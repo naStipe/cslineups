@@ -158,6 +158,8 @@ const throwModalTitle = document.getElementById("throwModalTitle");
 const throwModalHint = document.getElementById("throwModalHint");
 const screenshotInput = document.getElementById("screenshotInput");
 const thumbGrid = document.getElementById("thumbGrid");
+const standingInput = document.getElementById("standingInput");
+const standingThumbGrid = document.getElementById("standingThumbGrid");
 const preciseInput = document.getElementById("preciseInput");
 const preciseThumbWrap = document.getElementById("preciseThumbWrap");
 const throwRangeSelect = document.getElementById("throwRangeSelect");
@@ -293,7 +295,12 @@ function requireUnlocked() {
 
 addModeBtn.onclick = () => {
   if (!requireUnlocked()) return;
-  setAddMode(!state.addMode);
+  setAddMode(true);
+  openTypeModal((typeId) => {
+    state.pendingType = typeId;
+    closeModal(typeModal);
+    addHint.textContent = "Now click where this nade lands.";
+  });
 };
 
 mapFrame.addEventListener("click", (e) => {
@@ -307,14 +314,8 @@ mapFrame.addEventListener("click", (e) => {
     return;
   }
 
-  if (state.addMode) {
-    if (!state.pendingType) {
-      openTypeModal((typeId) => {
-        state.pendingType = typeId;
-        closeModal(typeModal);
-        addHint.textContent = "Now click where this nade lands.";
-      });
-    } else if (!state.pendingLanding) {
+  if (state.addMode && state.pendingType) {
+    if (!state.pendingLanding) {
       state.pendingLanding = { x, y };
       addHint.textContent = "Now click the spot you throw from.";
     } else {
@@ -335,6 +336,7 @@ function closeModal(m) { m.classList.remove("show"); }
 /* ===================== THROW MODAL ===================== */
 
 const MAX_SCREENSHOTS = 5;
+const MAX_STANDING = 3;
 
 function compressFile(file) {
   return new Promise((resolve, reject) => {
@@ -391,6 +393,36 @@ function renderPreciseThumb() {
   preciseThumbWrap.appendChild(t);
 }
 
+function renderStandingThumbGrid() {
+  standingThumbGrid.innerHTML = "";
+  (pendingThrowDraft.standing || []).forEach((src, i) => {
+    const t = document.createElement("div");
+    t.className = "thumb";
+    t.innerHTML = `<img src="${src}"><button class="thumb-remove" type="button">✕</button>`;
+    t.querySelector(".thumb-remove").onclick = () => {
+      pendingThrowDraft.standing.splice(i, 1);
+      renderStandingThumbGrid();
+    };
+    standingThumbGrid.appendChild(t);
+  });
+}
+
+standingInput.onchange = async () => {
+  const files = Array.from(standingInput.files || []);
+  standingInput.value = "";
+  if (!files.length) return;
+  const room = MAX_STANDING - pendingThrowDraft.standing.length;
+  if (files.length > room) {
+    alert(`Only ${MAX_STANDING} standing-position screenshots allowed — adding the first ${Math.max(room, 0)}.`);
+  }
+  const toAdd = files.slice(0, Math.max(room, 0));
+  for (const f of toAdd) {
+    const dataUrl = await compressFile(f);
+    pendingThrowDraft.standing.push(dataUrl);
+  }
+  renderStandingThumbGrid();
+};
+
 screenshotInput.onchange = async () => {
   const files = Array.from(screenshotInput.files || []);
   screenshotInput.value = "";
@@ -422,11 +454,13 @@ function openThrowModal(throwPos, lineupId, isNewLineup, typeId, landingPos, exi
     isNewLineup,
     typeId,
     landingPos,
+    standing: existingThrow ? [...(existingThrow.standing || [])] : [],
     screenshots: existingThrow ? [...existingThrow.screenshots] : [],
     precise: existingThrow ? existingThrow.precise || null : null,
     editingThrowId: existingThrow ? existingThrow.id : null,
   };
 
+  renderStandingThumbGrid();
   renderThumbGrid();
   renderPreciseThumb();
   throwRangeSelect.value = existingThrow ? existingThrow.range : "throw";
@@ -464,6 +498,7 @@ saveThrow.onclick = async () => {
     const draft = pendingThrowDraft;
     const throwEntryBase = {
       pos: draft.throwPos,
+      standing: draft.standing,
       screenshots: draft.screenshots,
       precise: draft.precise,
       range: throwRangeSelect.value,
@@ -585,9 +620,16 @@ function openDetail(lineupId) {
     const card = document.createElement("div");
     card.className = "throw-card";
 
+    const standingGallery = (t.standing && t.standing.length)
+      ? `<div class="gallery-section"><div class="gallery-label">Stand here</div>
+          <div class="throw-card-gallery standing-gallery">${t.standing.map((src, i) =>
+            `<img src="${src}" data-idx="${i}" alt="standing position ${i + 1}">`).join("")}</div></div>`
+      : "";
+
     const gallery = (t.screenshots && t.screenshots.length)
-      ? `<div class="throw-card-gallery">${t.screenshots.map((src, i) =>
-          `<img src="${src}" data-idx="${i}" alt="throw spot ${i + 1}">`).join("")}</div>`
+      ? `<div class="gallery-section"><div class="gallery-label">Aim here</div>
+          <div class="throw-card-gallery aim-gallery">${t.screenshots.map((src, i) =>
+            `<img src="${src}" data-idx="${i}" alt="throw spot ${i + 1}">`).join("")}</div></div>`
       : "";
 
     const precise = t.precise
@@ -595,6 +637,7 @@ function openDetail(lineupId) {
       : "";
 
     card.innerHTML = `
+      ${standingGallery}
       ${gallery}
       ${precise}
       <div class="throw-card-body">
@@ -610,8 +653,11 @@ function openDetail(lineupId) {
       </div>
     `;
 
-    card.querySelectorAll(".throw-card-gallery img").forEach(imgEl => {
-      imgEl.onclick = () => openLightbox(t.screenshots, parseInt(imgEl.dataset.idx, 10), `Throw position · ${lineup.throws.indexOf(t) + 1}`);
+    card.querySelectorAll(".standing-gallery img").forEach(imgEl => {
+      imgEl.onclick = () => openLightbox(t.standing, parseInt(imgEl.dataset.idx, 10), `Standing position · ${lineup.throws.indexOf(t) + 1}`);
+    });
+    card.querySelectorAll(".aim-gallery img").forEach(imgEl => {
+      imgEl.onclick = () => openLightbox(t.screenshots, parseInt(imgEl.dataset.idx, 10), `Aim · throw position ${lineup.throws.indexOf(t) + 1}`);
     });
     const preciseImg = card.querySelector(`#precise-${t.id}`);
     if (preciseImg) preciseImg.onclick = () => openLightbox([t.precise], 0, "Precise lineup");
@@ -710,6 +756,9 @@ function closeDetailPanel() {
   renderMarkers();
 }
 closeDetail.onclick = closeDetailPanel;
+detailPanel.addEventListener("click", (e) => {
+  if (e.target === detailPanel) closeDetailPanel();
+});
 
 addThrowBtn.onclick = () => {
   if (!requireUnlocked()) return;

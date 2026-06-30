@@ -150,12 +150,17 @@ body.locked .primary-btn{opacity:.5;}
 
 /* ---------- DETAIL PANEL ---------- */
 .detail-panel{
-  position:fixed;top:0;right:-380px;width:360px;height:100vh;
-  background:var(--panel);border-left:1px solid var(--line);
-  padding:20px;display:flex;flex-direction:column;gap:14px;
-  transition:right .2s ease;overflow-y:auto;z-index:50;
+  position:fixed;inset:0;background:rgba(5,7,8,.86);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .15s ease;
+  z-index:50;padding:30px;
 }
-.detail-panel.open{right:0;}
+.detail-panel.open{opacity:1;pointer-events:auto;}
+.detail-panel-inner{
+  width:min(980px,100%);max-height:100%;overflow-y:auto;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:26px 30px;box-shadow:0 30px 80px rgba(0,0,0,.6);
+}
 .detail-head{display:flex;justify-content:space-between;align-items:center;}
 .type-chip{
   font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
@@ -163,9 +168,9 @@ body.locked .primary-btn{opacity:.5;}
 }
 .icon-btn{background:none;border:none;color:var(--text-dim);font-size:16px;cursor:pointer;}
 .icon-btn:hover{color:var(--text);}
-#detailTitle{font-size:16px;color:var(--text-dim);font-weight:400;}
+#detailTitle{font-size:16px;color:var(--text-dim);font-weight:400;margin:10px 0 16px;}
 
-.throw-list{display:flex;flex-direction:column;gap:12px;}
+.throw-list{display:flex;flex-direction:column;gap:18px;}
 .throw-card{
   background:var(--panel-2);border:1px solid var(--line);border-radius:8px;overflow:hidden;
 }
@@ -216,11 +221,13 @@ body.locked .primary-btn{opacity:.5;}
   .app{grid-template-columns:1fr;grid-template-rows:auto 1fr;}
   .sidebar{flex-direction:row;overflow-x:auto;align-items:center;}
   .map-list{flex-direction:row;}
-  .detail-panel{width:90vw;right:-90vw;}
+  .detail-panel{padding:10px;}
+  .detail-panel-inner{padding:16px;}
 }
 
 /* ---------- multi-screenshot thumbnails (in modal) ---------- */
 .thumb-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:6px;}
+.thumb-grid.thumb-grid-3{grid-template-columns:repeat(3,1fr);max-width:280px;}
 .thumb-grid .thumb{
   position:relative;aspect-ratio:1/1;border-radius:6px;overflow:hidden;
   border:1px solid var(--line);background:var(--bg);
@@ -230,6 +237,12 @@ body.locked .primary-btn{opacity:.5;}
   position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;
   background:rgba(10,13,14,.85);color:var(--fire);border:1px solid var(--fire);
   font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;
+}
+
+.gallery-section{padding:10px 12px 0;}
+.gallery-label{
+  font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--text-dim);margin-bottom:6px;
 }
 
 /* ---------- throw card image gallery ---------- */

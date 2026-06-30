@@ -60,16 +60,18 @@
   </main>
 
   <!-- EXPANDED LINEUP PANEL -->
-  <aside class="detail-panel" id="detailPanel">
-    <div class="detail-head">
-      <span class="type-chip" id="detailType">SMOKE</span>
-      <button class="icon-btn" id="closeDetail">✕</button>
+  <div class="detail-panel" id="detailPanel">
+    <div class="detail-panel-inner">
+      <div class="detail-head">
+        <span class="type-chip" id="detailType">SMOKE</span>
+        <button class="icon-btn" id="closeDetail">✕</button>
+      </div>
+      <h3 id="detailTitle">Lineup</h3>
+      <div class="throw-list" id="throwList"></div>
+      <button class="ghost-btn" id="addThrowBtn">+ Add throw position</button>
+      <button class="ghost-btn danger" id="deleteLineupBtn">Delete this lineup</button>
     </div>
-    <h3 id="detailTitle">Lineup</h3>
-    <div class="throw-list" id="throwList"></div>
-    <button class="ghost-btn" id="addThrowBtn">+ Add throw position</button>
-    <button class="ghost-btn danger" id="deleteLineupBtn">Delete this lineup</button>
-  </aside>
+  </div>
 
 </div>
 
@@ -88,7 +90,11 @@
     <h3 id="throwModalTitle">Add throw position</h3>
     <p class="modal-hint" id="throwModalHint">Now click the spot on the map you throw <em>from</em>. Then fill in the details below.</p>
 
-    <label class="field-label">Screenshots (up to 5)</label>
+    <label class="field-label">Standing position (up to 3) — where you stand</label>
+    <input type="file" id="standingInput" accept="image/*" multiple>
+    <div class="thumb-grid thumb-grid-3" id="standingThumbGrid"></div>
+
+    <label class="field-label">Aim screenshots (up to 5) — where to aim / throw from</label>
     <input type="file" id="screenshotInput" accept="image/*" multiple>
     <div class="thumb-grid" id="thumbGrid"></div>
 
