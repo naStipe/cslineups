@@ -132,10 +132,6 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 
 /* ===================== DOM REFS ===================== */
 
-const mapStage = document.getElementById("mapStage");
-const rulerTop = document.getElementById("rulerTop");
-const rulerLeft = document.getElementById("rulerLeft");
-const gridReadout = document.getElementById("gridReadout");
 const mapList = document.getElementById("mapList");
 const typeFilters = document.getElementById("typeFilters");
 const mapImage = document.getElementById("mapImage");
@@ -190,44 +186,6 @@ const clusterGrid = document.getElementById("clusterGrid");
 const cancelCluster = document.getElementById("cancelCluster");
 
 let pendingThrowDraft = null; // {x,y,screenshot,...} being built before save
-
-/* ===================== COORDINATE RULER (signature HUD element) ===================== */
-
-const GRID_COLS = 16;
-const GRID_ROWS = 16;
-
-function buildRuler() {
-  rulerTop.innerHTML = "";
-  for (let i = 0; i < GRID_COLS; i++) {
-    const span = document.createElement("span");
-    span.textContent = String.fromCharCode(65 + i);
-    rulerTop.appendChild(span);
-  }
-  rulerLeft.innerHTML = "";
-  for (let i = 0; i < GRID_ROWS; i++) {
-    const span = document.createElement("span");
-    span.textContent = i + 1;
-    rulerLeft.appendChild(span);
-  }
-}
-
-function gridRefFromPercent(x, y) {
-  const col = Math.min(GRID_COLS - 1, Math.max(0, Math.floor((x / 100) * GRID_COLS)));
-  const row = Math.min(GRID_ROWS - 1, Math.max(0, Math.floor((y / 100) * GRID_ROWS)));
-  return `${String.fromCharCode(65 + col)}${row + 1}`;
-}
-
-mapFrame.addEventListener("mousemove", (e) => {
-  const rect = mapImage.getBoundingClientRect();
-  const x = ((e.clientX - rect.left) / rect.width) * 100;
-  const y = ((e.clientY - rect.top) / rect.height) * 100;
-  if (x < 0 || x > 100 || y < 0 || y > 100) return;
-  gridReadout.textContent = `REF ${gridRefFromPercent(x, y)}`;
-});
-mapFrame.addEventListener("mouseenter", () => { gridReadout.style.display = "block"; });
-mapFrame.addEventListener("mouseleave", () => { gridReadout.style.display = "none"; gridReadout.textContent = "REF —"; });
-
-buildRuler();
 
 /* ===================== INIT ===================== */
 
@@ -370,6 +328,12 @@ mapFrame.addEventListener("click", (e) => {
       const newId = uid();
       openThrowModal({ x, y }, newId, true, state.pendingType, state.pendingLanding);
     }
+    return;
+  }
+
+  if (state.selectedLineupId && !detailPanel.classList.contains("open")) {
+    state.selectedLineupId = null;
+    renderMarkers();
   }
 });
 
@@ -668,10 +632,16 @@ function renderMarkers() {
 
     landing.onclick = (e) => {
       e.stopPropagation();
-      if (count === 1) {
-        openDetail(cluster.lineups[0].id);
-      } else {
+      if (count > 1) {
         openClusterPicker(cluster.lineups);
+        return;
+      }
+      const lineup = cluster.lineups[0];
+      if (state.selectedLineupId === lineup.id) {
+        openDetail(lineup.id);
+      } else {
+        state.selectedLineupId = lineup.id;
+        renderMarkers();
       }
     };
     markerLayer.appendChild(landing);
@@ -683,7 +653,8 @@ function renderMarkers() {
         tp.className = `marker throwpos ${openLineup.type}`;
         tp.style.left = t.pos.x + "%";
         tp.style.top = t.pos.y + "%";
-        tp.title = "Throw from here";
+        tp.title = "Click to open this lineup";
+        tp.onclick = (e) => { e.stopPropagation(); openDetail(openLineup.id); };
         markerLayer.appendChild(tp);
 
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
