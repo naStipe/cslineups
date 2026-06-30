@@ -25,13 +25,14 @@ function applyLockState() {
 
 
 const MAPS = [
-  { id: "dust2",   name: "Dust II",  file: "maps/dust2.webp"  },
-  { id: "mirage",  name: "Mirage",   file: "maps/mirage.webp" },
-  { id: "inferno", name: "Inferno",  file: "maps/inferno.webp"},
-  { id: "nuke",    name: "Nuke",     file: "maps/nuke.webp"   },
-  { id: "ancient", name: "Ancient",  file: "maps/ancient.webp"},
-  { id: "anubis",  name: "Anubis",   file: "maps/anubis.png"  },
-  { id: "cache",   name: "Cache",    file: "maps/cache.webp"  },
+  { id: "dust2",    name: "Dust II",   file: "maps/dust2.webp",    logo: "maps/dust2-logo.jpg"    },
+  { id: "mirage",   name: "Mirage",    file: "maps/mirage.webp",   logo: "maps/mirage-logo.jpg"   },
+  { id: "inferno",  name: "Inferno",   file: "maps/inferno.webp",  logo: "maps/inferno-logo.jpg"  },
+  { id: "nuke",     name: "Nuke",      file: "maps/nuke.webp",     logo: "maps/nuke-logo.jpg"     },
+  { id: "ancient",  name: "Ancient",   file: "maps/ancient.webp",  logo: "maps/ancient-logo.jpg"  },
+  { id: "anubis",   name: "Anubis",    file: "maps/anubis.png",    logo: "maps/anubis-logo.jpg"   },
+  { id: "overpass", name: "Overpass",  file: "maps/overpass.webp", logo: "maps/overpass-logo.jpg" },
+  { id: "cache",    name: "Cache",     file: "maps/cache.webp",    logo: null                     },
 ];
 
 const TYPES = [
@@ -133,6 +134,10 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 /* ===================== DOM REFS ===================== */
 
 const mapList = document.getElementById("mapList");
+const homeScreen = document.getElementById("homeScreen");
+const homeGrid = document.getElementById("homeGrid");
+const appShell = document.getElementById("appShell");
+const backBtn = document.getElementById("backBtn");
 const typeFilters = document.getElementById("typeFilters");
 const mapImage = document.getElementById("mapImage");
 const mapFrame = document.getElementById("mapFrame");
@@ -186,6 +191,47 @@ const clusterGrid = document.getElementById("clusterGrid");
 const cancelCluster = document.getElementById("cancelCluster");
 
 let pendingThrowDraft = null; // {x,y,screenshot,...} being built before save
+
+/* ===================== HOME SCREEN ===================== */
+
+async function buildHomeScreen() {
+  // Fetch all lineups once to get per-map counts
+  let allLineups = [];
+  try { allLineups = await dbGetAll(); } catch(e) { /* counts will show 0 */ }
+
+  homeGrid.innerHTML = "";
+  MAPS.forEach(m => {
+    const count = allLineups.filter(l => l.mapId === m.id).length;
+    const card = document.createElement("div");
+    card.className = "map-card";
+    card.innerHTML = `
+      <div class="map-card-bg" style="background-image:url('${m.file}')"></div>
+      <div class="map-card-content">
+        ${m.logo ? `<img class="map-card-logo" src="${m.logo}" alt="${m.name} logo">` : ""}
+        <div class="map-card-name">${m.name}</div>
+        <div class="map-card-count ${count === 0 ? "empty" : ""}">
+          ${count === 0 ? "No lineups yet" : `${count} lineup${count === 1 ? "" : "s"}`}
+        </div>
+      </div>
+    `;
+    card.onclick = () => enterMap(m.id);
+    homeGrid.appendChild(card);
+  });
+}
+
+function enterMap(id) {
+  homeScreen.style.display = "none";
+  appShell.removeAttribute("hidden");
+  selectMap(id);
+}
+
+function goHome() {
+  appShell.setAttribute("hidden", "");
+  homeScreen.style.display = "";
+  closeDetailPanel();
+  setAddMode(false);
+  buildHomeScreen(); // refresh counts when returning
+}
 
 /* ===================== INIT ===================== */
 
@@ -899,7 +945,9 @@ importInput.onchange = async () => {
 
 /* ===================== BOOT ===================== */
 
+backBtn.onclick = goHome;
+
 buildSidebar();
 buildFilters();
 applyLockState();
-selectMap(state.mapId);
+buildHomeScreen();

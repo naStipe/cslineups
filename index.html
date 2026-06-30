@@ -8,7 +8,22 @@
 </head>
 <body>
 
-<div class="app">
+<!-- HOME SCREEN -->
+<div class="home-screen" id="homeScreen">
+  <header class="home-header">
+    <div class="home-brand">
+      <span class="home-brand-mark">⌖</span>
+      <div>
+        <p class="home-eyebrow">Operator database</p>
+        <h1 class="home-title">LINEUPS</h1>
+      </div>
+    </div>
+  </header>
+  <div class="home-grid" id="homeGrid"></div>
+</div>
+
+<!-- MAIN APP (hidden until a map is selected) -->
+<div class="app" id="appShell" hidden>
 
   <!-- SIDEBAR -->
   <aside class="sidebar">
@@ -36,8 +51,11 @@
 
     <header class="topbar">
       <div class="topbar-left">
-        <p class="map-eyebrow">Active map</p>
-        <h2 id="currentMapName">DUST II</h2>
+        <button class="back-btn" id="backBtn">← Maps</button>
+        <div>
+          <p class="map-eyebrow">Active map</p>
+          <h2 id="currentMapName">DUST II</h2>
+        </div>
       </div>
 
       <div class="filters" id="typeFilters"></div>
