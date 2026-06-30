@@ -42,6 +42,25 @@ const TYPES = [
   { id: "decoy", label: "Decoy",     color: "var(--decoy)" },
 ];
 
+const RANGE_LABELS = {
+  "throw": "Throw",
+  "mid-throw": "Mid-throw",
+  "close-throw": "Close-throw",
+};
+
+const MOVEMENT_LABELS = {
+  "none": "Standing",
+  "jumpthrow": "Jumpthrow",
+  "w-throw": "W + Throw",
+  "w-jumpthrow": "W + Jumpthrow",
+  "shift-w-throw": "Shift + W + Throw",
+  "shift-w-jumpthrow": "Shift + W + Jumpthrow",
+  "crouch": "Crouch",
+  "crouchjump": "Crouch + Jump",
+  "crouchaim-jump": "Crouch-aim + Jump",
+  "crouchaim-crouchjump": "Crouch-aim + Crouch-jump",
+};
+
 /* ===================== STORAGE (Netlify Function API) ===================== */
 
 const API_URL = "/.netlify/functions/lineups";
@@ -136,13 +155,23 @@ const cancelType = document.getElementById("cancelType");
 
 const throwModal = document.getElementById("throwModal");
 const throwModalTitle = document.getElementById("throwModalTitle");
+const throwModalHint = document.getElementById("throwModalHint");
 const screenshotInput = document.getElementById("screenshotInput");
-const screenshotPreview = document.getElementById("screenshotPreview");
-const throwTypeSelect = document.getElementById("throwTypeSelect");
-const keybindInput = document.getElementById("keybindInput");
+const thumbGrid = document.getElementById("thumbGrid");
+const preciseInput = document.getElementById("preciseInput");
+const preciseThumbWrap = document.getElementById("preciseThumbWrap");
+const throwRangeSelect = document.getElementById("throwRangeSelect");
+const movementSelect = document.getElementById("movementSelect");
 const notesInput = document.getElementById("notesInput");
 const cancelThrow = document.getElementById("cancelThrow");
 const saveThrow = document.getElementById("saveThrow");
+
+const lightboxModal = document.getElementById("lightboxModal");
+const lightboxImage = document.getElementById("lightboxImage");
+const lightboxCaption = document.getElementById("lightboxCaption");
+const lightboxClose = document.getElementById("lightboxClose");
+const lightboxPrev = document.getElementById("lightboxPrev");
+const lightboxNext = document.getElementById("lightboxNext");
 
 const detailPanel = document.getElementById("detailPanel");
 const detailType = document.getElementById("detailType");
@@ -305,44 +334,114 @@ function closeModal(m) { m.classList.remove("show"); }
 
 /* ===================== THROW MODAL ===================== */
 
-function openThrowModal(throwPos, lineupId, isNewLineup, typeId, landingPos) {
-  pendingThrowDraft = { throwPos, lineupId, isNewLineup, typeId, landingPos, screenshot: null };
-  screenshotInput.value = "";
-  screenshotPreview.hidden = true;
-  throwTypeSelect.value = "stand";
-  keybindInput.value = "";
-  notesInput.value = "";
-  throwModalTitle.textContent = isNewLineup ? "New lineup — throw position" : "Add throw position";
-  throwModal.classList.add("show");
+const MAX_SCREENSHOTS = 5;
+
+function compressFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX_DIM = 1280;
+        let { width, height } = img;
+        if (width > MAX_DIM || height > MAX_DIM) {
+          const scale = MAX_DIM / Math.max(width, height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", 0.85));
+      };
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
-screenshotInput.onchange = () => {
-  const file = screenshotInput.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    const img = new Image();
-    img.onload = () => {
-      const MAX_DIM = 1280;
-      let { width, height } = img;
-      if (width > MAX_DIM || height > MAX_DIM) {
-        const scale = MAX_DIM / Math.max(width, height);
-        width = Math.round(width * scale);
-        height = Math.round(height * scale);
-      }
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      canvas.getContext("2d").drawImage(img, 0, 0, width, height);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
-      pendingThrowDraft.screenshot = dataUrl;
-      screenshotPreview.src = dataUrl;
-      screenshotPreview.hidden = false;
+function renderThumbGrid() {
+  thumbGrid.innerHTML = "";
+  (pendingThrowDraft.screenshots || []).forEach((src, i) => {
+    const t = document.createElement("div");
+    t.className = "thumb";
+    t.innerHTML = `<img src="${src}"><button class="thumb-remove" type="button">✕</button>`;
+    t.querySelector(".thumb-remove").onclick = () => {
+      pendingThrowDraft.screenshots.splice(i, 1);
+      renderThumbGrid();
     };
-    img.src = reader.result;
+    thumbGrid.appendChild(t);
+  });
+}
+
+function renderPreciseThumb() {
+  preciseThumbWrap.innerHTML = "";
+  if (!pendingThrowDraft.precise) return;
+  const t = document.createElement("div");
+  t.className = "thumb";
+  t.style.maxWidth = "120px";
+  t.innerHTML = `<img src="${pendingThrowDraft.precise}"><button class="thumb-remove" type="button">✕</button>`;
+  t.querySelector(".thumb-remove").onclick = () => {
+    pendingThrowDraft.precise = null;
+    renderPreciseThumb();
   };
-  reader.readAsDataURL(file);
+  preciseThumbWrap.appendChild(t);
+}
+
+screenshotInput.onchange = async () => {
+  const files = Array.from(screenshotInput.files || []);
+  screenshotInput.value = "";
+  if (!files.length) return;
+  const room = MAX_SCREENSHOTS - pendingThrowDraft.screenshots.length;
+  if (files.length > room) {
+    alert(`Only ${MAX_SCREENSHOTS} screenshots allowed per lineup — adding the first ${Math.max(room, 0)}.`);
+  }
+  const toAdd = files.slice(0, Math.max(room, 0));
+  for (const f of toAdd) {
+    const dataUrl = await compressFile(f);
+    pendingThrowDraft.screenshots.push(dataUrl);
+  }
+  renderThumbGrid();
 };
+
+preciseInput.onchange = async () => {
+  const file = preciseInput.files[0];
+  preciseInput.value = "";
+  if (!file) return;
+  pendingThrowDraft.precise = await compressFile(file);
+  renderPreciseThumb();
+};
+
+function openThrowModal(throwPos, lineupId, isNewLineup, typeId, landingPos, existingThrow) {
+  pendingThrowDraft = {
+    throwPos,
+    lineupId,
+    isNewLineup,
+    typeId,
+    landingPos,
+    screenshots: existingThrow ? [...existingThrow.screenshots] : [],
+    precise: existingThrow ? existingThrow.precise || null : null,
+    editingThrowId: existingThrow ? existingThrow.id : null,
+  };
+
+  renderThumbGrid();
+  renderPreciseThumb();
+  throwRangeSelect.value = existingThrow ? existingThrow.range : "throw";
+  movementSelect.value = existingThrow ? existingThrow.movement : "none";
+  notesInput.value = existingThrow ? existingThrow.notes || "" : "";
+
+  if (existingThrow) {
+    throwModalTitle.textContent = "Edit throw position";
+    throwModalHint.textContent = "Editing this throw position's details. The map position stays the same.";
+  } else {
+    throwModalTitle.textContent = isNewLineup ? "New lineup — throw position" : "Add throw position";
+    throwModalHint.textContent = "Click confirmed. Fill in the details below.";
+  }
+  throwModal.classList.add("show");
+}
 
 cancelThrow.onclick = () => {
   closeModal(throwModal);
@@ -354,18 +453,21 @@ cancelThrow.onclick = () => {
 saveThrow.onclick = async () => {
   if (!pendingThrowDraft) return;
   if (!requireUnlocked()) return;
+  if (pendingThrowDraft.screenshots.length === 0) {
+    if (!confirm("No screenshots attached — save anyway?")) return;
+  }
 
   saveThrow.disabled = true;
   saveThrow.textContent = "Saving…";
 
   try {
     const draft = pendingThrowDraft;
-    const throwEntry = {
-      id: uid(),
+    const throwEntryBase = {
       pos: draft.throwPos,
-      screenshot: draft.screenshot,
-      throwType: throwTypeSelect.value,
-      keybind: keybindInput.value.trim(),
+      screenshots: draft.screenshots,
+      precise: draft.precise,
+      range: throwRangeSelect.value,
+      movement: movementSelect.value,
       notes: notesInput.value.trim(),
     };
 
@@ -375,26 +477,31 @@ saveThrow.onclick = async () => {
         mapId: state.mapId,
         type: draft.typeId,
         landing: draft.landingPos,
-        throws: [throwEntry],
+        throws: [{ id: uid(), ...throwEntryBase }],
         createdAt: Date.now(),
       };
       await dbPut(lineup);
     } else {
       let lineup = state.lineups.find(l => l.id === draft.lineupId);
       if (!lineup) {
-        // fall back to fetching fresh in case local state is stale
         const all = await dbGetAll();
         lineup = all.find(l => l.id === draft.lineupId);
       }
-      if (!lineup) throw new Error("Could not find the lineup to add this throw position to.");
-      lineup.throws.push(throwEntry);
+      if (!lineup) throw new Error("Could not find the lineup to save this throw position to.");
+
+      if (draft.editingThrowId) {
+        const idx = lineup.throws.findIndex(t => t.id === draft.editingThrowId);
+        if (idx === -1) throw new Error("Could not find the throw position to update.");
+        lineup.throws[idx] = { id: draft.editingThrowId, ...throwEntryBase };
+      } else {
+        lineup.throws.push({ id: uid(), ...throwEntryBase });
+      }
       await dbPut(lineup);
     }
 
     closeModal(throwModal);
     pendingThrowDraft = null;
     setAddMode(false);
-    const wasNew = draft.isNewLineup;
     const reopenId = draft.lineupId;
     state.pendingThrowFor = null;
     await loadLineups();
@@ -470,28 +577,51 @@ function openDetail(lineupId) {
   const lineup = state.lineups.find(l => l.id === lineupId);
   if (!lineup) return;
 
-  const typeInfo = TYPES.find(t => t.id === lineup.type);
-  detailType.textContent = typeInfo.label;
-  detailType.style.color = "#0a0d0e";
-  detailType.style.background = getCssVarColor(typeInfo.color);
-  detailTitle.textContent = `${typeInfo.label} lineup · ${lineup.throws.length} position${lineup.throws.length === 1 ? "" : "s"}`;
+  renderDetailType(lineup);
+  detailTitle.textContent = `${lineup.throws.length} position${lineup.throws.length === 1 ? "" : "s"}`;
 
   throwList.innerHTML = "";
   lineup.throws.forEach(t => {
     const card = document.createElement("div");
     card.className = "throw-card";
+
+    const gallery = (t.screenshots && t.screenshots.length)
+      ? `<div class="throw-card-gallery">${t.screenshots.map((src, i) =>
+          `<img src="${src}" data-idx="${i}" alt="throw spot ${i + 1}">`).join("")}</div>`
+      : "";
+
+    const precise = t.precise
+      ? `<div class="precise-row"><img src="${t.precise}" id="precise-${t.id}"><span>Precise lineup shot</span></div>`
+      : "";
+
     card.innerHTML = `
-      ${t.screenshot ? `<img src="${t.screenshot}" alt="throw spot">` : ""}
+      ${gallery}
+      ${precise}
       <div class="throw-card-body">
         <div class="throw-meta">
-          <span class="tag">${t.throwType}</span>
-          ${t.keybind ? `<span class="tag">${escapeHtml(t.keybind)}</span>` : ""}
+          <span class="tag">${RANGE_LABELS[t.range] || t.range}</span>
+          <span class="tag">${MOVEMENT_LABELS[t.movement] || t.movement}</span>
         </div>
         ${t.notes ? `<div class="throw-notes">${escapeHtml(t.notes)}</div>` : ""}
-        <div class="throw-card-actions"><button data-id="${t.id}">Remove</button></div>
+        <div class="throw-card-actions">
+          <button class="edit-btn">Edit</button>
+          <button class="remove-btn">Remove</button>
+        </div>
       </div>
     `;
-    card.querySelector(".throw-card-actions button").onclick = async () => {
+
+    card.querySelectorAll(".throw-card-gallery img").forEach(imgEl => {
+      imgEl.onclick = () => openLightbox(t.screenshots, parseInt(imgEl.dataset.idx, 10), `Throw position · ${lineup.throws.indexOf(t) + 1}`);
+    });
+    const preciseImg = card.querySelector(`#precise-${t.id}`);
+    if (preciseImg) preciseImg.onclick = () => openLightbox([t.precise], 0, "Precise lineup");
+
+    card.querySelector(".edit-btn").onclick = () => {
+      if (!requireUnlocked()) return;
+      openThrowModal(t.pos, lineup.id, false, lineup.type, lineup.landing, t);
+    };
+
+    card.querySelector(".remove-btn").onclick = async () => {
       if (!requireUnlocked()) return;
       lineup.throws = lineup.throws.filter(x => x.id !== t.id);
       if (lineup.throws.length === 0) {
@@ -509,6 +639,70 @@ function openDetail(lineupId) {
   detailPanel.classList.add("open");
   renderMarkers();
 }
+
+function renderDetailType(lineup) {
+  const typeInfo = TYPES.find(t => t.id === lineup.type);
+  detailType.textContent = typeInfo.label + " ✎";
+  detailType.style.color = "#0a0d0e";
+  detailType.style.background = getCssVarColor(typeInfo.color);
+  detailType.title = "Click to change nade type";
+  detailType.onclick = () => {
+    if (!requireUnlocked()) return;
+    openTypeModalForEdit(lineup);
+  };
+}
+
+function openTypeModalForEdit(lineup) {
+  buildTypeGrid(async (typeId) => {
+    closeModal(typeModal);
+    lineup.type = typeId;
+    await dbPut(lineup);
+    await loadLineups();
+    openDetail(lineup.id);
+  });
+  typeModal.classList.add("show");
+}
+
+/* ===================== LIGHTBOX ===================== */
+
+let lightboxState = { images: [], index: 0, caption: "" };
+
+function openLightbox(images, index, caption) {
+  const valid = (images || []).filter(Boolean);
+  if (!valid.length) return;
+  lightboxState = { images: valid, index, caption: caption || "" };
+  renderLightbox();
+  lightboxModal.classList.add("show");
+}
+
+function renderLightbox() {
+  lightboxImage.src = lightboxState.images[lightboxState.index];
+  const multi = lightboxState.images.length > 1;
+  lightboxPrev.style.display = multi ? "" : "none";
+  lightboxNext.style.display = multi ? "" : "none";
+  lightboxCaption.textContent = multi
+    ? `${lightboxState.caption} — ${lightboxState.index + 1} / ${lightboxState.images.length}`
+    : lightboxState.caption;
+}
+
+lightboxPrev.onclick = () => {
+  lightboxState.index = (lightboxState.index - 1 + lightboxState.images.length) % lightboxState.images.length;
+  renderLightbox();
+};
+lightboxNext.onclick = () => {
+  lightboxState.index = (lightboxState.index + 1) % lightboxState.images.length;
+  renderLightbox();
+};
+lightboxClose.onclick = () => lightboxModal.classList.remove("show");
+lightboxModal.addEventListener("click", (e) => {
+  if (e.target === lightboxModal) lightboxModal.classList.remove("show");
+});
+document.addEventListener("keydown", (e) => {
+  if (!lightboxModal.classList.contains("show")) return;
+  if (e.key === "Escape") lightboxModal.classList.remove("show");
+  if (e.key === "ArrowLeft") lightboxPrev.onclick();
+  if (e.key === "ArrowRight") lightboxNext.onclick();
+});
 
 function closeDetailPanel() {
   state.selectedLineupId = null;

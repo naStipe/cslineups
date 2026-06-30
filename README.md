@@ -68,3 +68,17 @@ the natural next step is Supabase (Postgres + file storage) — the function in
 `netlify/functions/lineups.js` is a thin enough layer that swapping the backend later is
 straightforward.
 
+
+## If you see "Netlify Blobs is not configured" errors
+
+Some Netlify accounts/runtimes don't auto-inject Blobs credentials into functions. If you see
+an error like `The environment has not been configured to use Netlify Blobs`, add two
+environment variables (same place as `EDIT_PASSWORD`, in **Site configuration → Environment
+variables**):
+
+- `NETLIFY_SITE_ID` — find it in **Site configuration → General → Site details → Site ID**.
+- `NETLIFY_AUTH_TOKEN` — create one at **User settings → Applications → Personal access
+  tokens → New access token** (give it a name, no special scopes needed beyond default).
+
+Add both, then trigger a new deploy. The function automatically uses these if present, and
+falls back to automatic context if they're not set.
