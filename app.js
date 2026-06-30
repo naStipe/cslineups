@@ -48,7 +48,10 @@ const API_URL = "/.netlify/functions/lineups";
 
 async function dbGetAll() {
   const res = await fetch(API_URL);
-  if (!res.ok) throw new Error("Failed to load lineups");
+  if (!res.ok) {
+    const msg = await res.text().catch(() => "");
+    throw new Error(`Failed to load lineups (${res.status}): ${msg}`);
+  }
   return res.json();
 }
 
@@ -59,7 +62,10 @@ async function dbPut(record) {
     body: JSON.stringify(record),
   });
   if (res.status === 401) throw new Error("LOCKED");
-  if (!res.ok) throw new Error("Failed to save lineup");
+  if (!res.ok) {
+    const msg = await res.text().catch(() => "");
+    throw new Error(`Failed to save lineup (${res.status}): ${msg}`);
+  }
 }
 
 async function dbDelete(id) {
