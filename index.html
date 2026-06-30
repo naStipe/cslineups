@@ -15,11 +15,12 @@
     <div class="brand">
       <span class="brand-mark">⌖</span>
       <div>
+        <p class="brand-eyebrow">Operator database</p>
         <h1>LINEUPS</h1>
-        <p class="brand-sub">personal nade database</p>
       </div>
     </div>
 
+    <p class="rail-label">Maps</p>
     <nav class="map-list" id="mapList"></nav>
 
     <div class="sidebar-footer">
@@ -35,13 +36,14 @@
 
     <header class="topbar">
       <div class="topbar-left">
+        <p class="map-eyebrow">Active map</p>
         <h2 id="currentMapName">DUST II</h2>
-        <span class="count-pill" id="lineupCount">0 lineups</span>
       </div>
 
       <div class="filters" id="typeFilters"></div>
 
       <div class="topbar-right">
+        <span class="count-pill" id="lineupCount">0 lineups</span>
         <button id="addModeBtn" class="primary-btn">
           <span class="add-dot"></span> Add lineup
         </button>
@@ -49,6 +51,11 @@
     </header>
 
     <div class="map-stage" id="mapStage">
+      <div class="ruler-corner"></div>
+      <div class="ruler ruler-top" id="rulerTop"></div>
+      <div class="ruler ruler-left" id="rulerLeft"></div>
+      <div class="grid-readout" id="gridReadout">REF —</div>
+
       <div class="map-frame" id="mapFrame">
         <img id="mapImage" src="" alt="map">
         <svg id="linkSvg"></svg>
@@ -62,7 +69,10 @@
   <div class="detail-panel" id="detailPanel">
     <div class="detail-panel-inner">
       <div class="detail-head">
-        <span class="type-chip" id="detailType">SMOKE</span>
+        <div>
+          <p class="dossier-eyebrow">Dossier</p>
+          <span class="type-chip" id="detailType">SMOKE</span>
+        </div>
         <button class="icon-btn" id="closeDetail">✕</button>
       </div>
       <h3 id="detailTitle">Lineup</h3>
