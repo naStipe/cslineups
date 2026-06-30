@@ -96,12 +96,6 @@ async function dbDelete(id) {
   if (!res.ok) throw new Error("Failed to delete lineup");
 }
 
-async function dbClearMap(mapId) {
-  const all = await dbGetAll();
-  const toDelete = all.filter(l => l.mapId === mapId);
-  for (const l of toDelete) await dbDelete(l.id);
-}
-
 async function dbImportBulk(records) {
   const res = await fetch(API_URL, {
     method: "POST",
@@ -185,8 +179,11 @@ const deleteLineupBtn = document.getElementById("deleteLineupBtn");
 
 const exportBtn = document.getElementById("exportBtn");
 const importInput = document.getElementById("importInput");
-const clearBtn = document.getElementById("clearBtn");
 const lockBtn = document.getElementById("lockBtn");
+
+const clusterModal = document.getElementById("clusterModal");
+const clusterGrid = document.getElementById("clusterGrid");
+const cancelCluster = document.getElementById("cancelCluster");
 
 let pendingThrowDraft = null; // {x,y,screenshot,...} being built before save
 
@@ -237,6 +234,9 @@ function buildTypeGrid(onPick) {
 async function selectMap(id) {
   state.mapId = id;
   state.selectedLineupId = null;
+  state.lineups = [];
+  markerLayer.innerHTML = "";
+  linkSvg.innerHTML = "";
   detailPanel.classList.remove("open");
   setAddMode(false);
   buildSidebar();
@@ -246,14 +246,20 @@ async function selectMap(id) {
   await loadLineups();
 }
 
+let loadToken = 0;
+
 async function loadLineups() {
+  const myToken = ++loadToken;
+  const requestedMapId = state.mapId;
   lineupCount.textContent = "loading…";
   try {
     const all = await dbGetAll();
-    state.lineups = all.filter(l => l.mapId === state.mapId);
+    if (myToken !== loadToken) return; // a newer map switch superseded this request
+    state.lineups = all.filter(l => l.mapId === requestedMapId);
     lineupCount.textContent = `${state.lineups.length} lineup${state.lineups.length === 1 ? "" : "s"}`;
     renderMarkers();
   } catch (err) {
+    if (myToken !== loadToken) return;
     lineupCount.textContent = "load failed";
     console.error(err);
   }
@@ -567,26 +573,61 @@ function getCssVarColor(v) {
   return v;
 }
 
+function clusterLineups(list) {
+  const THRESHOLD = 1.8; // % of map width/height
+  const clusters = [];
+  list.forEach(lineup => {
+    const c = clusters.find(cl => Math.hypot(cl.x - lineup.landing.x, cl.y - lineup.landing.y) < THRESHOLD);
+    if (c) {
+      c.lineups.push(lineup);
+      c.x = c.lineups.reduce((s, l) => s + l.landing.x, 0) / c.lineups.length;
+      c.y = c.lineups.reduce((s, l) => s + l.landing.y, 0) / c.lineups.length;
+    } else {
+      clusters.push({ x: lineup.landing.x, y: lineup.landing.y, lineups: [lineup] });
+    }
+  });
+  return clusters;
+}
+
 function renderMarkers() {
   markerLayer.innerHTML = "";
   linkSvg.innerHTML = "";
   const visible = state.lineups.filter(l => state.activeFilters.has(l.type));
+  const clusters = clusterLineups(visible);
 
-  visible.forEach(lineup => {
-    const isOpen = state.selectedLineupId === lineup.id;
+  clusters.forEach(cluster => {
+    const count = cluster.lineups.length;
+    const sameType = count === 1 || cluster.lineups.every(l => l.type === cluster.lineups[0].type);
+    const colorClass = sameType ? cluster.lineups[0].type : "multi";
 
     const landing = document.createElement("div");
-    landing.className = `marker landing ${lineup.type}`;
-    landing.style.left = lineup.landing.x + "%";
-    landing.style.top = lineup.landing.y + "%";
-    landing.title = "Click to see throw position(s)";
-    landing.onclick = (e) => { e.stopPropagation(); openDetail(lineup.id); };
+    landing.className = `marker landing ${colorClass}`;
+    landing.style.left = cluster.x + "%";
+    landing.style.top = cluster.y + "%";
+    landing.title = count > 1 ? `${count} lineups here` : "Click to see throw position(s)";
+
+    if (count > 1) {
+      const badge = document.createElement("span");
+      badge.className = "marker-badge";
+      badge.textContent = count;
+      landing.appendChild(badge);
+    }
+
+    landing.onclick = (e) => {
+      e.stopPropagation();
+      if (count === 1) {
+        openDetail(cluster.lineups[0].id);
+      } else {
+        openClusterPicker(cluster.lineups);
+      }
+    };
     markerLayer.appendChild(landing);
 
-    if (isOpen) {
-      lineup.throws.forEach(t => {
+    const openLineup = cluster.lineups.find(l => l.id === state.selectedLineupId);
+    if (openLineup) {
+      openLineup.throws.forEach(t => {
         const tp = document.createElement("div");
-        tp.className = `marker throwpos ${lineup.type}`;
+        tp.className = `marker throwpos ${openLineup.type}`;
         tp.style.left = t.pos.x + "%";
         tp.style.top = t.pos.y + "%";
         tp.title = "Throw from here";
@@ -595,15 +636,32 @@ function renderMarkers() {
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
         line.setAttribute("x1", t.pos.x + "%");
         line.setAttribute("y1", t.pos.y + "%");
-        line.setAttribute("x2", lineup.landing.x + "%");
-        line.setAttribute("y2", lineup.landing.y + "%");
-        line.setAttribute("stroke", getCssVarColor(typeColor(lineup.type)));
+        line.setAttribute("x2", openLineup.landing.x + "%");
+        line.setAttribute("y2", openLineup.landing.y + "%");
+        line.setAttribute("stroke", getCssVarColor(typeColor(openLineup.type)));
         line.setAttribute("class", "link-line");
         linkSvg.appendChild(line);
       });
     }
   });
 }
+
+function openClusterPicker(lineups) {
+  clusterGrid.innerHTML = "";
+  lineups.forEach((lineup, i) => {
+    const typeInfo = TYPES.find(t => t.id === lineup.type);
+    const opt = document.createElement("div");
+    opt.className = "type-opt";
+    opt.innerHTML = `<span class="dot" style="background:${typeInfo.color}"></span>${typeInfo.label} #${i + 1} — ${lineup.throws.length} position${lineup.throws.length === 1 ? "" : "s"}`;
+    opt.onclick = () => {
+      closeModal(clusterModal);
+      openDetail(lineup.id);
+    };
+    clusterGrid.appendChild(opt);
+  });
+  clusterModal.classList.add("show");
+}
+cancelCluster.onclick = () => closeModal(clusterModal);
 
 /* ===================== DETAIL PANEL ===================== */
 
@@ -810,14 +868,6 @@ importInput.onchange = async () => {
     alert("Could not import that backup: " + err.message);
   }
   importInput.value = "";
-};
-
-clearBtn.onclick = async () => {
-  if (!requireUnlocked()) return;
-  if (!confirm(`Delete ALL lineups on ${MAPS.find(m => m.id === state.mapId).name}?`)) return;
-  await dbClearMap(state.mapId);
-  closeDetailPanel();
-  await loadLineups();
 };
 
 /* ===================== BOOT ===================== */

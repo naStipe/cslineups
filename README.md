@@ -41,10 +41,6 @@ deployed on Netlify. Every `git push` to `main` redeploys automatically, functio
 Map images live in `/maps`. To add a new map, drop an image in that folder and add an entry
 to the `MAPS` array at the top of `app.js`:
 
-```js
-{ id: "vertigo", name: "Vertigo", file: "maps/vertigo.webp" }
-```
-
 ## Password-protecting edits
 
 The site is viewable by anyone with the link, but adding/editing/deleting lineups requires a

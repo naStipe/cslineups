@@ -27,7 +27,6 @@
       <button id="exportBtn" class="ghost-btn">Export backup</button>
       <label class="ghost-btn" for="importInput">Import backup</label>
       <input type="file" id="importInput" accept="application/json" hidden>
-      <button id="clearBtn" class="ghost-btn danger">Clear this map</button>
     </div>
   </aside>
 
@@ -73,6 +72,16 @@
     </div>
   </div>
 
+</div>
+
+<!-- MODAL: pick which lineup, when several share a landing spot -->
+<div class="modal-backdrop" id="clusterModal">
+  <div class="modal">
+    <h3>Multiple lineups here</h3>
+    <p class="modal-hint">Pick which one to open.</p>
+    <div class="cluster-grid" id="clusterGrid"></div>
+    <button class="ghost-btn" id="cancelCluster">Cancel</button>
+  </div>
 </div>
 
 <!-- MODAL: new landing spot -> choose type -->

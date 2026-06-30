@@ -278,3 +278,55 @@ body.locked .primary-btn{opacity:.5;}
 .lightbox-prev{left:24px;}
 .lightbox-next{right:24px;}
 .lightbox-caption{margin-top:14px;color:var(--text-dim);font-size:12px;font-family:var(--font-mono);}
+
+/* ===================== MARKER CLUSTERING ===================== */
+.marker.landing{
+  box-shadow:0 0 0 2px currentColor, 0 0 0 5px rgba(0,0,0,.35), 0 2px 10px rgba(0,0,0,.7);
+}
+.marker.landing:hover{box-shadow:0 0 0 2px currentColor, 0 0 0 7px rgba(216,232,90,.18), 0 2px 14px rgba(0,0,0,.8);}
+.marker.multi{background:var(--accent);color:var(--accent);}
+.marker-badge{
+  position:absolute;top:-7px;right:-7px;
+  background:var(--bg);color:var(--text);
+  border:1.5px solid currentColor;border-radius:50%;
+  min-width:16px;height:16px;padding:0 2px;
+  font-family:var(--font-mono);font-size:10px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+}
+
+.cluster-grid{display:flex;flex-direction:column;gap:8px;margin:10px 0;}
+
+/* ===================== POLISH PASS ===================== */
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px;border:2px solid var(--bg);}
+::-webkit-scrollbar-thumb:hover{background:#3a474d;}
+
+.modal-backdrop{backdrop-filter:blur(3px);}
+.detail-panel{backdrop-filter:blur(4px);}
+
+.map-frame{border-radius:4px;}
+.map-frame img{border-radius:3px;}
+
+.throw-card{transition:box-shadow .15s, transform .15s;}
+.throw-card:hover{box-shadow:0 6px 18px rgba(0,0,0,.35);}
+
+.primary-btn{box-shadow:0 2px 10px rgba(216,232,90,.18);}
+.primary-btn:hover{box-shadow:0 4px 16px rgba(216,232,90,.3);transform:translateY(-1px);}
+.primary-btn.active{box-shadow:0 2px 10px rgba(255,90,54,.25);}
+
+.ghost-btn{transition:.15s ease;}
+.ghost-btn:hover{background:var(--panel-2);transform:translateY(-1px);}
+
+.map-item{position:relative;transition:.15s ease;}
+.map-item.active{box-shadow:inset 3px 0 0 var(--accent);}
+.map-item:hover{transform:translateX(2px);}
+
+.filter-chip{transition:.15s ease;}
+.filter-chip:hover{border-color:var(--text-dim);}
+
+.modal{box-shadow:0 24px 60px rgba(0,0,0,.6);}
+
+.brand-mark{filter:drop-shadow(0 0 6px rgba(216,232,90,.4));}
+
+.count-pill{font-weight:600;}
