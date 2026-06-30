@@ -1,4 +1,28 @@
-/* ===================== CONFIG ===================== */
+/* ===================== EDIT LOCK ===================== */
+
+const PW_STORAGE_KEY = "lineups-edit-password";
+
+function getEditPassword() {
+  return sessionStorage.getItem(PW_STORAGE_KEY) || "";
+}
+function setEditPassword(pw) {
+  sessionStorage.setItem(PW_STORAGE_KEY, pw);
+}
+function isUnlocked() {
+  return !!getEditPassword();
+}
+function lockEditing() {
+  sessionStorage.removeItem(PW_STORAGE_KEY);
+  applyLockState();
+}
+function applyLockState() {
+  const unlocked = isUnlocked();
+  document.body.classList.toggle("locked", !unlocked);
+  lockBtn.textContent = unlocked ? "🔓 Editing unlocked" : "🔒 Unlock editing";
+  lockBtn.classList.toggle("unlocked", unlocked);
+}
+
+
 
 const MAPS = [
   { id: "dust2",   name: "Dust II",  file: "maps/dust2.webp"  },
@@ -31,14 +55,19 @@ async function dbGetAll() {
 async function dbPut(record) {
   const res = await fetch(API_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-Edit-Password": getEditPassword() },
     body: JSON.stringify(record),
   });
+  if (res.status === 401) throw new Error("LOCKED");
   if (!res.ok) throw new Error("Failed to save lineup");
 }
 
 async function dbDelete(id) {
-  const res = await fetch(`${API_URL}?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+  const res = await fetch(`${API_URL}?id=${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    headers: { "X-Edit-Password": getEditPassword() },
+  });
+  if (res.status === 401) throw new Error("LOCKED");
   if (!res.ok) throw new Error("Failed to delete lineup");
 }
 
@@ -51,10 +80,20 @@ async function dbClearMap(mapId) {
 async function dbImportBulk(records) {
   const res = await fetch(API_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-Edit-Password": getEditPassword() },
     body: JSON.stringify({ records }),
   });
+  if (res.status === 401) throw new Error("LOCKED");
   if (!res.ok) throw new Error("Failed to import lineups");
+}
+
+async function verifyPassword(pw) {
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Edit-Password": pw },
+    body: JSON.stringify({ checkPassword: true }),
+  });
+  return res.ok;
 }
 
 /* ===================== STATE ===================== */
@@ -110,6 +149,7 @@ const deleteLineupBtn = document.getElementById("deleteLineupBtn");
 const exportBtn = document.getElementById("exportBtn");
 const importInput = document.getElementById("importInput");
 const clearBtn = document.getElementById("clearBtn");
+const lockBtn = document.getElementById("lockBtn");
 
 let pendingThrowDraft = null; // {x,y,screenshot,...} being built before save
 
@@ -194,7 +234,32 @@ function setAddMode(on) {
   if (on) addHint.textContent = "Click anywhere on the map to drop the landing spot for a new lineup.";
 }
 
-addModeBtn.onclick = () => setAddMode(!state.addMode);
+lockBtn.onclick = async () => {
+  if (isUnlocked()) {
+    lockEditing();
+    return;
+  }
+  const pw = prompt("Enter edit password:");
+  if (pw === null) return;
+  const ok = await verifyPassword(pw);
+  if (ok) {
+    setEditPassword(pw);
+    applyLockState();
+  } else {
+    alert("Wrong password.");
+  }
+};
+
+function requireUnlocked() {
+  if (isUnlocked()) return true;
+  lockBtn.click();
+  return false;
+}
+
+addModeBtn.onclick = () => {
+  if (!requireUnlocked()) return;
+  setAddMode(!state.addMode);
+};
 
 mapFrame.addEventListener("click", (e) => {
   const rect = mapImage.getBoundingClientRect();
@@ -250,9 +315,25 @@ screenshotInput.onchange = () => {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = () => {
-    pendingThrowDraft.screenshot = reader.result;
-    screenshotPreview.src = reader.result;
-    screenshotPreview.hidden = false;
+    const img = new Image();
+    img.onload = () => {
+      const MAX_DIM = 1280;
+      let { width, height } = img;
+      if (width > MAX_DIM || height > MAX_DIM) {
+        const scale = MAX_DIM / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+      pendingThrowDraft.screenshot = dataUrl;
+      screenshotPreview.src = dataUrl;
+      screenshotPreview.hidden = false;
+    };
+    img.src = reader.result;
   };
   reader.readAsDataURL(file);
 };
@@ -266,40 +347,63 @@ cancelThrow.onclick = () => {
 
 saveThrow.onclick = async () => {
   if (!pendingThrowDraft) return;
-  const draft = pendingThrowDraft;
-  const throwEntry = {
-    id: uid(),
-    pos: draft.throwPos,
-    screenshot: draft.screenshot,
-    throwType: throwTypeSelect.value,
-    keybind: keybindInput.value.trim(),
-    notes: notesInput.value.trim(),
-  };
+  if (!requireUnlocked()) return;
 
-  if (draft.isNewLineup) {
-    const lineup = {
-      id: draft.lineupId,
-      mapId: state.mapId,
-      type: draft.typeId,
-      landing: draft.landingPos,
-      throws: [throwEntry],
-      createdAt: Date.now(),
+  saveThrow.disabled = true;
+  saveThrow.textContent = "Saving…";
+
+  try {
+    const draft = pendingThrowDraft;
+    const throwEntry = {
+      id: uid(),
+      pos: draft.throwPos,
+      screenshot: draft.screenshot,
+      throwType: throwTypeSelect.value,
+      keybind: keybindInput.value.trim(),
+      notes: notesInput.value.trim(),
     };
-    await dbPut(lineup);
-  } else {
-    const lineup = state.lineups.find(l => l.id === draft.lineupId);
-    lineup.throws.push(throwEntry);
-    await dbPut(lineup);
-  }
 
-  closeModal(throwModal);
-  pendingThrowDraft = null;
-  setAddMode(false);
-  const wasNew = draft.isNewLineup;
-  const reopenId = draft.lineupId;
-  state.pendingThrowFor = null;
-  await loadLineups();
-  openDetail(reopenId);
+    if (draft.isNewLineup) {
+      const lineup = {
+        id: draft.lineupId,
+        mapId: state.mapId,
+        type: draft.typeId,
+        landing: draft.landingPos,
+        throws: [throwEntry],
+        createdAt: Date.now(),
+      };
+      await dbPut(lineup);
+    } else {
+      let lineup = state.lineups.find(l => l.id === draft.lineupId);
+      if (!lineup) {
+        // fall back to fetching fresh in case local state is stale
+        const all = await dbGetAll();
+        lineup = all.find(l => l.id === draft.lineupId);
+      }
+      if (!lineup) throw new Error("Could not find the lineup to add this throw position to.");
+      lineup.throws.push(throwEntry);
+      await dbPut(lineup);
+    }
+
+    closeModal(throwModal);
+    pendingThrowDraft = null;
+    setAddMode(false);
+    const wasNew = draft.isNewLineup;
+    const reopenId = draft.lineupId;
+    state.pendingThrowFor = null;
+    await loadLineups();
+    openDetail(reopenId);
+  } catch (err) {
+    console.error(err);
+    alert(
+      err && err.message === "LOCKED"
+        ? "Editing is locked — unlock it first."
+        : "Could not save: " + (err && err.message ? err.message : err)
+    );
+  } finally {
+    saveThrow.disabled = false;
+    saveThrow.textContent = "Save throw position";
+  }
 };
 
 /* ===================== MARKERS / RENDERING ===================== */
@@ -382,6 +486,7 @@ function openDetail(lineupId) {
       </div>
     `;
     card.querySelector(".throw-card-actions button").onclick = async () => {
+      if (!requireUnlocked()) return;
       lineup.throws = lineup.throws.filter(x => x.id !== t.id);
       if (lineup.throws.length === 0) {
         await dbDelete(lineup.id);
@@ -407,6 +512,7 @@ function closeDetailPanel() {
 closeDetail.onclick = closeDetailPanel;
 
 addThrowBtn.onclick = () => {
+  if (!requireUnlocked()) return;
   state.pendingThrowFor = state.selectedLineupId;
   setAddMode(true);
   addHint.textContent = "Click the spot you throw from.";
@@ -414,6 +520,7 @@ addThrowBtn.onclick = () => {
 };
 
 deleteLineupBtn.onclick = async () => {
+  if (!requireUnlocked()) return;
   if (!state.selectedLineupId) return;
   if (!confirm("Delete this entire lineup, including all throw positions?")) return;
   await dbDelete(state.selectedLineupId);
@@ -441,6 +548,7 @@ exportBtn.onclick = async () => {
 };
 
 importInput.onchange = async () => {
+  if (!requireUnlocked()) { importInput.value = ""; return; }
   const file = importInput.files[0];
   if (!file) return;
   const text = await file.text();
@@ -456,6 +564,7 @@ importInput.onchange = async () => {
 };
 
 clearBtn.onclick = async () => {
+  if (!requireUnlocked()) return;
   if (!confirm(`Delete ALL lineups on ${MAPS.find(m => m.id === state.mapId).name}?`)) return;
   await dbClearMap(state.mapId);
   closeDetailPanel();
@@ -466,4 +575,5 @@ clearBtn.onclick = async () => {
 
 buildSidebar();
 buildFilters();
+applyLockState();
 selectMap(state.mapId);

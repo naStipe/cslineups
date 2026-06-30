@@ -17,11 +17,18 @@ async function writeAll(obj) {
   await s.setJSON(BLOB_KEY, obj);
 }
 
+function checkPassword(event) {
+  const required = process.env.EDIT_PASSWORD;
+  if (!required) return true; // no password configured = open editing
+  const supplied = event.headers["x-edit-password"] || event.headers["X-Edit-Password"];
+  return supplied === required;
+}
+
 exports.handler = async (event) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, X-Edit-Password",
     "Content-Type": "application/json",
   };
 
@@ -31,12 +38,23 @@ exports.handler = async (event) => {
 
   try {
     if (event.httpMethod === "GET") {
+      // Reading/previewing is always open, no password needed
       const all = await readAll();
       return { statusCode: 200, headers, body: JSON.stringify(Object.values(all)) };
     }
 
+    // All write operations require the edit password
+    if (!checkPassword(event)) {
+      return { statusCode: 401, headers, body: JSON.stringify({ error: "Wrong or missing edit password" }) };
+    }
+
     if (event.httpMethod === "POST") {
       const body = JSON.parse(event.body || "{}");
+
+      // Just verifying a password (e.g. unlocking edit mode in the UI)
+      if (body.checkPassword === true) {
+        return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
+      }
 
       // Bulk import: { records: [...] }
       if (Array.isArray(body.records)) {

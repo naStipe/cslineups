@@ -75,6 +75,9 @@ button,input,select,textarea{font-family:var(--font-body);}
 }
 .primary-btn:hover{filter:brightness(1.08);}
 .primary-btn.active{background:var(--fire);}
+.ghost-btn.unlocked{color:var(--he);border-color:var(--he);}
+body.locked .primary-btn{opacity:.5;}
+
 .add-dot{width:8px;height:8px;border-radius:50%;background:#0a0d0e;}
 
 /* ---------- MAIN ---------- */
