@@ -32,7 +32,7 @@ const MAPS = [
   { id: "ancient",  name: "Ancient",   file: "maps/ancient.webp",  logo: "maps/ancient-logo.jpg"  },
   { id: "anubis",   name: "Anubis",    file: "maps/anubis.png",    logo: "maps/anubis-logo.jpg"   },
   { id: "overpass", name: "Overpass",  file: "maps/overpass.webp", logo: "maps/overpass-logo.jpg" },
-  { id: "cache",    name: "Cache",     file: "maps/cache.webp",    logo: null                     },
+  { id: "cache",    name: "Cache",     file: "maps/cache.webp",    logo: "maps/cache-logo.jpg"    },
 ];
 
 const TYPES = [
@@ -195,19 +195,20 @@ let pendingThrowDraft = null; // {x,y,screenshot,...} being built before save
 /* ===================== HOME SCREEN ===================== */
 
 async function buildHomeScreen() {
-  // Fetch all lineups once to get per-map counts
   let allLineups = [];
-  try { allLineups = await dbGetAll(); } catch(e) { /* counts will show 0 */ }
+  try { allLineups = await dbGetAll(); } catch(e) {}
 
   homeGrid.innerHTML = "";
+  const inner = document.createElement("div");
+  inner.className = "home-grid-inner";
+
   MAPS.forEach(m => {
     const count = allLineups.filter(l => l.mapId === m.id).length;
     const card = document.createElement("div");
     card.className = "map-card";
     card.innerHTML = `
-      <div class="map-card-bg" style="background-image:url('${m.file}')"></div>
+      <div class="map-card-bg" style="background-image:url('${m.logo || m.file}')"></div>
       <div class="map-card-content">
-        ${m.logo ? `<img class="map-card-logo" src="${m.logo}" alt="${m.name} logo">` : ""}
         <div class="map-card-name">${m.name}</div>
         <div class="map-card-count ${count === 0 ? "empty" : ""}">
           ${count === 0 ? "No lineups yet" : `${count} lineup${count === 1 ? "" : "s"}`}
@@ -215,8 +216,10 @@ async function buildHomeScreen() {
       </div>
     `;
     card.onclick = () => enterMap(m.id);
-    homeGrid.appendChild(card);
+    inner.appendChild(card);
   });
+
+  homeGrid.appendChild(inner);
 }
 
 function enterMap(id) {
@@ -402,7 +405,7 @@ function compressFile(file) {
     reader.onload = () => {
       const img = new Image();
       img.onload = () => {
-        const MAX_DIM = 1280;
+        const MAX_DIM = 1920;
         let { width, height } = img;
         if (width > MAX_DIM || height > MAX_DIM) {
           const scale = MAX_DIM / Math.max(width, height);
@@ -413,7 +416,7 @@ function compressFile(file) {
         canvas.width = width;
         canvas.height = height;
         canvas.getContext("2d").drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL("image/jpeg", 0.85));
+        resolve(canvas.toDataURL("image/jpeg", 0.94));
       };
       img.onerror = reject;
       img.src = reader.result;
@@ -442,7 +445,6 @@ function renderPreciseThumb() {
   if (!pendingThrowDraft.precise) return;
   const t = document.createElement("div");
   t.className = "thumb";
-  t.style.maxWidth = "120px";
   t.innerHTML = `<img src="${pendingThrowDraft.precise}"><button class="thumb-remove" type="button">✕</button>`;
   t.querySelector(".thumb-remove").onclick = () => {
     pendingThrowDraft.precise = null;
@@ -750,27 +752,40 @@ function openDetail(lineupId) {
 
     const variantTag = `<div class="variant-tag">VARIANT ${String(idx + 1).padStart(2, "0")}</div>`;
 
-    const standingGallery = (t.standing && t.standing.length)
-      ? `<div class="gallery-section"><div class="gallery-label">Stand here</div>
-          <div class="throw-card-gallery standing-gallery">${t.standing.map((src, i) =>
-            `<img src="${src}" data-idx="${i}" alt="standing position ${i + 1}">`).join("")}</div></div>`
-      : "";
+    const standingImgs = (t.standing && t.standing.length) ? t.standing : [];
+    const aimImgs = (t.screenshots && t.screenshots.length) ? t.screenshots : [];
+    const hasImages = standingImgs.length || aimImgs.length || t.precise;
 
-    const gallery = (t.screenshots && t.screenshots.length)
-      ? `<div class="gallery-section"><div class="gallery-label">Aim here</div>
-          <div class="throw-card-gallery aim-gallery">${t.screenshots.map((src, i) =>
-            `<img src="${src}" data-idx="${i}" alt="throw spot ${i + 1}">`).join("")}</div></div>`
-      : "";
+    const makeCarousel = (imgs, label, cssClass) => {
+      if (!imgs.length) return "";
+      const multi = imgs.length > 1;
+      return `
+        <div class="tc-carousel" data-class="${cssClass}">
+          <div class="tc-carousel-label">${label}</div>
+          <div class="tc-carousel-inner">
+            <img class="tc-carousel-img ${cssClass}" src="${imgs[0]}" data-imgs='${JSON.stringify(imgs)}' data-idx="0" alt="${label}">
+            ${multi ? `<button class="tc-arrow tc-prev" type="button">‹</button>
+                       <button class="tc-arrow tc-next" type="button">›</button>
+                       <div class="tc-dots">${imgs.map((_,i) => `<span class="tc-dot${i===0?' active':''}"></span>`).join("")}</div>` : ""}
+          </div>
+        </div>`;
+    };
 
-    const precise = t.precise
-      ? `<div class="precise-row"><img src="${t.precise}" id="precise-${t.id}"><span>Precise lineup shot</span></div>`
-      : "";
+    const preciseHtml = t.precise ? `
+      <div class="tc-carousel">
+        <div class="tc-carousel-label">Precise</div>
+        <div class="tc-carousel-inner">
+          <img class="tc-carousel-img" src="${t.precise}" alt="Precise lineup">
+        </div>
+      </div>` : "";
 
     card.innerHTML = `
       ${variantTag}
-      ${standingGallery}
-      ${gallery}
-      ${precise}
+      ${hasImages ? `<div class="tc-galleries">
+        ${makeCarousel(standingImgs, "Stand here", "standing-gallery")}
+        ${makeCarousel(aimImgs, "Aim here", "aim-gallery")}
+        ${preciseHtml}
+      </div>` : ""}
       <div class="throw-card-body">
         <div class="throw-meta">
           <span class="tag">${RANGE_LABELS[t.range] || t.range}</span>
@@ -784,14 +799,35 @@ function openDetail(lineupId) {
       </div>
     `;
 
-    card.querySelectorAll(".standing-gallery img").forEach(imgEl => {
-      imgEl.onclick = () => openLightbox(t.standing, parseInt(imgEl.dataset.idx, 10), `Standing position · ${lineup.throws.indexOf(t) + 1}`);
+    // Wire carousels
+    card.querySelectorAll(".tc-carousel").forEach(carousel => {
+      const img = carousel.querySelector(".tc-carousel-img");
+      if (!img) return;
+      const raw = img.dataset.imgs;
+      if (!raw) {
+        // single image (precise) — click opens lightbox
+        img.onclick = () => openLightbox([img.src], 0, img.alt);
+        return;
+      }
+      const imgs = JSON.parse(raw);
+      const dots = carousel.querySelectorAll(".tc-dot");
+      let cur = 0;
+
+      const go = (n) => {
+        cur = (n + imgs.length) % imgs.length;
+        img.src = imgs[cur];
+        img.dataset.idx = cur;
+        dots.forEach((d, i) => d.classList.toggle("active", i === cur));
+      };
+
+      const prev = carousel.querySelector(".tc-prev");
+      const next = carousel.querySelector(".tc-next");
+      if (prev) prev.onclick = (e) => { e.stopPropagation(); go(cur - 1); };
+      if (next) next.onclick = (e) => { e.stopPropagation(); go(cur + 1); };
+
+      const label = img.alt;
+      img.onclick = () => openLightbox(imgs, cur, label);
     });
-    card.querySelectorAll(".aim-gallery img").forEach(imgEl => {
-      imgEl.onclick = () => openLightbox(t.screenshots, parseInt(imgEl.dataset.idx, 10), `Aim · throw position ${lineup.throws.indexOf(t) + 1}`);
-    });
-    const preciseImg = card.querySelector(`#precise-${t.id}`);
-    if (preciseImg) preciseImg.onclick = () => openLightbox([t.precise], 0, "Precise lineup");
 
     card.querySelector(".edit-btn").onclick = () => {
       if (!requireUnlocked()) return;
