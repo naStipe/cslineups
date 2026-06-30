@@ -401,6 +401,16 @@ const MAX_STANDING = 3;
 
 function compressFile(file) {
   return new Promise((resolve, reject) => {
+    // Under 5MB — use the original file directly, no re-encoding
+    if (file.size < 5 * 1024 * 1024) {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    // Over 2MB — resize to max 1920px but keep high quality
     const reader = new FileReader();
     reader.onload = () => {
       const img = new Image();
@@ -416,7 +426,9 @@ function compressFile(file) {
         canvas.width = width;
         canvas.height = height;
         canvas.getContext("2d").drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL("image/jpeg", 0.94));
+        // Use PNG for lossless if original was PNG, otherwise high-quality JPEG
+        const isPng = file.type === "image/png";
+        resolve(canvas.toDataURL(isPng ? "image/png" : "image/jpeg", 0.98));
       };
       img.onerror = reject;
       img.src = reader.result;
