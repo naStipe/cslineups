@@ -3,6 +3,14 @@ const { getStore } = require("@netlify/blobs");
 const BLOB_KEY = "all";
 
 function store() {
+  const siteID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
+  const token = process.env.NETLIFY_AUTH_TOKEN || process.env.BLOBS_TOKEN;
+
+  // Prefer automatic context (works in most Netlify deploys). Fall back to
+  // manual config if the environment doesn't inject it automatically.
+  if (siteID && token) {
+    return getStore({ name: "lineups", siteID, token });
+  }
   return getStore("lineups");
 }
 
