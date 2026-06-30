@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LINEUPS — Personal Grenade Database</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark">⌖</span>
+      <div>
+        <h1>LINEUPS</h1>
+        <p class="brand-sub">personal nade database</p>
+      </div>
+    </div>
+
+    <nav class="map-list" id="mapList"></nav>
+
+    <div class="sidebar-footer">
+      <button id="exportBtn" class="ghost-btn">Export backup</button>
+      <label class="ghost-btn" for="importInput">Import backup</label>
+      <input type="file" id="importInput" accept="application/json" hidden>
+      <button id="clearBtn" class="ghost-btn danger">Clear this map</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <header class="topbar">
+      <div class="topbar-left">
+        <h2 id="currentMapName">DUST II</h2>
+        <span class="count-pill" id="lineupCount">0 lineups</span>
+      </div>
+
+      <div class="filters" id="typeFilters"></div>
+
+      <div class="topbar-right">
+        <button id="addModeBtn" class="primary-btn">
+          <span class="add-dot"></span> Add lineup
+        </button>
+      </div>
+    </header>
+
+    <div class="map-stage" id="mapStage">
+      <div class="map-frame" id="mapFrame">
+        <img id="mapImage" src="" alt="map">
+        <svg id="linkSvg"></svg>
+        <div id="markerLayer"></div>
+      </div>
+      <p class="hint" id="addHint">Click anywhere on the map to drop the landing spot for a new lineup.</p>
+    </div>
+  </main>
+
+  <!-- EXPANDED LINEUP PANEL -->
+  <aside class="detail-panel" id="detailPanel">
+    <div class="detail-head">
+      <span class="type-chip" id="detailType">SMOKE</span>
+      <button class="icon-btn" id="closeDetail">✕</button>
+    </div>
+    <h3 id="detailTitle">Lineup</h3>
+    <div class="throw-list" id="throwList"></div>
+    <button class="ghost-btn" id="addThrowBtn">+ Add throw position</button>
+    <button class="ghost-btn danger" id="deleteLineupBtn">Delete this lineup</button>
+  </aside>
+
+</div>
+
+<!-- MODAL: new landing spot -> choose type -->
+<div class="modal-backdrop" id="typeModal">
+  <div class="modal">
+    <h3>What kind of nade?</h3>
+    <div class="type-grid" id="typeGrid"></div>
+    <button class="ghost-btn" id="cancelType">Cancel</button>
+  </div>
+</div>
+
+<!-- MODAL: throw position form -->
+<div class="modal-backdrop" id="throwModal">
+  <div class="modal">
+    <h3 id="throwModalTitle">Add throw position</h3>
+    <p class="modal-hint">Now click the spot on the map you throw <em>from</em>. Then fill in the details below.</p>
+
+    <label class="field-label">Screenshot</label>
+    <input type="file" id="screenshotInput" accept="image/*">
+    <img id="screenshotPreview" class="screenshot-preview" hidden>
+
+    <label class="field-label">Throw type</label>
+    <select id="throwTypeSelect">
+      <option value="stand">Stand</option>
+      <option value="run">Run-throw</option>
+      <option value="jump">Jump-throw</option>
+      <option value="crouch">Crouch</option>
+      <option value="left-click">Left click (full force)</option>
+      <option value="right-click">Right click (soft toss)</option>
+    </select>
+
+    <label class="field-label">Key bind / setpos</label>
+    <input type="text" id="keybindInput" placeholder="e.g. bind kp_5 ... or just a note">
+
+    <label class="field-label">Notes</label>
+    <textarea id="notesInput" rows="3" placeholder="Crosshair alignment, jump timing, ..."></textarea>
+
+    <div class="modal-actions">
+      <button class="ghost-btn" id="cancelThrow">Cancel</button>
+      <button class="primary-btn" id="saveThrow">Save throw position</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
