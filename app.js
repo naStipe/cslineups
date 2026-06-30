@@ -18,63 +18,43 @@ const TYPES = [
   { id: "decoy", label: "Decoy",     color: "var(--decoy)" },
 ];
 
-/* ===================== STORAGE (IndexedDB) ===================== */
+/* ===================== STORAGE (Netlify Function API) ===================== */
 
-const DB_NAME = "lineups-db";
-const STORE = "lineups";
-let dbPromise = null;
-
-function getDB() {
-  if (dbPromise) return dbPromise;
-  dbPromise = new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(STORE)) {
-        const store = db.createObjectStore(STORE, { keyPath: "id" });
-        store.createIndex("mapId", "mapId", { unique: false });
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-  return dbPromise;
-}
+const API_URL = "/.netlify/functions/lineups";
 
 async function dbGetAll() {
-  const db = await getDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE, "readonly");
-    const req = tx.objectStore(STORE).getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
+  const res = await fetch(API_URL);
+  if (!res.ok) throw new Error("Failed to load lineups");
+  return res.json();
 }
 
 async function dbPut(record) {
-  const db = await getDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE, "readwrite");
-    tx.objectStore(STORE).put(record);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(record),
   });
+  if (!res.ok) throw new Error("Failed to save lineup");
 }
 
 async function dbDelete(id) {
-  const db = await getDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE, "readwrite");
-    tx.objectStore(STORE).delete(id);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
+  const res = await fetch(`${API_URL}?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("Failed to delete lineup");
 }
 
 async function dbClearMap(mapId) {
   const all = await dbGetAll();
   const toDelete = all.filter(l => l.mapId === mapId);
   for (const l of toDelete) await dbDelete(l.id);
+}
+
+async function dbImportBulk(records) {
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ records }),
+  });
+  if (!res.ok) throw new Error("Failed to import lineups");
 }
 
 /* ===================== STATE ===================== */
@@ -190,10 +170,16 @@ async function selectMap(id) {
 }
 
 async function loadLineups() {
-  const all = await dbGetAll();
-  state.lineups = all.filter(l => l.mapId === state.mapId);
-  lineupCount.textContent = `${state.lineups.length} lineup${state.lineups.length === 1 ? "" : "s"}`;
-  renderMarkers();
+  lineupCount.textContent = "loading…";
+  try {
+    const all = await dbGetAll();
+    state.lineups = all.filter(l => l.mapId === state.mapId);
+    lineupCount.textContent = `${state.lineups.length} lineup${state.lineups.length === 1 ? "" : "s"}`;
+    renderMarkers();
+  } catch (err) {
+    lineupCount.textContent = "load failed";
+    console.error(err);
+  }
 }
 
 /* ===================== ADD MODE / MAP CLICKS ===================== */
@@ -460,11 +446,11 @@ importInput.onchange = async () => {
   const text = await file.text();
   try {
     const records = JSON.parse(text);
-    for (const r of records) await dbPut(r);
+    await dbImportBulk(records);
     await loadLineups();
     alert(`Imported ${records.length} lineups.`);
   } catch (err) {
-    alert("Could not read that file as a lineups backup.");
+    alert("Could not import that backup: " + err.message);
   }
   importInput.value = "";
 };
