@@ -67,7 +67,7 @@ const MOVEMENT_LABELS = {
 const API_URL = "/api/lineups";
 
 async function dbGetAll() {
-  const res = await fetch(API_URL);
+  const res = await fetch(`${API_URL}?mapId=${encodeURIComponent(state.mapId)}`);
   if (!res.ok) {
     const msg = await res.text().catch(() => "");
     throw new Error(`Failed to load lineups (${res.status}): ${msg}`);
@@ -195,15 +195,22 @@ let pendingThrowDraft = null; // {x,y,screenshot,...} being built before save
 /* ===================== HOME SCREEN ===================== */
 
 async function buildHomeScreen() {
-  let allLineups = [];
-  try { allLineups = await dbGetAll(); } catch(e) {}
-
   homeGrid.innerHTML = "";
   const inner = document.createElement("div");
   inner.className = "home-grid-inner";
 
-  MAPS.forEach(m => {
-    const count = allLineups.filter(l => l.mapId === m.id).length;
+  // Fetch counts for all maps in parallel
+  const counts = await Promise.all(
+    MAPS.map(m =>
+      fetch(`${API_URL}?mapId=${encodeURIComponent(m.id)}`)
+        .then(r => r.ok ? r.json() : [])
+        .then(rows => rows.length)
+        .catch(() => 0)
+    )
+  );
+
+  MAPS.forEach((m, i) => {
+    const count = counts[i];
     const card = document.createElement("div");
     card.className = "map-card";
     card.innerHTML = `
@@ -299,13 +306,12 @@ let loadToken = 0;
 
 async function loadLineups() {
   const myToken = ++loadToken;
-  const requestedMapId = state.mapId;
   lineupCount.textContent = "loading…";
   try {
-    const all = await dbGetAll();
-    if (myToken !== loadToken) return; // a newer map switch superseded this request
-    state.lineups = all.filter(l => l.mapId === requestedMapId);
-    lineupCount.textContent = `${state.lineups.length} lineup${state.lineups.length === 1 ? "" : "s"}`;
+    const lineups = await dbGetAll();
+    if (myToken !== loadToken) return;
+    state.lineups = lineups;
+    lineupCount.textContent = `${lineups.length} lineup${lineups.length === 1 ? "" : "s"}`;
     renderMarkers();
   } catch (err) {
     if (myToken !== loadToken) return;

@@ -1,8 +1,6 @@
 const { createClient } = require("@supabase/supabase-js");
 
 const IMAGE_BUCKET = "lineup-images";
-const DATA_BUCKET  = "lineup-data";
-const DATA_KEY     = "all.json";
 
 function supabase() {
   return createClient(
@@ -12,31 +10,10 @@ function supabase() {
   );
 }
 
-async function readAll(sb) {
-  const { data, error } = await sb.storage.from(DATA_BUCKET).download(DATA_KEY);
-  if (error) {
-    if (error.message && error.message.includes("not found")) return {};
-    throw new Error(`Failed to read lineups: ${error.message}`);
-  }
-  const text = await data.text();
-  return JSON.parse(text);
-}
-
-async function writeAll(sb, obj) {
-  const json = JSON.stringify(obj);
-  const buf  = Buffer.from(json, "utf8");
-  const { error } = await sb.storage.from(DATA_BUCKET).upload(DATA_KEY, buf, {
-    contentType: "application/json",
-    upsert: true,
-  });
-  if (error) throw new Error(`Failed to write lineups: ${error.message}`);
-}
-
 function checkPassword(req) {
   const required = process.env.EDIT_PASSWORD;
   if (!required) return true;
-  const supplied = req.headers["x-edit-password"];
-  return supplied === required;
+  return req.headers["x-edit-password"] === required;
 }
 
 async function uploadImage(dataUrl, sb) {
@@ -57,6 +34,7 @@ async function uploadImage(dataUrl, sb) {
 }
 
 async function processThrows(throws, sb) {
+  // Upload all images in parallel across all throw positions
   return Promise.all((throws || []).map(async (t) => ({
     ...t,
     screenshots: await Promise.all((t.screenshots || []).map(u => uploadImage(u, sb))),
@@ -72,7 +50,6 @@ const corsHeaders = {
 };
 
 module.exports = async function handler(req, res) {
-  // CORS preflight
   if (req.method === "OPTIONS") {
     res.set(corsHeaders).status(204).end();
     return;
@@ -82,9 +59,24 @@ module.exports = async function handler(req, res) {
   try {
     const sb = supabase();
 
+    // ── GET  ── load lineups for a specific map (or all if no mapId given)
     if (req.method === "GET") {
-      const all = await readAll(sb);
-      res.status(200).json(Object.values(all));
+      const mapId = req.query && req.query.mapId;
+      let query = sb.from("lineups").select("*");
+      if (mapId) query = query.eq("map_id", mapId);
+      const { data, error } = await query;
+      if (error) throw new Error(error.message);
+
+      // Shape rows back into the frontend format
+      const lineups = (data || []).map(row => ({
+        id:        row.id,
+        mapId:     row.map_id,
+        type:      row.type,
+        landing:   row.landing,
+        throws:    row.throws,
+        createdAt: row.created_at,
+      }));
+      res.status(200).json(lineups);
       return;
     }
 
@@ -93,6 +85,7 @@ module.exports = async function handler(req, res) {
       return;
     }
 
+    // ── POST ── upsert a single lineup (or bulk import / password check)
     if (req.method === "POST") {
       const body = req.body;
 
@@ -101,15 +94,21 @@ module.exports = async function handler(req, res) {
         return;
       }
 
+      // Bulk import
       if (Array.isArray(body.records)) {
-        const all = await readAll(sb);
         for (const r of body.records) {
-          if (r && r.id) {
-            r.throws = await processThrows(r.throws, sb);
-            all[r.id] = r;
-          }
+          if (!r || !r.id) continue;
+          r.throws = await processThrows(r.throws, sb);
+          const { error } = await sb.from("lineups").upsert({
+            id:         r.id,
+            map_id:     r.mapId,
+            type:       r.type,
+            landing:    r.landing,
+            throws:     r.throws,
+            created_at: r.createdAt || Date.now(),
+          });
+          if (error) throw new Error(error.message);
         }
-        await writeAll(sb, all);
         res.status(200).json({ ok: true, count: body.records.length });
         return;
       }
@@ -120,22 +119,28 @@ module.exports = async function handler(req, res) {
       }
 
       body.throws = await processThrows(body.throws, sb);
-      const all = await readAll(sb);
-      all[body.id] = body;
-      await writeAll(sb, all);
+      const { error } = await sb.from("lineups").upsert({
+        id:         body.id,
+        map_id:     body.mapId,
+        type:       body.type,
+        landing:    body.landing,
+        throws:     body.throws,
+        created_at: body.createdAt || Date.now(),
+      });
+      if (error) throw new Error(error.message);
       res.status(200).json({ ok: true });
       return;
     }
 
+    // ── DELETE ── remove a single lineup by id
     if (req.method === "DELETE") {
       const id = req.query && req.query.id;
       if (!id) {
         res.status(400).json({ error: "Missing id" });
         return;
       }
-      const all = await readAll(sb);
-      delete all[id];
-      await writeAll(sb, all);
+      const { error } = await sb.from("lineups").delete().eq("id", id);
+      if (error) throw new Error(error.message);
       res.status(200).json({ ok: true });
       return;
     }
