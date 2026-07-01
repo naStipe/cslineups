@@ -434,19 +434,24 @@ function getSupabaseAnonKey() {
 async function uploadFileToSupabase(file) {
   const url = window.__SUPABASE_URL;
   const key = window.__SUPABASE_ANON_KEY;
-  if (!url || !key) throw new Error("Supabase config not loaded");
+  if (!url || !key) {
+    // Try loading config once more in case it wasn't ready at boot
+    await loadConfig();
+    if (!window.__SUPABASE_URL || !window.__SUPABASE_ANON_KEY) {
+      throw new Error("Supabase config not available — check SUPABASE_URL and SUPABASE_ANON_KEY env vars in Vercel");
+    }
+  }
 
-  // Resize only if over 5MB, preserving format/quality otherwise
   const blob = await maybeResize(file);
   const ext  = blob.type.split("/")[1] || "jpg";
   const filename = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}.${ext}`;
 
   const res = await fetch(
-    `${url}/storage/v1/object/lineup-images/${filename}`,
+    `${window.__SUPABASE_URL}/storage/v1/object/lineup-images/${filename}`,
     {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${key}`,
+        "Authorization": `Bearer ${window.__SUPABASE_ANON_KEY}`,
         "Content-Type": blob.type,
         "x-upsert": "false",
       },
@@ -455,9 +460,9 @@ async function uploadFileToSupabase(file) {
   );
   if (!res.ok) {
     const err = await res.text().catch(() => "");
-    throw new Error(`Image upload failed: ${err}`);
+    throw new Error(`Image upload failed (${res.status}): ${err}`);
   }
-  return `${url}/storage/v1/object/public/lineup-images/${filename}`;
+  return `${window.__SUPABASE_URL}/storage/v1/object/public/lineup-images/${filename}`;
 }
 
 async function maybeResize(file) {
@@ -534,13 +539,19 @@ standingInput.onchange = async () => {
   standingInput.value = "";
   if (!files.length) return;
   const room = MAX_STANDING - pendingThrowDraft.standing.length;
-  if (files.length > room) {
-    alert(`Only ${MAX_STANDING} standing-position screenshots allowed — adding the first ${Math.max(room, 0)}.`);
+  if (files.length > room && room > 0) {
+    alert(`Only ${MAX_STANDING} standing-position screenshots allowed — adding the first ${room}.`);
   }
   const toAdd = files.slice(0, Math.max(room, 0));
-  const urls = await Promise.all(toAdd.map(f => uploadFileToSupabase(f)));
-  pendingThrowDraft.standing.push(...urls);
-  renderStandingThumbGrid();
+  if (!toAdd.length) return;
+  try {
+    const urls = await Promise.all(toAdd.map(f => uploadFileToSupabase(f)));
+    pendingThrowDraft.standing.push(...urls);
+    renderStandingThumbGrid();
+  } catch (err) {
+    console.error(err);
+    alert("Could not upload image: " + err.message);
+  }
 };
 
 screenshotInput.onchange = async () => {
@@ -548,21 +559,32 @@ screenshotInput.onchange = async () => {
   screenshotInput.value = "";
   if (!files.length) return;
   const room = MAX_SCREENSHOTS - pendingThrowDraft.screenshots.length;
-  if (files.length > room) {
-    alert(`Only ${MAX_SCREENSHOTS} screenshots allowed per lineup — adding the first ${Math.max(room, 0)}.`);
+  if (files.length > room && room > 0) {
+    alert(`Only ${MAX_SCREENSHOTS} screenshots allowed per lineup — adding the first ${room}.`);
   }
   const toAdd = files.slice(0, Math.max(room, 0));
-  const urls = await Promise.all(toAdd.map(f => uploadFileToSupabase(f)));
-  pendingThrowDraft.screenshots.push(...urls);
-  renderThumbGrid();
+  if (!toAdd.length) return;
+  try {
+    const urls = await Promise.all(toAdd.map(f => uploadFileToSupabase(f)));
+    pendingThrowDraft.screenshots.push(...urls);
+    renderThumbGrid();
+  } catch (err) {
+    console.error(err);
+    alert("Could not upload image: " + err.message);
+  }
 };
 
 preciseInput.onchange = async () => {
   const file = preciseInput.files[0];
   preciseInput.value = "";
   if (!file) return;
-  pendingThrowDraft.precise = await uploadFileToSupabase(file);
-  renderPreciseThumb();
+  try {
+    pendingThrowDraft.precise = await uploadFileToSupabase(file);
+    renderPreciseThumb();
+  } catch (err) {
+    console.error(err);
+    alert("Could not upload image: " + err.message);
+  }
 };
 
 function openThrowModal(throwPos, lineupId, isNewLineup, typeId, landingPos, existingThrow) {
