@@ -122,7 +122,8 @@ let state = {
   mapId: MAPS[0].id,
   lineups: [],          // all lineups for current map, loaded from DB
   activeFilters: new Set(TYPES.map(t => t.id)),
-  pendingType: null,     // type chosen in type modal, awaiting landing click
+  pendingType: null,
+  pendingName: "",     // type chosen in type modal, awaiting landing click
   pendingLanding: null,  // {x,y} percent, awaiting throw-pos click for a NEW lineup
   pendingThrowFor: null, // lineup id awaiting a throw-pos click (adding to existing lineup)
   selectedLineupId: null,
@@ -150,6 +151,7 @@ const addHint = document.getElementById("addHint");
 
 const typeModal = document.getElementById("typeModal");
 const typeGrid = document.getElementById("typeGrid");
+const lineupNameInput = document.getElementById("lineupNameInput");
 const cancelType = document.getElementById("cancelType");
 
 const throwModal = document.getElementById("throwModal");
@@ -177,6 +179,7 @@ const lightboxNext = document.getElementById("lightboxNext");
 const detailPanel = document.getElementById("detailPanel");
 const detailType = document.getElementById("detailType");
 const detailTitle = document.getElementById("detailTitle");
+const detailNameInput = document.getElementById("detailNameInput");
 const throwList = document.getElementById("throwList");
 const closeDetail = document.getElementById("closeDetail");
 const addThrowBtn = document.getElementById("addThrowBtn");
@@ -359,6 +362,7 @@ addModeBtn.onclick = () => {
   setAddMode(true);
   openTypeModal((typeId) => {
     state.pendingType = typeId;
+    state.pendingName = lineupNameInput ? lineupNameInput.value.trim() : "";
     closeModal(typeModal);
     addHint.textContent = "Now click where this nade lands.";
   });
@@ -394,6 +398,7 @@ mapFrame.addEventListener("click", (e) => {
 
 function openTypeModal(onPick) {
   buildTypeGrid(onPick);
+  if (lineupNameInput) lineupNameInput.value = "";
   typeModal.classList.add("show");
 }
 cancelType.onclick = () => { closeModal(typeModal); setAddMode(false); };
@@ -633,6 +638,7 @@ saveThrow.onclick = async () => {
         id: draft.lineupId,
         mapId: state.mapId,
         type: draft.typeId,
+        name: state.pendingName || "",
         landing: draft.landingPos,
         throws: [{ id: uid(), ...throwEntryBase }],
         createdAt: Date.now(),
@@ -788,13 +794,11 @@ function openClusterPicker(lineups) {
   clusterGrid.innerHTML = "";
   lineups.forEach((lineup, i) => {
     const typeInfo = TYPES.find(t => t.id === lineup.type);
+    const label = lineup.name || `${typeInfo.label} #${i + 1}`;
     const opt = document.createElement("div");
     opt.className = "type-opt";
-    opt.innerHTML = `<span class="dot" style="background:${typeInfo.color}"></span>${typeInfo.label} #${i + 1} — ${lineup.throws.length} position${lineup.throws.length === 1 ? "" : "s"}`;
-    opt.onclick = () => {
-      closeModal(clusterModal);
-      openDetail(lineup.id);
-    };
+    opt.innerHTML = `<span class="dot" style="background:${typeInfo.color}"></span>${label} — ${lineup.throws.length} position${lineup.throws.length === 1 ? "" : "s"}`;
+    opt.onclick = () => { closeModal(clusterModal); openDetail(lineup.id); };
     clusterGrid.appendChild(opt);
   });
   clusterModal.classList.add("show");
@@ -818,6 +822,15 @@ function openDetail(lineupId, throwIdx) {
 function renderDetail(lineup) {
   renderDetailType(lineup);
   detailTitle.textContent = `${lineup.throws.length} variant${lineup.throws.length === 1 ? "" : "s"}`;
+
+  // Name field
+  detailNameInput.value = lineup.name || "";
+  detailNameInput.onchange = async () => {
+    if (!requireUnlocked()) { detailNameInput.value = lineup.name || ""; return; }
+    lineup.name = detailNameInput.value.trim();
+    await dbPut(lineup);
+    await loadLineups();
+  };
   throwList.innerHTML = "";
 
   if (!lineup.throws.length) return;

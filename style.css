@@ -749,3 +749,22 @@ button,input,select,textarea{font-family:var(--font-body);}
   background: var(--hull);
 }
 .detail-strip-thumb.active .strip-thumb-label{ color: var(--signal); }
+
+/* ===================== LINEUP NAME ===================== */
+.detail-name-wrap{ flex: 1; padding: 0 16px; }
+.detail-name-input{
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-stretch: condensed;
+  font-size: 20px;
+  letter-spacing: .04em;
+  padding: 4px 0;
+  outline: none;
+  transition: border-color .15s;
+}
+.detail-name-input:focus{ border-bottom-color: var(--signal); }
+.detail-name-input::placeholder{ color: var(--text-faint); }

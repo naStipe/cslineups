@@ -40,6 +40,7 @@ module.exports = async function handler(req, res) {
         id:        row.id,
         mapId:     row.map_id,
         type:      row.type,
+        name:      row.name || "",
         landing:   row.landing,
         throws:    row.throws,
         createdAt: row.created_at,
@@ -65,7 +66,7 @@ module.exports = async function handler(req, res) {
         for (const r of body.records) {
           if (!r || !r.id) continue;
           const { error } = await sb.from("lineups").upsert({
-            id: r.id, map_id: r.mapId, type: r.type,
+            id: r.id, map_id: r.mapId, type: r.type, name: r.name || "",
             landing: r.landing, throws: r.throws,
             created_at: r.createdAt || Date.now(),
           });
@@ -82,7 +83,7 @@ module.exports = async function handler(req, res) {
 
       // Images are already uploaded as public URLs — just save the metadata
       const { error } = await sb.from("lineups").upsert({
-        id: body.id, map_id: body.mapId, type: body.type,
+        id: body.id, map_id: body.mapId, type: body.type, name: body.name || "",
         landing: body.landing, throws: body.throws,
         created_at: body.createdAt || Date.now(),
       });

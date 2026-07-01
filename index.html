@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LINEUPS — Personal Grenade Database</title>
+<script>
+  window.__SUPABASE_URL      = "https://zjobcvtuvddzivyurtsd.supabase.co";
+  window.__SUPABASE_ANON_KEY = "REPLACE_WITH_YOUR_PUBLISHABLE_KEY";
+</script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -86,6 +90,9 @@
           <p class="dossier-eyebrow">Dossier</p>
           <span class="type-chip" id="detailType">SMOKE</span>
         </div>
+        <div class="detail-name-wrap">
+          <input class="detail-name-input" id="detailNameInput" type="text" placeholder="Unnamed position" maxlength="40">
+        </div>
         <button class="icon-btn" id="closeDetail">✕</button>
       </div>
       <h3 id="detailTitle">Lineup</h3>
@@ -112,6 +119,8 @@
   <div class="modal">
     <h3>What kind of nade?</h3>
     <div class="type-grid" id="typeGrid"></div>
+    <label class="field-label" style="margin-top:8px;">Name this position <span style="color:var(--text-faint);font-size:10px;">optional</span></label>
+    <input type="text" id="lineupNameInput" placeholder="e.g. CT Spawn, Mid Box, Window…" autocomplete="off">
     <button class="ghost-btn" id="cancelType">Cancel</button>
   </div>
 </div>
