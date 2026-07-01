@@ -609,10 +609,8 @@ saveThrow.onclick = async () => {
     closeModal(throwModal);
     pendingThrowDraft = null;
     setAddMode(false);
-    const reopenId = draft.lineupId;
     state.pendingThrowFor = null;
     await loadLineups();
-    openDetail(reopenId);
   } catch (err) {
     console.error(err);
     alert(
