@@ -408,6 +408,9 @@ const MAX_STANDING = 3;
 /* ===================== SUPABASE DIRECT IMAGE UPLOAD ===================== */
 
 async function uploadFileToSupabase(file) {
+  if (!window.__SUPABASE_URL || !window.__SUPABASE_ANON_KEY) {
+    await loadConfig();
+  }
   const url = window.__SUPABASE_URL;
   const key = window.__SUPABASE_ANON_KEY;
   if (!url || !key) throw new Error("Supabase config not available — check SUPABASE_URL and SUPABASE_ANON_KEY in Vercel");
@@ -1075,7 +1078,23 @@ importInput.onchange = async () => {
 
 backBtn.onclick = goHome;
 
+async function loadConfig() {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch("/api/config");
+      if (!res.ok) continue;
+      const cfg = await res.json();
+      if (cfg.supabaseUrl && cfg.supabaseAnonKey) {
+        window.__SUPABASE_URL      = cfg.supabaseUrl;
+        window.__SUPABASE_ANON_KEY = cfg.supabaseAnonKey;
+        return true;
+      }
+    } catch (e) { console.warn("Config attempt", attempt + 1, "failed:", e); }
+  }
+  return false;
+}
+
 buildSidebar();
 buildFilters();
 applyLockState();
-buildHomeScreen();
+loadConfig().then(() => buildHomeScreen());
