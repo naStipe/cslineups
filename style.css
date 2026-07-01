@@ -669,3 +669,83 @@ button,input,select,textarea{font-family:var(--font-body);}
   transition: background .15s;
 }
 .tc-dot.active{ background: var(--signal); }
+
+/* ===================== HERO + THUMBNAIL STRIP ===================== */
+.detail-hero{
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  border-top: 2px solid var(--signal);
+}
+.hero-header{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line-soft);
+  flex-wrap: wrap;
+}
+.hero-header .variant-tag{
+  position: static;
+  border-radius: 4px;
+}
+.hero-header .throw-meta{ flex: 1; display: flex; gap: 8px; flex-wrap: wrap; }
+.hero-header .throw-card-actions{ margin-left: auto; }
+.hero-galleries{
+  /* override tc-galleries to make images taller in hero */
+}
+.hero-galleries .tc-carousel-img{
+  aspect-ratio: 16/9;
+}
+.hero-notes{
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  border-top: 1px solid var(--line-soft);
+}
+
+/* Thumbnail strip */
+.detail-strip{
+  display: flex;
+  gap: 8px;
+  padding: 14px 0 4px;
+  overflow-x: auto;
+  flex-wrap: wrap;
+}
+.detail-strip-thumb{
+  flex-shrink: 0;
+  width: 100px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 2px solid var(--line);
+  cursor: pointer;
+  transition: border-color .15s, transform .15s;
+  position: relative;
+  background: var(--void);
+}
+.detail-strip-thumb:hover{ border-color: var(--text-dim); transform: translateY(-2px); }
+.detail-strip-thumb.active{ border-color: var(--signal); }
+.detail-strip-thumb img{
+  width: 100%;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+  display: block;
+}
+.strip-thumb-empty{
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: var(--panel-2);
+}
+.strip-thumb-label{
+  display: block;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: .06em;
+  color: var(--text-dim);
+  padding: 4px 0;
+  background: var(--hull);
+}
+.detail-strip-thumb.active .strip-thumb-label{ color: var(--signal); }

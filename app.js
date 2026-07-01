@@ -1,17 +1,3 @@
-/* ===================== CONFIG LOADER ===================== */
-
-async function loadConfig() {
-  try {
-    const res = await fetch("/api/config");
-    if (!res.ok) return;
-    const cfg = await res.json();
-    window.__SUPABASE_URL      = cfg.supabaseUrl;
-    window.__SUPABASE_ANON_KEY = cfg.supabaseAnonKey;
-  } catch (e) {
-    console.warn("Could not load config:", e);
-  }
-}
-
 /* ===================== EDIT LOCK ===================== */
 
 const PW_STORAGE_KEY = "lineups-edit-password";
@@ -667,11 +653,17 @@ saveThrow.onclick = async () => {
       await dbPut(lineup);
     }
 
+    const wasEditing = !!draft.editingThrowId;
+    const reopenId = draft.lineupId;
+
     closeModal(throwModal);
     pendingThrowDraft = null;
     setAddMode(false);
     state.pendingThrowFor = null;
     await loadLineups();
+
+    // If we were editing an existing throw, reopen the dossier so changes are visible immediately
+    if (wasEditing) openDetail(reopenId);
   } catch (err) {
     console.error(err);
     alert(
@@ -808,120 +800,149 @@ cancelCluster.onclick = () => closeModal(clusterModal);
 
 /* ===================== DETAIL PANEL ===================== */
 
-function openDetail(lineupId) {
+let selectedThrowIdx = 0;
+
+function openDetail(lineupId, throwIdx) {
   state.selectedLineupId = lineupId;
+  selectedThrowIdx = throwIdx !== undefined ? throwIdx : 0;
   const lineup = state.lineups.find(l => l.id === lineupId);
   if (!lineup) return;
-
-  renderDetailType(lineup);
-  detailTitle.textContent = `${lineup.throws.length} position${lineup.throws.length === 1 ? "" : "s"}`;
-
-  throwList.innerHTML = "";
-  lineup.throws.forEach((t, idx) => {
-    const card = document.createElement("div");
-    card.className = "throw-card";
-
-    const variantTag = `<div class="variant-tag">VARIANT ${String(idx + 1).padStart(2, "0")}</div>`;
-
-    const standingImgs = (t.standing && t.standing.length) ? t.standing : [];
-    const aimImgs = (t.screenshots && t.screenshots.length) ? t.screenshots : [];
-    const hasImages = standingImgs.length || aimImgs.length || t.precise;
-
-    const makeCarousel = (imgs, label, cssClass) => {
-      if (!imgs.length) return "";
-      const multi = imgs.length > 1;
-      return `
-        <div class="tc-carousel" data-class="${cssClass}">
-          <div class="tc-carousel-label">${label}</div>
-          <div class="tc-carousel-inner">
-            <img class="tc-carousel-img ${cssClass}" src="${imgs[0]}" data-imgs='${JSON.stringify(imgs)}' data-idx="0" alt="${label}">
-            ${multi ? `<button class="tc-arrow tc-prev" type="button">‹</button>
-                       <button class="tc-arrow tc-next" type="button">›</button>
-                       <div class="tc-dots">${imgs.map((_,i) => `<span class="tc-dot${i===0?' active':''}"></span>`).join("")}</div>` : ""}
-          </div>
-        </div>`;
-    };
-
-    const preciseHtml = t.precise ? `
-      <div class="tc-carousel">
-        <div class="tc-carousel-label">Precise</div>
-        <div class="tc-carousel-inner">
-          <img class="tc-carousel-img" src="${t.precise}" alt="Precise lineup">
-        </div>
-      </div>` : "";
-
-    card.innerHTML = `
-      ${variantTag}
-      ${hasImages ? `<div class="tc-galleries">
-        ${makeCarousel(standingImgs, "Stand here", "standing-gallery")}
-        ${makeCarousel(aimImgs, "Aim here", "aim-gallery")}
-        ${preciseHtml}
-      </div>` : ""}
-      <div class="throw-card-body">
-        <div class="throw-meta">
-          <span class="tag">${RANGE_LABELS[t.range] || t.range}</span>
-          <span class="tag">${MOVEMENT_LABELS[t.movement] || t.movement}</span>
-        </div>
-        ${t.notes ? `<div class="throw-notes">${escapeHtml(t.notes)}</div>` : ""}
-        <div class="throw-card-actions">
-          <button class="edit-btn">Edit</button>
-          <button class="remove-btn">Remove</button>
-        </div>
-      </div>
-    `;
-
-    // Wire carousels
-    card.querySelectorAll(".tc-carousel").forEach(carousel => {
-      const img = carousel.querySelector(".tc-carousel-img");
-      if (!img) return;
-      const raw = img.dataset.imgs;
-      if (!raw) {
-        // single image (precise) — click opens lightbox
-        img.onclick = () => openLightbox([img.src], 0, img.alt);
-        return;
-      }
-      const imgs = JSON.parse(raw);
-      const dots = carousel.querySelectorAll(".tc-dot");
-      let cur = 0;
-
-      const go = (n) => {
-        cur = (n + imgs.length) % imgs.length;
-        img.src = imgs[cur];
-        img.dataset.idx = cur;
-        dots.forEach((d, i) => d.classList.toggle("active", i === cur));
-      };
-
-      const prev = carousel.querySelector(".tc-prev");
-      const next = carousel.querySelector(".tc-next");
-      if (prev) prev.onclick = (e) => { e.stopPropagation(); go(cur - 1); };
-      if (next) next.onclick = (e) => { e.stopPropagation(); go(cur + 1); };
-
-      const label = img.alt;
-      img.onclick = () => openLightbox(imgs, cur, label);
-    });
-
-    card.querySelector(".edit-btn").onclick = () => {
-      if (!requireUnlocked()) return;
-      openThrowModal(t.pos, lineup.id, false, lineup.type, lineup.landing, t);
-    };
-
-    card.querySelector(".remove-btn").onclick = async () => {
-      if (!requireUnlocked()) return;
-      lineup.throws = lineup.throws.filter(x => x.id !== t.id);
-      if (lineup.throws.length === 0) {
-        await dbDelete(lineup.id);
-        closeDetailPanel();
-      } else {
-        await dbPut(lineup);
-      }
-      await loadLineups();
-      if (state.selectedLineupId) openDetail(state.selectedLineupId);
-    };
-    throwList.appendChild(card);
-  });
-
+  renderDetail(lineup);
   detailPanel.classList.add("open");
   renderMarkers();
+}
+
+function renderDetail(lineup) {
+  renderDetailType(lineup);
+  detailTitle.textContent = `${lineup.throws.length} variant${lineup.throws.length === 1 ? "" : "s"}`;
+  throwList.innerHTML = "";
+
+  if (!lineup.throws.length) return;
+
+  selectedThrowIdx = Math.min(selectedThrowIdx, lineup.throws.length - 1);
+  const active = lineup.throws[selectedThrowIdx];
+
+  // ── HERO ──
+  const hero = document.createElement("div");
+  hero.className = "detail-hero";
+  hero.innerHTML = buildHeroHtml(active, selectedThrowIdx, lineup);
+  wireCarousels(hero, active);
+  hero.querySelector(".edit-btn").onclick = () => {
+    if (!requireUnlocked()) return;
+    openThrowModal(active.pos, lineup.id, false, lineup.type, lineup.landing, active);
+  };
+  hero.querySelector(".remove-btn").onclick = async () => {
+    if (!requireUnlocked()) return;
+    lineup.throws = lineup.throws.filter(x => x.id !== active.id);
+    if (lineup.throws.length === 0) {
+      await dbDelete(lineup.id);
+      closeDetailPanel();
+    } else {
+      await dbPut(lineup);
+    }
+    await loadLineups();
+    if (state.selectedLineupId) openDetail(state.selectedLineupId, Math.max(0, selectedThrowIdx - 1));
+  };
+  throwList.appendChild(hero);
+
+  // ── THUMBNAIL STRIP ──
+  if (lineup.throws.length > 1) {
+    const strip = document.createElement("div");
+    strip.className = "detail-strip";
+    lineup.throws.forEach((t, i) => {
+      const thumb = document.createElement("div");
+      thumb.className = "detail-strip-thumb" + (i === selectedThrowIdx ? " active" : "");
+      const preview = (t.screenshots && t.screenshots[0]) || (t.standing && t.standing[0]) || "";
+      thumb.innerHTML = `
+        ${preview ? `<img src="${preview}" alt="Variant ${i+1}">` : `<div class="strip-thumb-empty"></div>`}
+        <span class="strip-thumb-label">V${String(i+1).padStart(2,"0")}</span>
+      `;
+      thumb.onclick = () => {
+        selectedThrowIdx = i;
+        renderDetail(lineup);
+      };
+      strip.appendChild(thumb);
+    });
+    throwList.appendChild(strip);
+  }
+}
+
+function buildHeroHtml(t, idx, lineup) {
+  const standingImgs = (t.standing && t.standing.length) ? t.standing : [];
+  const aimImgs = (t.screenshots && t.screenshots.length) ? t.screenshots : [];
+  const hasImages = standingImgs.length || aimImgs.length || t.precise;
+
+  const makeCarousel = (imgs, label, cssClass) => {
+    if (!imgs.length) return "";
+    const multi = imgs.length > 1;
+    return `
+      <div class="tc-carousel" data-class="${cssClass}">
+        <div class="tc-carousel-label">${label}</div>
+        <div class="tc-carousel-inner">
+          <img class="tc-carousel-img ${cssClass}" src="${imgs[0]}" data-imgs='${JSON.stringify(imgs)}' data-idx="0" alt="${label}">
+          ${multi ? `<button class="tc-arrow tc-prev" type="button">‹</button>
+                     <button class="tc-arrow tc-next" type="button">›</button>
+                     <div class="tc-dots">${imgs.map((_,i) => `<span class="tc-dot${i===0?" active":""}"></span>`).join("")}</div>` : ""}
+        </div>
+      </div>`;
+  };
+
+  const preciseHtml = t.precise ? `
+    <div class="tc-carousel">
+      <div class="tc-carousel-label">Precise</div>
+      <div class="tc-carousel-inner">
+        <img class="tc-carousel-img" src="${t.precise}" alt="Precise lineup">
+      </div>
+    </div>` : "";
+
+  return `
+    <div class="hero-header">
+      <span class="variant-tag">VARIANT ${String(idx+1).padStart(2,"0")}</span>
+      <div class="throw-meta">
+        <span class="tag">${RANGE_LABELS[t.range] || t.range}</span>
+        <span class="tag">${MOVEMENT_LABELS[t.movement] || t.movement}</span>
+      </div>
+      <div class="throw-card-actions">
+        <button class="edit-btn">Edit</button>
+        <button class="remove-btn">Remove</button>
+      </div>
+    </div>
+    ${hasImages ? `<div class="tc-galleries hero-galleries">
+      ${makeCarousel(standingImgs, "Stand here", "standing-gallery")}
+      ${makeCarousel(aimImgs, "Aim here", "aim-gallery")}
+      ${preciseHtml}
+    </div>` : ""}
+    ${t.notes ? `<div class="throw-notes hero-notes">${escapeHtml(t.notes)}</div>` : ""}
+  `;
+}
+
+function wireCarousels(container, t) {
+  const standingImgs = (t.standing && t.standing.length) ? t.standing : [];
+  const aimImgs = (t.screenshots && t.screenshots.length) ? t.screenshots : [];
+
+  container.querySelectorAll(".tc-carousel").forEach(carousel => {
+    const img = carousel.querySelector(".tc-carousel-img");
+    if (!img) return;
+    const raw = img.dataset.imgs;
+    if (!raw) {
+      img.onclick = () => openLightbox([img.src], 0, img.alt);
+      return;
+    }
+    const imgs = JSON.parse(raw);
+    const dots = carousel.querySelectorAll(".tc-dot");
+    let cur = 0;
+    const go = (n) => {
+      cur = (n + imgs.length) % imgs.length;
+      img.src = imgs[cur];
+      img.dataset.idx = cur;
+      dots.forEach((d, i) => d.classList.toggle("active", i === cur));
+    };
+    const prev = carousel.querySelector(".tc-prev");
+    const next = carousel.querySelector(".tc-next");
+    if (prev) prev.onclick = (e) => { e.stopPropagation(); go(cur - 1); };
+    if (next) next.onclick = (e) => { e.stopPropagation(); go(cur + 1); };
+    img.onclick = () => openLightbox(imgs, cur, img.alt);
+  });
 }
 
 function renderDetailType(lineup) {
@@ -1057,4 +1078,4 @@ backBtn.onclick = goHome;
 buildSidebar();
 buildFilters();
 applyLockState();
-loadConfig().then(() => buildHomeScreen());
+buildHomeScreen();
