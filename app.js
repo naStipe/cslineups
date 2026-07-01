@@ -1,3 +1,17 @@
+/* ===================== CONFIG LOADER ===================== */
+
+async function loadConfig() {
+  try {
+    const res = await fetch("/api/config");
+    if (!res.ok) return;
+    const cfg = await res.json();
+    window.__SUPABASE_URL      = cfg.supabaseUrl;
+    window.__SUPABASE_ANON_KEY = cfg.supabaseAnonKey;
+  } catch (e) {
+    console.warn("Could not load config:", e);
+  }
+}
+
 /* ===================== EDIT LOCK ===================== */
 
 const PW_STORAGE_KEY = "lineups-edit-password";
@@ -405,18 +419,50 @@ function closeModal(m) { m.classList.remove("show"); }
 const MAX_SCREENSHOTS = 5;
 const MAX_STANDING = 3;
 
-function compressFile(file) {
-  return new Promise((resolve, reject) => {
-    // Under 5MB — use the original file directly, no re-encoding
-    if (file.size < 5 * 1024 * 1024) {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-      return;
-    }
+/* ===================== SUPABASE DIRECT IMAGE UPLOAD ===================== */
 
-    // Over 2MB — resize to max 1920px but keep high quality
+const SUPABASE_URL = document.currentScript
+  ? null // filled at runtime via env injection in vercel
+  : null;
+
+// We read the anon key from a meta tag injected by the server,
+// or fall back to window.__SUPABASE_ANON_KEY set inline.
+function getSupabaseAnonKey() {
+  return window.__SUPABASE_ANON_KEY || "";
+}
+
+async function uploadFileToSupabase(file) {
+  const url = window.__SUPABASE_URL;
+  const key = window.__SUPABASE_ANON_KEY;
+  if (!url || !key) throw new Error("Supabase config not loaded");
+
+  // Resize only if over 5MB, preserving format/quality otherwise
+  const blob = await maybeResize(file);
+  const ext  = blob.type.split("/")[1] || "jpg";
+  const filename = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+
+  const res = await fetch(
+    `${url}/storage/v1/object/lineup-images/${filename}`,
+    {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${key}`,
+        "Content-Type": blob.type,
+        "x-upsert": "false",
+      },
+      body: blob,
+    }
+  );
+  if (!res.ok) {
+    const err = await res.text().catch(() => "");
+    throw new Error(`Image upload failed: ${err}`);
+  }
+  return `${url}/storage/v1/object/public/lineup-images/${filename}`;
+}
+
+async function maybeResize(file) {
+  if (file.size < 5 * 1024 * 1024) return file; // under 5MB — use as-is
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
       const img = new Image();
@@ -429,12 +475,10 @@ function compressFile(file) {
           height = Math.round(height * scale);
         }
         const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
+        canvas.width = width; canvas.height = height;
         canvas.getContext("2d").drawImage(img, 0, 0, width, height);
-        // Use PNG for lossless if original was PNG, otherwise high-quality JPEG
         const isPng = file.type === "image/png";
-        resolve(canvas.toDataURL(isPng ? "image/png" : "image/jpeg", 0.98));
+        canvas.toBlob(resolve, isPng ? "image/png" : "image/jpeg", 0.98);
       };
       img.onerror = reject;
       img.src = reader.result;
@@ -494,10 +538,8 @@ standingInput.onchange = async () => {
     alert(`Only ${MAX_STANDING} standing-position screenshots allowed — adding the first ${Math.max(room, 0)}.`);
   }
   const toAdd = files.slice(0, Math.max(room, 0));
-  for (const f of toAdd) {
-    const dataUrl = await compressFile(f);
-    pendingThrowDraft.standing.push(dataUrl);
-  }
+  const urls = await Promise.all(toAdd.map(f => uploadFileToSupabase(f)));
+  pendingThrowDraft.standing.push(...urls);
   renderStandingThumbGrid();
 };
 
@@ -510,10 +552,8 @@ screenshotInput.onchange = async () => {
     alert(`Only ${MAX_SCREENSHOTS} screenshots allowed per lineup — adding the first ${Math.max(room, 0)}.`);
   }
   const toAdd = files.slice(0, Math.max(room, 0));
-  for (const f of toAdd) {
-    const dataUrl = await compressFile(f);
-    pendingThrowDraft.screenshots.push(dataUrl);
-  }
+  const urls = await Promise.all(toAdd.map(f => uploadFileToSupabase(f)));
+  pendingThrowDraft.screenshots.push(...urls);
   renderThumbGrid();
 };
 
@@ -521,7 +561,7 @@ preciseInput.onchange = async () => {
   const file = preciseInput.files[0];
   preciseInput.value = "";
   if (!file) return;
-  pendingThrowDraft.precise = await compressFile(file);
+  pendingThrowDraft.precise = await uploadFileToSupabase(file);
   renderPreciseThumb();
 };
 
@@ -1002,4 +1042,4 @@ backBtn.onclick = goHome;
 buildSidebar();
 buildFilters();
 applyLockState();
-buildHomeScreen();
+loadConfig().then(() => buildHomeScreen());

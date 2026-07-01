@@ -1,7 +1,5 @@
 const { createClient } = require("@supabase/supabase-js");
 
-const IMAGE_BUCKET = "lineup-images";
-
 function supabase() {
   return createClient(
     process.env.SUPABASE_URL,
@@ -14,33 +12,6 @@ function checkPassword(req) {
   const required = process.env.EDIT_PASSWORD;
   if (!required) return true;
   return req.headers["x-edit-password"] === required;
-}
-
-async function uploadImage(dataUrl, sb) {
-  if (!dataUrl || !dataUrl.startsWith("data:")) return dataUrl;
-  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
-  if (!match) return dataUrl;
-  const [, mime, b64] = match;
-  const ext = mime.split("/")[1] || "jpg";
-  const filename = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-  const buf = Buffer.from(b64, "base64");
-  const { error } = await sb.storage.from(IMAGE_BUCKET).upload(filename, buf, {
-    contentType: mime,
-    upsert: false,
-  });
-  if (error) throw new Error(`Image upload failed: ${error.message}`);
-  const { data } = sb.storage.from(IMAGE_BUCKET).getPublicUrl(filename);
-  return data.publicUrl;
-}
-
-async function processThrows(throws, sb) {
-  // Upload all images in parallel across all throw positions
-  return Promise.all((throws || []).map(async (t) => ({
-    ...t,
-    screenshots: await Promise.all((t.screenshots || []).map(u => uploadImage(u, sb))),
-    standing:    await Promise.all((t.standing    || []).map(u => uploadImage(u, sb))),
-    precise:     t.precise ? await uploadImage(t.precise, sb) : null,
-  })));
 }
 
 const corsHeaders = {
@@ -59,15 +30,12 @@ module.exports = async function handler(req, res) {
   try {
     const sb = supabase();
 
-    // ── GET  ── load lineups for a specific map (or all if no mapId given)
     if (req.method === "GET") {
       const mapId = req.query && req.query.mapId;
       let query = sb.from("lineups").select("*");
       if (mapId) query = query.eq("map_id", mapId);
       const { data, error } = await query;
       if (error) throw new Error(error.message);
-
-      // Shape rows back into the frontend format
       const lineups = (data || []).map(row => ({
         id:        row.id,
         mapId:     row.map_id,
@@ -85,7 +53,6 @@ module.exports = async function handler(req, res) {
       return;
     }
 
-    // ── POST ── upsert a single lineup (or bulk import / password check)
     if (req.method === "POST") {
       const body = req.body;
 
@@ -94,17 +61,12 @@ module.exports = async function handler(req, res) {
         return;
       }
 
-      // Bulk import
       if (Array.isArray(body.records)) {
         for (const r of body.records) {
           if (!r || !r.id) continue;
-          r.throws = await processThrows(r.throws, sb);
           const { error } = await sb.from("lineups").upsert({
-            id:         r.id,
-            map_id:     r.mapId,
-            type:       r.type,
-            landing:    r.landing,
-            throws:     r.throws,
+            id: r.id, map_id: r.mapId, type: r.type,
+            landing: r.landing, throws: r.throws,
             created_at: r.createdAt || Date.now(),
           });
           if (error) throw new Error(error.message);
@@ -118,13 +80,10 @@ module.exports = async function handler(req, res) {
         return;
       }
 
-      body.throws = await processThrows(body.throws, sb);
+      // Images are already uploaded as public URLs — just save the metadata
       const { error } = await sb.from("lineups").upsert({
-        id:         body.id,
-        map_id:     body.mapId,
-        type:       body.type,
-        landing:    body.landing,
-        throws:     body.throws,
+        id: body.id, map_id: body.mapId, type: body.type,
+        landing: body.landing, throws: body.throws,
         created_at: body.createdAt || Date.now(),
       });
       if (error) throw new Error(error.message);
@@ -132,13 +91,9 @@ module.exports = async function handler(req, res) {
       return;
     }
 
-    // ── DELETE ── remove a single lineup by id
     if (req.method === "DELETE") {
       const id = req.query && req.query.id;
-      if (!id) {
-        res.status(400).json({ error: "Missing id" });
-        return;
-      }
+      if (!id) { res.status(400).json({ error: "Missing id" }); return; }
       const { error } = await sb.from("lineups").delete().eq("id", id);
       if (error) throw new Error(error.message);
       res.status(200).json({ ok: true });
