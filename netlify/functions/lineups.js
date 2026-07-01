@@ -1,57 +1,87 @@
 const { getStore } = require("@netlify/blobs");
+const { createClient } = require("@supabase/supabase-js");
 
-const BLOB_KEY = "all";
+const LINEUP_KEY = "all";
+const BUCKET = "lineup-images";
 
-function store() {
+function lineupStore() {
   const siteID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
-  const token = process.env.NETLIFY_AUTH_TOKEN || process.env.BLOBS_TOKEN;
-
-  // Prefer automatic context (works in most Netlify deploys). Fall back to
-  // manual config if the environment doesn't inject it automatically.
-  if (siteID && token) {
-    return getStore({ name: "lineups", siteID, token });
-  }
+  const token  = process.env.NETLIFY_AUTH_TOKEN || process.env.BLOBS_TOKEN;
+  if (siteID && token) return getStore({ name: "lineups", siteID, token });
   return getStore("lineups");
 }
 
+function supabase() {
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY,
+    { auth: { persistSession: false } }
+  );
+}
+
 async function readAll() {
-  const s = store();
-  const data = await s.get(BLOB_KEY, { type: "json" });
+  const data = await lineupStore().get(LINEUP_KEY, { type: "json" });
   return data || {};
 }
 
 async function writeAll(obj) {
-  const s = store();
-  await s.setJSON(BLOB_KEY, obj);
+  await lineupStore().setJSON(LINEUP_KEY, obj);
 }
 
 function checkPassword(event) {
   const required = process.env.EDIT_PASSWORD;
-  if (!required) return true; // no password configured = open editing
+  if (!required) return true;
   const supplied = event.headers["x-edit-password"] || event.headers["X-Edit-Password"];
   return supplied === required;
 }
 
-exports.handler = async (event) => {
-  const headers = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, X-Edit-Password",
-    "Content-Type": "application/json",
-  };
+// Upload a single base64 data URI to Supabase Storage, return the public URL
+async function uploadImage(dataUrl, sb) {
+  if (!dataUrl || !dataUrl.startsWith("data:")) return dataUrl;
+  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) return dataUrl;
+  const [, mime, b64] = match;
+  const ext = mime.split("/")[1] || "jpg";
+  const filename = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const buf = Buffer.from(b64, "base64");
 
+  const { error } = await sb.storage.from(BUCKET).upload(filename, buf, {
+    contentType: mime,
+    upsert: false,
+  });
+  if (error) throw new Error(`Supabase upload failed: ${error.message}`);
+
+  const { data } = sb.storage.from(BUCKET).getPublicUrl(filename);
+  return data.publicUrl;
+}
+
+async function processThrows(throws, sb) {
+  return Promise.all((throws || []).map(async (t) => ({
+    ...t,
+    screenshots: await Promise.all((t.screenshots || []).map(u => uploadImage(u, sb))),
+    standing:    await Promise.all((t.standing    || []).map(u => uploadImage(u, sb))),
+    precise:     t.precise ? await uploadImage(t.precise, sb) : null,
+  })));
+}
+
+const headers = {
+  "Access-Control-Allow-Origin":  "*",
+  "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, X-Edit-Password",
+  "Content-Type": "application/json",
+};
+
+exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 204, headers, body: "" };
   }
 
   try {
     if (event.httpMethod === "GET") {
-      // Reading/previewing is always open, no password needed
       const all = await readAll();
       return { statusCode: 200, headers, body: JSON.stringify(Object.values(all)) };
     }
 
-    // All write operations require the edit password
     if (!checkPassword(event)) {
       return { statusCode: 401, headers, body: JSON.stringify({ error: "Wrong or missing edit password" }) };
     }
@@ -59,25 +89,29 @@ exports.handler = async (event) => {
     if (event.httpMethod === "POST") {
       const body = JSON.parse(event.body || "{}");
 
-      // Just verifying a password (e.g. unlocking edit mode in the UI)
       if (body.checkPassword === true) {
         return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
       }
 
-      // Bulk import: { records: [...] }
+      const sb = supabase();
+
       if (Array.isArray(body.records)) {
         const all = await readAll();
-        body.records.forEach((r) => {
-          if (r && r.id) all[r.id] = r;
-        });
+        for (const r of body.records) {
+          if (r && r.id) {
+            r.throws = await processThrows(r.throws, sb);
+            all[r.id] = r;
+          }
+        }
         await writeAll(all);
         return { statusCode: 200, headers, body: JSON.stringify({ ok: true, count: body.records.length }) };
       }
 
-      // Single upsert: the record itself
       if (!body.id) {
         return { statusCode: 400, headers, body: JSON.stringify({ error: "Missing id" }) };
       }
+
+      body.throws = await processThrows(body.throws, sb);
       const all = await readAll();
       all[body.id] = body;
       await writeAll(all);
@@ -97,6 +131,7 @@ exports.handler = async (event) => {
 
     return { statusCode: 405, headers, body: JSON.stringify({ error: "Method not allowed" }) };
   } catch (err) {
+    console.error(err);
     return { statusCode: 500, headers, body: JSON.stringify({ error: String(err && err.message || err) }) };
   }
 };
