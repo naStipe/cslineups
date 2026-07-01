@@ -421,37 +421,21 @@ const MAX_STANDING = 3;
 
 /* ===================== SUPABASE DIRECT IMAGE UPLOAD ===================== */
 
-const SUPABASE_URL = document.currentScript
-  ? null // filled at runtime via env injection in vercel
-  : null;
-
-// We read the anon key from a meta tag injected by the server,
-// or fall back to window.__SUPABASE_ANON_KEY set inline.
-function getSupabaseAnonKey() {
-  return window.__SUPABASE_ANON_KEY || "";
-}
-
 async function uploadFileToSupabase(file) {
   const url = window.__SUPABASE_URL;
   const key = window.__SUPABASE_ANON_KEY;
-  if (!url || !key) {
-    // Try loading config once more in case it wasn't ready at boot
-    await loadConfig();
-    if (!window.__SUPABASE_URL || !window.__SUPABASE_ANON_KEY) {
-      throw new Error("Supabase config not available — check SUPABASE_URL and SUPABASE_ANON_KEY env vars in Vercel");
-    }
-  }
+  if (!url || !key) throw new Error("Supabase config not available — check SUPABASE_URL and SUPABASE_ANON_KEY in Vercel");
 
   const blob = await maybeResize(file);
   const ext  = blob.type.split("/")[1] || "jpg";
   const filename = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}.${ext}`;
 
   const res = await fetch(
-    `${window.__SUPABASE_URL}/storage/v1/object/lineup-images/${filename}`,
+    `${url}/storage/v1/object/lineup-images/${filename}`,
     {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${window.__SUPABASE_ANON_KEY}`,
+        "Authorization": `Bearer ${key}`,
         "Content-Type": blob.type,
         "x-upsert": "false",
       },
@@ -462,11 +446,21 @@ async function uploadFileToSupabase(file) {
     const err = await res.text().catch(() => "");
     throw new Error(`Image upload failed (${res.status}): ${err}`);
   }
-  return `${window.__SUPABASE_URL}/storage/v1/object/public/lineup-images/${filename}`;
+  return `${url}/storage/v1/object/public/lineup-images/${filename}`;
+}
+
+async function uploadDataUrlToSupabase(dataUrl) {
+  if (!dataUrl || !dataUrl.startsWith("data:")) return dataUrl; // already a URL
+  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) return dataUrl;
+  const [, mime, b64] = match;
+  const buf = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  const blob = new Blob([buf], { type: mime });
+  return uploadFileToSupabase(blob);
 }
 
 async function maybeResize(file) {
-  if (file.size < 5 * 1024 * 1024) return file; // under 5MB — use as-is
+  if (file.size < 5 * 1024 * 1024) return file;
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -488,6 +482,16 @@ async function maybeResize(file) {
       img.onerror = reject;
       img.src = reader.result;
     };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// Read a file as a local data URL (for instant preview — no upload yet)
+function readAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve(reader.result);
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
@@ -539,19 +543,11 @@ standingInput.onchange = async () => {
   standingInput.value = "";
   if (!files.length) return;
   const room = MAX_STANDING - pendingThrowDraft.standing.length;
-  if (files.length > room && room > 0) {
-    alert(`Only ${MAX_STANDING} standing-position screenshots allowed — adding the first ${room}.`);
-  }
   const toAdd = files.slice(0, Math.max(room, 0));
   if (!toAdd.length) return;
-  try {
-    const urls = await Promise.all(toAdd.map(f => uploadFileToSupabase(f)));
-    pendingThrowDraft.standing.push(...urls);
-    renderStandingThumbGrid();
-  } catch (err) {
-    console.error(err);
-    alert("Could not upload image: " + err.message);
-  }
+  const dataUrls = await Promise.all(toAdd.map(readAsDataUrl));
+  pendingThrowDraft.standing.push(...dataUrls);
+  renderStandingThumbGrid();
 };
 
 screenshotInput.onchange = async () => {
@@ -559,32 +555,19 @@ screenshotInput.onchange = async () => {
   screenshotInput.value = "";
   if (!files.length) return;
   const room = MAX_SCREENSHOTS - pendingThrowDraft.screenshots.length;
-  if (files.length > room && room > 0) {
-    alert(`Only ${MAX_SCREENSHOTS} screenshots allowed per lineup — adding the first ${room}.`);
-  }
   const toAdd = files.slice(0, Math.max(room, 0));
   if (!toAdd.length) return;
-  try {
-    const urls = await Promise.all(toAdd.map(f => uploadFileToSupabase(f)));
-    pendingThrowDraft.screenshots.push(...urls);
-    renderThumbGrid();
-  } catch (err) {
-    console.error(err);
-    alert("Could not upload image: " + err.message);
-  }
+  const dataUrls = await Promise.all(toAdd.map(readAsDataUrl));
+  pendingThrowDraft.screenshots.push(...dataUrls);
+  renderThumbGrid();
 };
 
 preciseInput.onchange = async () => {
   const file = preciseInput.files[0];
   preciseInput.value = "";
   if (!file) return;
-  try {
-    pendingThrowDraft.precise = await uploadFileToSupabase(file);
-    renderPreciseThumb();
-  } catch (err) {
-    console.error(err);
-    alert("Could not upload image: " + err.message);
-  }
+  pendingThrowDraft.precise = await readAsDataUrl(file);
+  renderPreciseThumb();
 };
 
 function openThrowModal(throwPos, lineupId, isNewLineup, typeId, landingPos, existingThrow) {
@@ -632,15 +615,25 @@ saveThrow.onclick = async () => {
   }
 
   saveThrow.disabled = true;
-  saveThrow.textContent = "Saving…";
+  saveThrow.textContent = "Uploading images…";
 
   try {
     const draft = pendingThrowDraft;
+
+    // Upload any local data URLs to Supabase now (parallel)
+    const [standing, screenshots, precise] = await Promise.all([
+      Promise.all(draft.standing.map(uploadDataUrlToSupabase)),
+      Promise.all(draft.screenshots.map(uploadDataUrlToSupabase)),
+      draft.precise ? uploadDataUrlToSupabase(draft.precise) : Promise.resolve(null),
+    ]);
+
+    saveThrow.textContent = "Saving…";
+
     const throwEntryBase = {
       pos: draft.throwPos,
-      standing: draft.standing,
-      screenshots: draft.screenshots,
-      precise: draft.precise,
+      standing,
+      screenshots,
+      precise,
       range: throwRangeSelect.value,
       movement: movementSelect.value,
       notes: notesInput.value.trim(),
