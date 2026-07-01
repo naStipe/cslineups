@@ -771,13 +771,13 @@ function renderMarkers() {
 
     const openLineup = cluster.lineups.find(l => l.id === state.selectedLineupId);
     if (openLineup) {
-      openLineup.throws.forEach(t => {
+      openLineup.throws.forEach((t, throwIdx) => {
         const tp = document.createElement("div");
         tp.className = `marker throwpos ${openLineup.type}`;
         tp.style.left = t.pos.x + "%";
         tp.style.top = t.pos.y + "%";
         tp.title = "Click to open this lineup";
-        tp.onclick = (e) => { e.stopPropagation(); openDetail(openLineup.id); };
+        tp.onclick = (e) => { e.stopPropagation(); openDetail(openLineup.id, throwIdx); };
         markerLayer.appendChild(tp);
 
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
