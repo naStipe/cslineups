@@ -50,16 +50,19 @@ const RANGE_LABELS = {
 };
 
 const MOVEMENT_LABELS = {
-  "none": "Standing",
-  "jumpthrow": "Jumpthrow",
-  "w-throw": "W + Throw",
-  "w-jumpthrow": "W + Jumpthrow",
-  "shift-w-throw": "Shift + W + Throw",
-  "shift-w-jumpthrow": "Shift + W + Jumpthrow",
-  "crouch": "Crouch",
-  "crouchjump": "Crouch + Jump",
-  "crouchaim-jump": "Crouch-aim + Jump",
-  "crouchaim-crouchjump": "Crouch-aim + Crouch-jump",
+  "none":                  "Standing",
+  "jumpthrow":             "Jumpthrow",
+  "w-throw":               "W + Throw",
+  "w-jumpthrow":           "W + Jumpthrow",
+  "run":                   "Run",
+  "run-throw":             "Run + Throw",
+  "run-jumpthrow":         "Run + Jumpthrow",
+  "shift-w-throw":         "Shift + W + Throw",
+  "shift-w-jumpthrow":     "Shift + W + Jumpthrow",
+  "crouch":                "Crouch",
+  "crouchjump":            "Crouch + Jump",
+  "crouchaim-jump":        "Crouch-aim + Jump",
+  "crouchaim-crouchjump":  "Crouch-aim + Crouch-jump",
 };
 
 /* ===================== STORAGE (Netlify Function API) ===================== */
