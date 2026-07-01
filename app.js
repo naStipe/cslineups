@@ -64,7 +64,7 @@ const MOVEMENT_LABELS = {
 
 /* ===================== STORAGE (Netlify Function API) ===================== */
 
-const API_URL = "/.netlify/functions/lineups";
+const API_URL = "/api/lineups";
 
 async function dbGetAll() {
   const res = await fetch(API_URL);

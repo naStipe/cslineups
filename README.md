@@ -36,11 +36,6 @@ GitHub). Leave **Build command** blank and set **Publish directory** to `.`. Net
 needs no extra setup or environment variables — it's automatically available once the site is
 deployed on Netlify. Every `git push` to `main` redeploys automatically, function included.
 
-## Adding/changing maps
-
-Map images live in `/maps`. To add a new map, drop an image in that folder and add an entry
-to the `MAPS` array at the top of `app.js`:
-
 ## Password-protecting edits
 
 The site is viewable by anyone with the link, but adding/editing/deleting lineups requires a
