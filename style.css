@@ -408,13 +408,20 @@ button,input,select,textarea{font-family:var(--font-body);}
   .back-btn{display:none;}
   .topbar-divider{display:none;}
 
-  /* Topbar on mobile */
-  .topbar{height:auto;padding:10px 14px;gap:10px;flex-wrap:wrap;}
-  .topbar-left{gap:10px;}
-  .topbar-map-name{font-size:15px;}
-  .filters{gap:4px;padding:2px 0;}
-  .filter-chip{padding:5px 9px;font-size:10px;}
-  .primary-btn{padding:9px 13px;font-size:11px;}
+/* Topbar on mobile - wrap filters to second row, hide add button */
+  .topbar{height:auto;padding:10px 14px 0;gap:0;flex-wrap:wrap;}
+  .topbar-left{flex:1;padding-bottom:10px;gap:8px;}
+  .topbar-right{display:none;}
+  .filters{
+    flex:0 0 100%;order:3;
+    border-top:1px solid var(--line);
+    padding:8px 0;
+    overflow-x:auto;flex-wrap:nowrap;justify-content:flex-start;
+    gap:6px;
+    scrollbar-width:none;
+  }
+  .filters::-webkit-scrollbar{display:none;}
+  .filter-chip{white-space:nowrap;flex-shrink:0;}
 
   /* Map stage — ensure touch events reach markers */
   .map-stage{ touch-action:none; }

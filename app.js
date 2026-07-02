@@ -1122,12 +1122,10 @@ function buildHeroHtml(t, idx, lineup) {
 }
 
 function wireCarousels(container, t) {
-  const standingImgs = (t.standing && t.standing.length) ? t.standing : [];
-  const aimImgs = (t.screenshots && t.screenshots.length) ? t.screenshots : [];
-
   container.querySelectorAll(".tc-carousel").forEach(carousel => {
     const img = carousel.querySelector(".tc-carousel-img");
     if (!img) return;
+    const inner = carousel.querySelector(".tc-carousel-inner");
     const raw = img.dataset.imgs;
     if (!raw) {
       img.onclick = () => openLightbox([img.src], 0, img.alt);
@@ -1147,6 +1145,21 @@ function wireCarousels(container, t) {
     if (prev) prev.onclick = (e) => { e.stopPropagation(); go(cur - 1); };
     if (next) next.onclick = (e) => { e.stopPropagation(); go(cur + 1); };
     img.onclick = () => openLightbox(imgs, cur, img.alt);
+
+    // Touch swipe through photos on mobile
+    if (inner && imgs.length > 1) {
+      let swipeStartX = null;
+      inner.addEventListener("touchstart", e => {
+        swipeStartX = e.touches[0].clientX;
+      }, { passive: true });
+      inner.addEventListener("touchend", e => {
+        if (swipeStartX === null) return;
+        const dx = e.changedTouches[0].clientX - swipeStartX;
+        swipeStartX = null;
+        if (Math.abs(dx) < 35) return;
+        if (dx < 0) go(cur + 1); else go(cur - 1);
+      }, { passive: true });
+    }
   });
 }
 
