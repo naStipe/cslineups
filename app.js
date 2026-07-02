@@ -60,9 +60,9 @@ const MOVEMENT_LABELS = {
   "shift-w-throw":         "Shift + W + Throw",
   "shift-w-jumpthrow":     "Shift + W + Jumpthrow",
   "crouch":                "Crouch",
-  "crouchjump":            "Crouch + Jump",
-  "crouchaim-jump":        "Crouch-aim + Jump",
-  "crouchaim-crouchjump":  "Crouch-aim + Crouch-jump",
+  "crouchjump":            "Crouch + JumpThrow",
+  "crouchaim-jump":        "Crouch-aim + JumpThrow",
+  "crouchaim-crouchjump":  "Crouch-aim + Crouch-jumpthrow",
 };
 
 /* ===================== STORAGE (Netlify Function API) ===================== */
