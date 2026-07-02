@@ -30,14 +30,23 @@
 <div class="home-screen" id="homeScreen">
   <header class="home-header">
     <div class="home-brand">
-      <span class="home-brand-mark">⌖</span>
-      <div>
-        <p class="home-eyebrow">Operator database</p>
-        <h1 class="home-title">LINEUPS</h1>
-      </div>
+      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+        <circle cx="20" cy="20" r="17" stroke="#ffa53e" stroke-width="2.2"/>
+        <circle cx="20" cy="20" r="9"  stroke="#ffa53e" stroke-width="1" opacity="0.3"/>
+        <line x1="20" y1="3"  x2="20" y2="11" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/>
+        <line x1="20" y1="29" x2="20" y2="37" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/>
+        <line x1="3"  y1="20" x2="11" y2="20" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/>
+        <line x1="29" y1="20" x2="37" y2="20" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="20" cy="20" r="3.5" fill="#ffa53e"/>
+        <circle cx="20" cy="20" r="1.4" fill="#0f0c09"/>
+      </svg>
+      <span class="home-wordmark">lineup<span class="home-wordmark-r">r</span></span>
     </div>
   </header>
-  <div class="home-grid" id="homeGrid"></div>
+  <div class="home-body">
+    <h2 class="home-section-title">Lineups</h2>
+    <div class="home-grid" id="homeGrid"></div>
+  </div>
 </div>
 
 <!-- MAIN APP (hidden until a map is selected) -->
@@ -46,11 +55,17 @@
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="brand">
-      <span class="brand-mark">⌖</span>
-      <div>
-        <p class="brand-eyebrow">Operator database</p>
-        <h1>LINEUPS</h1>
-      </div>
+      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="28" height="28">
+        <circle cx="20" cy="20" r="17" stroke="#ffa53e" stroke-width="2.2"/>
+        <circle cx="20" cy="20" r="9"  stroke="#ffa53e" stroke-width="1" opacity="0.3"/>
+        <line x1="20" y1="3"  x2="20" y2="11" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/>
+        <line x1="20" y1="29" x2="20" y2="37" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/>
+        <line x1="3"  y1="20" x2="11" y2="20" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/>
+        <line x1="29" y1="20" x2="37" y2="20" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="20" cy="20" r="3.5" fill="#ffa53e"/>
+        <circle cx="20" cy="20" r="1.4" fill="#0f0c09"/>
+      </svg>
+      <span class="sidebar-wordmark">lineup<span class="sidebar-wordmark-r">r</span></span>
     </div>
 
     <p class="rail-label">Maps</p>
@@ -67,19 +82,21 @@
 
     <header class="topbar">
       <div class="topbar-left">
-        <button class="back-btn" id="backBtn">← Maps</button>
-        <div>
-          <p class="map-eyebrow">Active map</p>
-          <h2 id="currentMapName">DUST II</h2>
-        </div>
+        <button class="back-btn" id="backBtn">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Maps
+        </button>
+        <div class="topbar-divider"></div>
+        <h2 class="topbar-map-name" id="currentMapName">DUST II</h2>
+        <span class="count-pill" id="lineupCount">0 lineups</span>
       </div>
 
       <div class="filters" id="typeFilters"></div>
 
       <div class="topbar-right">
-        <span class="count-pill" id="lineupCount">0 lineups</span>
         <button id="addModeBtn" class="primary-btn">
-          <span class="add-dot"></span> Add lineup
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Add lineup
         </button>
       </div>
     </header>
@@ -100,12 +117,27 @@
       <!-- Cheatsheet panel -->
       <div class="cheatsheet-panel" id="cheatsheetPanel">
         <button class="cheatsheet-tab" id="cheatsheetTab">
-          <span class="cheatsheet-tab-icon">📋</span>
-          <span class="cheatsheet-tab-label">Insta smokes</span>
+          <svg class="cs-icon" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="7"  cy="13" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+            <circle cx="13" cy="11" r="4"   stroke="currentColor" stroke-width="1.5"/>
+            <circle cx="10" cy="7"  r="3.5" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="10" y1="17" x2="10" y2="20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="7"  y1="20" x2="13" y2="20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Instant smokes
         </button>
         <div class="cheatsheet-body" id="cheatsheetBody">
           <div class="cheatsheet-header">
-            <span class="cheatsheet-title">Instant Smokes</span>
+            <div class="cheatsheet-header-left">
+              <svg class="cs-icon" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="7"  cy="13" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+                <circle cx="13" cy="11" r="4"   stroke="currentColor" stroke-width="1.5"/>
+                <circle cx="10" cy="7"  r="3.5" stroke="currentColor" stroke-width="1.5"/>
+                <line x1="10" y1="17" x2="10" y2="20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <line x1="7"  y1="20" x2="13" y2="20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              <span class="cheatsheet-title">Instant smokes</span>
+            </div>
             <button class="icon-btn" id="cheatsheetClose">✕</button>
           </div>
           <div class="cheatsheet-img-wrap">
