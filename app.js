@@ -299,7 +299,28 @@ let hasDragged = false;
 let dragStartX, dragStartY, dragPanX, dragPanY;
 const MAX_ZOOM = 6;
 
+function clampPan() {
+  if (zoom <= 1) { panX = 0; panY = 0; return; }
+  const sw = mapStage.clientWidth;
+  const sh = mapStage.clientHeight;
+  const fw = mapFrame.offsetWidth;
+  const fh = mapFrame.offsetHeight;
+  // Scaled frame size
+  const scaledW = fw * zoom;
+  const scaledH = fh * zoom;
+  // The frame center is at (sw/2 + panX, sh/2 + panY)
+  // Keep at least 20% of the frame visible in each direction
+  const minVisible = 60; // px of frame that must stay on screen
+  const maxPanX = sw / 2 - minVisible + scaledW / 2;
+  const minPanX = -(sw / 2 - minVisible + scaledW / 2);
+  const maxPanY = sh / 2 - minVisible + scaledH / 2;
+  const minPanY = -(sh / 2 - minVisible + scaledH / 2);
+  panX = Math.min(maxPanX, Math.max(minPanX, panX));
+  panY = Math.min(maxPanY, Math.max(minPanY, panY));
+}
+
 function applyTransform(rerender = true) {
+  clampPan();
   mapFrame.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
   // Scale markers inversely so they appear the same size on screen regardless of zoom
   const markerScale = 1 / zoom;
