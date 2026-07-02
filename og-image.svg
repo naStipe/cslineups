@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+<rect width="1200" height="630" fill="#0f0c09"/>
+<g opacity="0.055" stroke="#ffa53e" stroke-width="1">
+  <line x1="0"    y1="0" x2="0"    y2="630"/>
+  <line x1="171"  y1="0" x2="171"  y2="630"/>
+  <line x1="342"  y1="0" x2="342"  y2="630"/>
+  <line x1="514"  y1="0" x2="514"  y2="630"/>
+  <line x1="685"  y1="0" x2="685"  y2="630"/>
+  <line x1="857"  y1="0" x2="857"  y2="630"/>
+  <line x1="1028" y1="0" x2="1028" y2="630"/>
+  <line x1="1200" y1="0" x2="1200" y2="630"/>
+  <line x1="0" y1="0"   x2="1200" y2="0"/>
+  <line x1="0" y1="105" x2="1200" y2="105"/>
+  <line x1="0" y1="210" x2="1200" y2="210"/>
+  <line x1="0" y1="315" x2="1200" y2="315"/>
+  <line x1="0" y1="420" x2="1200" y2="420"/>
+  <line x1="0" y1="525" x2="1200" y2="525"/>
+  <line x1="0" y1="630" x2="1200" y2="630"/>
+</g>
+<g transform="translate(330, 315)">
+  <circle r="140" fill="none" stroke="#ffa53e" stroke-width="5"/>
+  <circle r="78" fill="none" stroke="#ffa53e" stroke-width="2" opacity="0.2"/>
+  <line x1="0" y1="-140" x2="0" y2="-46" stroke="#ffa53e" stroke-width="4" stroke-linecap="round"/>
+  <line x1="0" y1="46"   x2="0" y2="140" stroke="#ffa53e" stroke-width="4" stroke-linecap="round"/>
+  <line x1="-140" y1="0" x2="-46" y2="0" stroke="#ffa53e" stroke-width="4" stroke-linecap="round"/>
+  <line x1="46"   y1="0" x2="140" y2="0" stroke="#ffa53e" stroke-width="4" stroke-linecap="round"/>
+  <line x1="-100" y1="-100" x2="-82" y2="-82" stroke="#ffa53e" stroke-width="2.5" stroke-linecap="round" opacity="0.4"/>
+  <line x1="82"   y1="-82"  x2="100" y2="-100" stroke="#ffa53e" stroke-width="2.5" stroke-linecap="round" opacity="0.4"/>
+  <line x1="-100" y1="100"  x2="-82" y2="82"   stroke="#ffa53e" stroke-width="2.5" stroke-linecap="round" opacity="0.4"/>
+  <line x1="82"   y1="82"   x2="100" y2="100"  stroke="#ffa53e" stroke-width="2.5" stroke-linecap="round" opacity="0.4"/>
+  <circle r="19" fill="#ffa53e"/>
+  <circle r="8"  fill="#0f0c09"/>
+</g>
+<line x1="530" y1="120" x2="530" y2="510" stroke="#2a221c" stroke-width="2"/>
+<text x="580" y="270" font-family="Arial Narrow, Arial, sans-serif" font-weight="700" font-size="130" letter-spacing="-3" fill="#f2ece2">lineup</text>
+<text x="1056" y="270" font-family="Arial Narrow, Arial, sans-serif" font-weight="700" font-size="130" fill="#ffa53e">r</text>
+<text x="582" y="318" font-family="monospace" font-size="22" letter-spacing="8" fill="#6b5f51">GRENADE LINEUP DATABASE</text>
+<line x1="582" y1="340" x2="1140" y2="340" stroke="#2a221c" stroke-width="1.5"/>
+<text x="582" y="374" font-family="monospace" font-size="20" letter-spacing="4" fill="#ffa53e" opacity="0.8">lineupr.vercel.app</text>
+<text x="582" y="408" font-family="monospace" font-size="18" letter-spacing="2" fill="#4a4036">CS2 · All maps · Smokes, flashes, molotovs &amp; more</text>
+<rect x="0" y="600" width="1200" height="30" fill="#ffa53e" opacity="0.06"/>
+<rect x="0" y="600" width="8"    height="30" fill="#ffa53e"/>
+</svg>
