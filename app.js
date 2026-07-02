@@ -146,6 +146,10 @@ const typeFilters = document.getElementById("typeFilters");
 const mapImage = document.getElementById("mapImage");
 const mapFrame = document.getElementById("mapFrame");
 const markerLayer = document.getElementById("markerLayer");
+const mapStage = document.getElementById("mapStage");
+const zoomInBtn = document.getElementById("zoomIn");
+const zoomOutBtn = document.getElementById("zoomOut");
+const zoomResetBtn = document.getElementById("zoomReset");
 const linkSvg = document.getElementById("linkSvg");
 const currentMapName = document.getElementById("currentMapName");
 const lineupCount = document.getElementById("lineupCount");
@@ -248,6 +252,115 @@ function goHome() {
   setAddMode(false);
   buildHomeScreen(); // refresh counts when returning
 }
+
+/* ===================== ZOOM / PAN ===================== */
+
+let zoom = 1;
+let panX = 0, panY = 0;
+let isDragging = false;
+let dragStartX, dragStartY, dragPanX, dragPanY;
+const MIN_ZOOM = 1, MAX_ZOOM = 6;
+
+function applyTransform(rerender = true) {
+  mapFrame.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+  if (rerender) renderMarkers();
+}
+
+function centerMap() {
+  const sw = mapStage.clientWidth;
+  const sh = mapStage.clientHeight;
+  const fw = mapFrame.offsetWidth;
+  const fh = mapFrame.offsetHeight;
+  panX = Math.max(0, (sw - fw) / 2);
+  panY = Math.max(0, (sh - fh) / 2);
+  zoom = Math.min(1, (sw - 40) / fw, (sh - 40) / fh);
+}
+
+function clampPan() {
+  const sw = mapStage.clientWidth;
+  const sh = mapStage.clientHeight;
+  const fw = mapFrame.offsetWidth * zoom;
+  const fh = mapFrame.offsetHeight * zoom;
+  const marginX = Math.min(sw * 0.3, 80);
+  const marginY = Math.min(sh * 0.3, 80);
+  panX = Math.min(panX, sw - marginX);
+  panX = Math.max(panX, marginX - fw);
+  panY = Math.min(panY, sh - marginY);
+  panY = Math.max(panY, marginY - fh);
+}
+
+function zoomAt(clientX, clientY, factor) {
+  const stageRect = mapStage.getBoundingClientRect();
+  const mx = clientX - stageRect.left;
+  const my = clientY - stageRect.top;
+  const newZoom = Math.min(Math.max(zoom * factor, MIN_ZOOM), MAX_ZOOM);
+  const rf = newZoom / zoom;
+  panX = mx - rf * (mx - panX);
+  panY = my - rf * (my - panY);
+  zoom = newZoom;
+  if (zoom <= MIN_ZOOM) centerMap();
+  else clampPan();
+  applyTransform();
+  mapStage.style.cursor = zoom > 1 ? "grab" : "";
+}
+
+mapStage.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.2 : 1 / 1.2);
+}, { passive: false });
+
+mapStage.addEventListener("mousedown", (e) => {
+  if (e.button !== 0 || zoom <= 1 || state.addMode || state.pendingThrowFor) return;
+  isDragging = true;
+  dragStartX = e.clientX; dragStartY = e.clientY;
+  dragPanX = panX; dragPanY = panY;
+  mapStage.classList.add("panning");
+  e.preventDefault();
+});
+window.addEventListener("mousemove", (e) => {
+  if (!isDragging) return;
+  panX = dragPanX + (e.clientX - dragStartX);
+  panY = dragPanY + (e.clientY - dragStartY);
+  clampPan();
+  applyTransform(false);
+});
+window.addEventListener("mouseup", () => {
+  if (!isDragging) return;
+  isDragging = false;
+  mapStage.classList.remove("panning");
+  mapStage.style.cursor = zoom > 1 ? "grab" : "";
+});
+
+// Touch pinch-zoom
+let lastTouchDist = null;
+mapStage.addEventListener("touchstart", (e) => {
+  if (e.touches.length === 2) {
+    lastTouchDist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+  }
+}, { passive: true });
+mapStage.addEventListener("touchmove", (e) => {
+  if (e.touches.length === 2 && lastTouchDist) {
+    const dist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    zoomAt(midX, midY, dist / lastTouchDist);
+    lastTouchDist = dist;
+    e.preventDefault();
+  }
+}, { passive: false });
+mapStage.addEventListener("touchend", () => { lastTouchDist = null; });
+
+zoomInBtn.onclick    = () => { const r = mapStage.getBoundingClientRect(); zoomAt(r.left + r.width/2, r.top + r.height/2, 1.4); };
+zoomOutBtn.onclick   = () => { const r = mapStage.getBoundingClientRect(); zoomAt(r.left + r.width/2, r.top + r.height/2, 1/1.4); };
+zoomResetBtn.onclick = () => { zoom = 1; centerMap(); applyTransform(); mapStage.style.cursor = ""; };
+
+mapImage.onload = () => { centerMap(); applyTransform(false); };
 
 /* ===================== INIT ===================== */
 
@@ -703,7 +816,7 @@ function getCssVarColor(v) {
 }
 
 function clusterLineups(list) {
-  const THRESHOLD = 3.5; // % of map width/height — forgiving enough for imprecise clicks
+  const THRESHOLD = 3.5 / zoom;
   const clusters = [];
   list.forEach(lineup => {
     const c = clusters.find(cl => Math.hypot(cl.x - lineup.landing.x, cl.y - lineup.landing.y) < THRESHOLD);

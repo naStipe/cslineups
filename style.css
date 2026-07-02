@@ -143,31 +143,48 @@ button,input,select,textarea{font-family:var(--font-body);}
 
 /* ===================== MAP STAGE ===================== */
 .map-stage{
-  flex:1;position:relative;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
+  flex:1;position:relative;overflow:hidden;
   background:
     radial-gradient(circle at 50% 35%, rgba(255,165,62,.04), transparent 60%),
     var(--void);
-  overflow:auto;padding:30px;
+  cursor:default;
+  user-select:none;
 }
-
 .map-frame{
-  position:relative;width:fit-content;height:fit-content;
-  border:1px solid var(--line);box-shadow:0 0 0 1px var(--void), 0 24px 70px rgba(0,0,0,.6);
-  cursor:default;border-radius:2px;
+  position:absolute;
+  transform-origin:0 0;
+  border:1px solid var(--line);
+  box-shadow:0 0 0 1px var(--void), 0 24px 70px rgba(0,0,0,.6);
+  border-radius:2px;
+  cursor:default;
 }
 .map-frame.add-mode{cursor:crosshair;}
-.map-frame img{display:block;max-width:80vw;max-height:80vh;width:auto;border-radius:1px;}
+.map-stage.panning, .map-stage.panning .map-frame{cursor:grabbing !important;}
+.map-frame img{display:block;width:auto;border-radius:1px;}
 #linkSvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
 #markerLayer{position:absolute;inset:0;}
 
 .hint{
-  margin-top:16px;
+  position:absolute;bottom:18px;left:50%;transform:translateX(-50%);
   background:var(--panel);border:1px solid var(--signal);color:var(--signal);
   font-size:12px;font-family:var(--font-mono);padding:7px 16px;border-radius:3px;
-  display:none;white-space:nowrap;
+  display:none;white-space:nowrap;pointer-events:none;z-index:10;
 }
 .hint.show{display:block;}
+
+/* Zoom controls */
+.zoom-controls{
+  position:absolute;bottom:18px;right:18px;
+  display:flex;flex-direction:column;gap:4px;z-index:10;
+}
+.zoom-btn{
+  width:32px;height:32px;border-radius:6px;
+  background:var(--panel);border:1px solid var(--line);
+  color:var(--text-dim);font-size:16px;line-height:1;
+  cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center;
+}
+.zoom-btn:hover{color:var(--signal);border-color:var(--signal);}
+.zoom-btn#zoomReset{font-size:13px;}
 
 /* ===================== MARKERS ===================== */
 .marker{
