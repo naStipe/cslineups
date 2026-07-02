@@ -363,29 +363,62 @@ window.addEventListener("mouseup", () => {
   mapStage.style.cursor = zoom > 1 ? "grab" : "";
 });
 
-// Pinch to zoom (touch)
+// Touch: single-finger pan + two-finger pinch zoom
 let lastTouchDist = null;
+let touchPanActive = false;
+let touchStartX = 0, touchStartY = 0;
+let hasTouchMoved = false;
+
 mapStage.addEventListener("touchstart", (e) => {
   if (e.touches.length === 2) {
+    // Pinch start
     lastTouchDist = Math.hypot(
       e.touches[0].clientX - e.touches[1].clientX,
       e.touches[0].clientY - e.touches[1].clientY
     );
+    touchPanActive = false;
+  } else if (e.touches.length === 1) {
+    // Single finger — potential pan or tap
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    hasTouchMoved = false;
+    // Allow pan when zoomed (and not in add/throw mode)
+    if (zoom > 1 && !state.addMode && !state.pendingThrowFor) {
+      touchPanActive = true;
+      dragPanX = panX;
+      dragPanY = panY;
+    }
   }
 }, { passive: true });
+
 mapStage.addEventListener("touchmove", (e) => {
-  if (e.touches.length !== 2 || !lastTouchDist) return;
-  const dist = Math.hypot(
-    e.touches[0].clientX - e.touches[1].clientX,
-    e.touches[0].clientY - e.touches[1].clientY
-  );
-  const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-  const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-  zoomAt(midX, midY, dist / lastTouchDist);
-  lastTouchDist = dist;
-  e.preventDefault();
+  if (e.touches.length === 2 && lastTouchDist) {
+    // Pinch zoom
+    const dist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    zoomAt(midX, midY, dist / lastTouchDist);
+    lastTouchDist = dist;
+    e.preventDefault();
+  } else if (e.touches.length === 1 && touchPanActive) {
+    // Single-finger pan
+    const dx = e.touches[0].clientX - touchStartX;
+    const dy = e.touches[0].clientY - touchStartY;
+    if (Math.hypot(dx, dy) > 6) hasTouchMoved = true;
+    panX = dragPanX + dx;
+    panY = dragPanY + dy;
+    applyTransform(false);
+    e.preventDefault();
+  }
 }, { passive: false });
-mapStage.addEventListener("touchend", () => { lastTouchDist = null; });
+
+mapStage.addEventListener("touchend", () => {
+  lastTouchDist = null;
+  touchPanActive = false;
+});
 
 zoomInBtn.onclick    = () => { const r = mapStage.getBoundingClientRect(); zoomAt(r.left + r.width/2, r.top + r.height/2, 1.5); };
 zoomOutBtn.onclick   = () => { const r = mapStage.getBoundingClientRect(); zoomAt(r.left + r.width/2, r.top + r.height/2, 1/1.5); };
@@ -541,7 +574,7 @@ mapFrame.addEventListener("click", (e) => {
   }
 
   if (state.selectedLineupId && !detailPanel.classList.contains("open")) {
-    if (hasDragged) { hasDragged = false; return; }
+    if (hasDragged || hasTouchMoved) { hasDragged = false; hasTouchMoved = false; return; }
     state.selectedLineupId = null;
     renderMarkers();
   }
