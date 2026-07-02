@@ -258,6 +258,7 @@ function goHome() {
 let zoom = 1;
 let panX = 0, panY = 0;
 let isDragging = false;
+let hasDragged = false;
 let dragStartX, dragStartY, dragPanX, dragPanY;
 const MAX_ZOOM = 6;
 
@@ -303,6 +304,7 @@ mapStage.addEventListener("wheel", (e) => {
 mapStage.addEventListener("mousedown", (e) => {
   if (e.button !== 0 || zoom <= 1 || state.addMode || state.pendingThrowFor) return;
   isDragging = true;
+  hasDragged = false;
   dragStartX = e.clientX; dragStartY = e.clientY;
   dragPanX = panX; dragPanY = panY;
   mapStage.classList.add("panning");
@@ -310,8 +312,11 @@ mapStage.addEventListener("mousedown", (e) => {
 });
 window.addEventListener("mousemove", (e) => {
   if (!isDragging) return;
-  panX = dragPanX + (e.clientX - dragStartX);
-  panY = dragPanY + (e.clientY - dragStartY);
+  const dx = e.clientX - dragStartX;
+  const dy = e.clientY - dragStartY;
+  if (Math.hypot(dx, dy) > 4) hasDragged = true;
+  panX = dragPanX + dx;
+  panY = dragPanY + dy;
   applyTransform(false);
 });
 window.addEventListener("mouseup", () => {
@@ -495,6 +500,7 @@ mapFrame.addEventListener("click", (e) => {
   }
 
   if (state.selectedLineupId && !detailPanel.classList.contains("open")) {
+    if (hasDragged) { hasDragged = false; return; }
     state.selectedLineupId = null;
     renderMarkers();
   }
@@ -902,7 +908,12 @@ function openClusterPicker(lineups) {
     const opt = document.createElement("div");
     opt.className = "type-opt";
     opt.innerHTML = `<span class="dot" style="background:${typeInfo.color}"></span>${label} — ${lineup.throws.length} position${lineup.throws.length === 1 ? "" : "s"}`;
-    opt.onclick = () => { closeModal(clusterModal); openDetail(lineup.id); };
+    opt.onclick = () => {
+      closeModal(clusterModal);
+      // Reveal throw positions on map first (same as clicking a single landing marker)
+      state.selectedLineupId = lineup.id;
+      renderMarkers();
+    };
     clusterGrid.appendChild(opt);
   });
   clusterModal.classList.add("show");
