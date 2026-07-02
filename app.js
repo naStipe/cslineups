@@ -262,9 +262,10 @@ let dragStartX, dragStartY, dragPanX, dragPanY;
 const MAX_ZOOM = 6;
 
 function applyTransform(rerender = true) {
-  // transform-origin is 50% 50% (frame center)
-  // translate(panX,panY) moves center; scale zooms from center
   mapFrame.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+  // Scale markers inversely so they appear the same size on screen regardless of zoom
+  const markerScale = 1 / zoom;
+  document.documentElement.style.setProperty("--marker-scale", markerScale);
   mapStage.style.cursor = zoom > 1 ? "grab" : "";
   if (rerender) renderMarkers();
 }
