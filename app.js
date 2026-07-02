@@ -259,49 +259,39 @@ let zoom = 1;
 let panX = 0, panY = 0;
 let isDragging = false;
 let dragStartX, dragStartY, dragPanX, dragPanY;
-const MIN_ZOOM = 1, MAX_ZOOM = 6;
+const MAX_ZOOM = 6;
 
 function applyTransform(rerender = true) {
+  // transform-origin is 50% 50% (frame center)
+  // translate(panX,panY) moves center; scale zooms from center
   mapFrame.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+  mapStage.style.cursor = zoom > 1 ? "grab" : "";
   if (rerender) renderMarkers();
 }
 
-function centerMap() {
-  const sw = mapStage.clientWidth;
-  const sh = mapStage.clientHeight;
-  const fw = mapFrame.offsetWidth;
-  const fh = mapFrame.offsetHeight;
-  panX = Math.max(0, (sw - fw) / 2);
-  panY = Math.max(0, (sh - fh) / 2);
-  zoom = Math.min(1, (sw - 40) / fw, (sh - 40) / fh);
-}
-
-function clampPan() {
-  const sw = mapStage.clientWidth;
-  const sh = mapStage.clientHeight;
-  const fw = mapFrame.offsetWidth * zoom;
-  const fh = mapFrame.offsetHeight * zoom;
-  const marginX = Math.min(sw * 0.3, 80);
-  const marginY = Math.min(sh * 0.3, 80);
-  panX = Math.min(panX, sw - marginX);
-  panX = Math.max(panX, marginX - fw);
-  panY = Math.min(panY, sh - marginY);
-  panY = Math.max(panY, marginY - fh);
+function resetZoom() {
+  zoom = 1; panX = 0; panY = 0;
+  applyTransform();
+  mapStage.style.cursor = "";
 }
 
 function zoomAt(clientX, clientY, factor) {
-  const stageRect = mapStage.getBoundingClientRect();
-  const mx = clientX - stageRect.left;
-  const my = clientY - stageRect.top;
-  const newZoom = Math.min(Math.max(zoom * factor, MIN_ZOOM), MAX_ZOOM);
+  const newZoom = Math.min(Math.max(zoom * factor, 1), MAX_ZOOM);
+  if (newZoom === zoom) return;
   const rf = newZoom / zoom;
-  panX = mx - rf * (mx - panX);
-  panY = my - rf * (my - panY);
+
+  // cursor offset from current frame center in screen space
+  const r = mapFrame.getBoundingClientRect();
+  const cx = clientX - (r.left + r.width / 2);
+  const cy = clientY - (r.top + r.height / 2);
+
+  // adjust pan so the point under cursor stays stationary
+  panX = panX + cx * (1 - rf);
+  panY = panY + cy * (1 - rf);
   zoom = newZoom;
-  if (zoom <= MIN_ZOOM) centerMap();
-  else clampPan();
+
+  if (zoom <= 1) { zoom = 1; panX = 0; panY = 0; }
   applyTransform();
-  mapStage.style.cursor = zoom > 1 ? "grab" : "";
 }
 
 mapStage.addEventListener("wheel", (e) => {
@@ -321,7 +311,6 @@ window.addEventListener("mousemove", (e) => {
   if (!isDragging) return;
   panX = dragPanX + (e.clientX - dragStartX);
   panY = dragPanY + (e.clientY - dragStartY);
-  clampPan();
   applyTransform(false);
 });
 window.addEventListener("mouseup", () => {
@@ -331,7 +320,7 @@ window.addEventListener("mouseup", () => {
   mapStage.style.cursor = zoom > 1 ? "grab" : "";
 });
 
-// Touch pinch-zoom
+// Pinch to zoom (touch)
 let lastTouchDist = null;
 mapStage.addEventListener("touchstart", (e) => {
   if (e.touches.length === 2) {
@@ -342,25 +331,22 @@ mapStage.addEventListener("touchstart", (e) => {
   }
 }, { passive: true });
 mapStage.addEventListener("touchmove", (e) => {
-  if (e.touches.length === 2 && lastTouchDist) {
-    const dist = Math.hypot(
-      e.touches[0].clientX - e.touches[1].clientX,
-      e.touches[0].clientY - e.touches[1].clientY
-    );
-    const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-    const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-    zoomAt(midX, midY, dist / lastTouchDist);
-    lastTouchDist = dist;
-    e.preventDefault();
-  }
+  if (e.touches.length !== 2 || !lastTouchDist) return;
+  const dist = Math.hypot(
+    e.touches[0].clientX - e.touches[1].clientX,
+    e.touches[0].clientY - e.touches[1].clientY
+  );
+  const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+  const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+  zoomAt(midX, midY, dist / lastTouchDist);
+  lastTouchDist = dist;
+  e.preventDefault();
 }, { passive: false });
 mapStage.addEventListener("touchend", () => { lastTouchDist = null; });
 
-zoomInBtn.onclick    = () => { const r = mapStage.getBoundingClientRect(); zoomAt(r.left + r.width/2, r.top + r.height/2, 1.4); };
-zoomOutBtn.onclick   = () => { const r = mapStage.getBoundingClientRect(); zoomAt(r.left + r.width/2, r.top + r.height/2, 1/1.4); };
-zoomResetBtn.onclick = () => { zoom = 1; centerMap(); applyTransform(); mapStage.style.cursor = ""; };
-
-mapImage.onload = () => { centerMap(); applyTransform(false); };
+zoomInBtn.onclick    = () => { const r = mapStage.getBoundingClientRect(); zoomAt(r.left + r.width/2, r.top + r.height/2, 1.5); };
+zoomOutBtn.onclick   = () => { const r = mapStage.getBoundingClientRect(); zoomAt(r.left + r.width/2, r.top + r.height/2, 1/1.5); };
+zoomResetBtn.onclick = resetZoom;
 
 /* ===================== INIT ===================== */
 
@@ -414,6 +400,7 @@ async function selectMap(id) {
   linkSvg.innerHTML = "";
   detailPanel.classList.remove("open");
   setAddMode(false);
+  resetZoom();
   buildSidebar();
   const m = MAPS.find(x => x.id === id);
   currentMapName.textContent = m.name.toUpperCase();
