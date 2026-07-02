@@ -31,6 +31,18 @@ module.exports = async function handler(req, res) {
     const sb = supabase();
 
     if (req.method === "GET") {
+      // ?counts=true — single request returning {mapId: count} for all maps
+      if (req.query.counts === "true") {
+        const { data, error } = await sb.from("lineups").select("map_id");
+        if (error) throw new Error(error.message);
+        const counts = {};
+        (data || []).forEach(row => {
+          counts[row.map_id] = (counts[row.map_id] || 0) + 1;
+        });
+        res.status(200).json(counts);
+        return;
+      }
+
       const mapId = req.query && req.query.mapId;
       let query = sb.from("lineups").select("*");
       if (mapId) query = query.eq("map_id", mapId);

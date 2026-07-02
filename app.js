@@ -152,6 +152,10 @@ const homeScreen = document.getElementById("homeScreen");
 const homeGrid = document.getElementById("homeGrid");
 const appShell = document.getElementById("appShell");
 const backBtn = document.getElementById("backBtn");
+const mobileMenuBtn = document.getElementById("mobileMenuBtn");
+const sidebar = document.getElementById("sidebar");
+const sidebarOverlay = document.getElementById("sidebarOverlay");
+const mapLoading = document.getElementById("mapLoading");
 const typeFilters = document.getElementById("typeFilters");
 const mapImage = document.getElementById("mapImage");
 const mapFrame = document.getElementById("mapFrame");
@@ -223,18 +227,15 @@ async function buildHomeScreen() {
   const inner = document.createElement("div");
   inner.className = "home-grid-inner";
 
-  // Fetch counts for all maps in parallel
-  const counts = await Promise.all(
-    MAPS.map(m =>
-      fetch(`${API_URL}?mapId=${encodeURIComponent(m.id)}`)
-        .then(r => r.ok ? r.json() : [])
-        .then(rows => rows.length)
-        .catch(() => 0)
-    )
-  );
+  // Single request for all map counts
+  let counts = {};
+  try {
+    const res = await fetch(`${API_URL}?counts=true`);
+    if (res.ok) counts = await res.json();
+  } catch (e) { /* counts stay 0 */ }
 
-  MAPS.forEach((m, i) => {
-    const count = counts[i];
+  MAPS.forEach(m => {
+    const count = counts[m.id] || 0;
     const card = document.createElement("div");
     card.className = "map-card";
     card.innerHTML = `
@@ -256,6 +257,7 @@ async function buildHomeScreen() {
 function enterMap(id) {
   homeScreen.style.display = "none";
   appShell.removeAttribute("hidden");
+  closeSidebar();
   selectMap(id);
 }
 
@@ -397,7 +399,7 @@ function buildSidebar() {
     const el = document.createElement("div");
     el.className = "map-item" + (m.id === state.mapId ? " active" : "");
     el.innerHTML = `<span class="swatch"></span>${m.name}`;
-    el.onclick = () => selectMap(m.id);
+    el.onclick = () => { closeSidebar(); selectMap(m.id); };
     mapList.appendChild(el);
   });
 }
@@ -455,6 +457,7 @@ let loadToken = 0;
 async function loadLineups() {
   const myToken = ++loadToken;
   lineupCount.textContent = "loading…";
+  showMapLoading(true);
   try {
     const lineups = await dbGetAll();
     if (myToken !== loadToken) return;
@@ -465,6 +468,8 @@ async function loadLineups() {
     if (myToken !== loadToken) return;
     lineupCount.textContent = "load failed";
     console.error(err);
+  } finally {
+    if (myToken === loadToken) showMapLoading(false);
   }
 }
 
@@ -1235,6 +1240,60 @@ exportBtn.onclick = async () => {
 /* ===================== BOOT ===================== */
 
 backBtn.onclick = goHome;
+
+/* Mobile sidebar toggle */
+function openSidebar() {
+  sidebar.classList.add("open");
+  sidebarOverlay.classList.add("show");
+}
+function closeSidebar() {
+  sidebar.classList.remove("open");
+  sidebarOverlay.classList.remove("show");
+}
+if (mobileMenuBtn) mobileMenuBtn.onclick = openSidebar;
+if (sidebarOverlay) sidebarOverlay.onclick = closeSidebar;
+
+/* Close sidebar on map select (mobile) */
+const _origSelectMap = selectMap;
+
+/* Loading skeleton */
+function showMapLoading(on) {
+  if (mapLoading) mapLoading.classList.toggle("show", on);
+}
+
+/* Keyboard shortcuts */
+document.addEventListener("keydown", (e) => {
+  const tag = e.target.tagName;
+  const typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+
+  if (e.key === "Escape") {
+    if (lightboxModal.classList.contains("show")) { lightboxModal.classList.remove("show"); return; }
+    if (detailPanel.classList.contains("open")) { closeDetailPanel(); return; }
+    if (document.querySelector(".modal-backdrop.show")) {
+      document.querySelectorAll(".modal-backdrop.show").forEach(m => m.classList.remove("show"));
+      setAddMode(false); return;
+    }
+    if (state.selectedLineupId) { state.selectedLineupId = null; renderMarkers(); return; }
+    if (state.addMode) { setAddMode(false); return; }
+  }
+
+  if (!typing) {
+    if (e.key === "z" || e.key === "Z") resetZoom();
+    if (e.key === "ArrowLeft"  && lightboxModal.classList.contains("show")) lightboxPrev.onclick();
+    if (e.key === "ArrowRight" && lightboxModal.classList.contains("show")) lightboxNext.onclick();
+  }
+});
+
+/* Touch swipe in lightbox */
+let _lbTouchX = null;
+lightboxModal.addEventListener("touchstart", e => { _lbTouchX = e.touches[0].clientX; }, { passive: true });
+lightboxModal.addEventListener("touchend", e => {
+  if (_lbTouchX === null) return;
+  const dx = e.changedTouches[0].clientX - _lbTouchX;
+  _lbTouchX = null;
+  if (Math.abs(dx) < 40) return;
+  if (dx < 0) lightboxNext.onclick(); else lightboxPrev.onclick();
+});
 
 async function loadConfig() {
   for (let attempt = 0; attempt < 3; attempt++) {
