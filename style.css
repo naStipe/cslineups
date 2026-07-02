@@ -473,7 +473,7 @@ button,input,select,textarea{font-family:var(--font-body);}
 
 /* ===================== HOME SCREEN ===================== */
 .home-screen{
-  position:fixed;inset:0;z-index:500;overflow-y:auto;
+  position:fixed;inset:0;z-index:500;overflow-y:auto;overflow-x:hidden;
   display:flex;flex-direction:column;
   background:
     radial-gradient(ellipse 1000px 600px at 50% -10%, rgba(255,165,62,.07), transparent 60%),
@@ -503,11 +503,24 @@ button,input,select,textarea{font-family:var(--font-body);}
 
 .home-grid{
   display:flex;align-items:center;justify-content:center;
+  max-width:100%;overflow:hidden;
 }
 .home-grid-inner{
   display:grid;
   grid-template-columns:repeat(4, 260px);
   gap:20px;
+}
+@media (max-width: 768px){
+  .home-grid-inner{
+    display:flex !important;
+    flex-direction:column !important;
+    width:100% !important;
+    gap:10px !important;
+  }
+  .map-card{
+    width:100% !important;
+    aspect-ratio:21/9 !important;
+  }
 }
 
 .map-card{
