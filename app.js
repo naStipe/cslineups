@@ -60,9 +60,9 @@ const MOVEMENT_LABELS = {
   "shift-w-throw":         "Shift + W + Throw",
   "shift-w-jumpthrow":     "Shift + W + Jumpthrow",
   "crouch":                "Crouch",
-  "crouchjump":            "Crouch + JumpThrow",
-  "crouchaim-jump":        "Crouch-aim + JumpThrow",
-  "crouchaim-crouchjump":  "Crouch-aim + Crouch-jumpthrow",
+  "crouchjump":            "Crouch + Jumpthrow",
+  "crouchaim-jump":        "Crouch-aim + Jumpthrow",
+  "crouchaim-crouchjump":  "Crouch-aim + Crouch-Jumpthrow",
 };
 
 /* ===================== STORAGE (Netlify Function API) ===================== */
@@ -74,6 +74,16 @@ async function dbGetAll() {
   if (!res.ok) {
     const msg = await res.text().catch(() => "");
     throw new Error(`Failed to load lineups (${res.status}): ${msg}`);
+  }
+  return res.json();
+}
+
+async function dbGetAllMaps() {
+  // Fetch all lineups across every map for export
+  const res = await fetch(API_URL);
+  if (!res.ok) {
+    const msg = await res.text().catch(() => "");
+    throw new Error(`Failed to fetch all lineups (${res.status}): ${msg}`);
   }
   return res.json();
 }
@@ -198,7 +208,6 @@ const addThrowBtn = document.getElementById("addThrowBtn");
 const deleteLineupBtn = document.getElementById("deleteLineupBtn");
 
 const exportBtn = document.getElementById("exportBtn");
-const importInput = document.getElementById("importInput");
 const lockBtn = document.getElementById("lockBtn");
 
 const clusterModal = document.getElementById("clusterModal");
@@ -1203,30 +1212,24 @@ function escapeHtml(s) {
 /* ===================== EXPORT / IMPORT / CLEAR ===================== */
 
 exportBtn.onclick = async () => {
-  const all = await dbGetAll();
-  const blob = new Blob([JSON.stringify(all, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "lineups-backup.json";
-  a.click();
-  URL.revokeObjectURL(url);
-};
-
-importInput.onchange = async () => {
-  if (!requireUnlocked()) { importInput.value = ""; return; }
-  const file = importInput.files[0];
-  if (!file) return;
-  const text = await file.text();
   try {
-    const records = JSON.parse(text);
-    await dbImportBulk(records);
-    await loadLineups();
-    alert(`Imported ${records.length} lineups.`);
+    exportBtn.textContent = "Exporting…";
+    // No mapId filter — fetches all lineups across every map
+    const res = await fetch(API_URL);
+    if (!res.ok) throw new Error(`${res.status}`);
+    const all = await res.json();
+    const blob = new Blob([JSON.stringify(all, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `lineups-backup-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   } catch (err) {
-    alert("Could not import that backup: " + err.message);
+    alert("Export failed: " + err.message);
+  } finally {
+    exportBtn.textContent = "Export backup";
   }
-  importInput.value = "";
 };
 
 /* ===================== BOOT ===================== */
