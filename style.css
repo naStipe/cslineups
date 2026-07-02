@@ -786,3 +786,80 @@ button,input,select,textarea{font-family:var(--font-body);}
 }
 .detail-name-input:focus{ border-bottom-color: var(--signal); }
 .detail-name-input::placeholder{ color: var(--text-faint); }
+
+/* ===================== CHEATSHEET PANEL ===================== */
+.cheatsheet-panel{
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
+}
+.cheatsheet-panel.hidden{ display: none; }
+
+.cheatsheet-tab{
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: .04em;
+  transition: .15s;
+  white-space: nowrap;
+}
+.cheatsheet-tab:hover{ color: var(--signal); border-color: var(--signal); }
+.cheatsheet-tab-icon{ font-size: 14px; }
+
+.cheatsheet-body{
+  display: none;
+  flex-direction: column;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  margin-top: 6px;
+  width: min(540px, 50vw);
+  border-top: 2px solid var(--signal);
+  animation: slideDown .15s ease;
+}
+.cheatsheet-panel.open .cheatsheet-body{ display: flex; }
+.cheatsheet-panel.open .cheatsheet-tab{ display: none; }
+
+@keyframes slideDown{
+  from{ opacity:0; transform:translateY(-8px); }
+  to{ opacity:1; transform:translateY(0); }
+}
+
+.cheatsheet-header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.cheatsheet-title{
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--signal);
+}
+.cheatsheet-img-wrap{
+  overflow-y: auto;
+  max-height: calc(100vh - 160px);
+}
+.cheatsheet-img-wrap img{
+  width: 100%;
+  display: block;
+  cursor: zoom-in;
+}

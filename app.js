@@ -25,14 +25,14 @@ function applyLockState() {
 
 
 const MAPS = [
-  { id: "dust2",    name: "Dust II",   file: "maps/dust2.webp",    logo: "maps/dust2-logo.jpg"    },
-  { id: "mirage",   name: "Mirage",    file: "maps/mirage.webp",   logo: "maps/mirage-logo.jpg"   },
-  { id: "inferno",  name: "Inferno",   file: "maps/inferno.webp",  logo: "maps/inferno-logo.jpg"  },
-  { id: "nuke",     name: "Nuke",      file: "maps/nuke.webp",     logo: "maps/nuke-logo.jpg"     },
-  { id: "ancient",  name: "Ancient",   file: "maps/ancient.webp",  logo: "maps/ancient-logo.jpg"  },
-  { id: "anubis",   name: "Anubis",    file: "maps/anubis.png",    logo: "maps/anubis-logo.jpg"   },
-  { id: "overpass", name: "Overpass",  file: "maps/overpass.webp", logo: "maps/overpass-logo.jpg" },
-  { id: "cache",    name: "Cache",     file: "maps/cache.webp",    logo: "maps/cache-logo.jpg"    },
+  { id: "dust2",    name: "Dust II",   file: "maps/dust2.webp",    logo: "maps/dust2-logo.jpg",    cheatsheet: null },
+  { id: "mirage",   name: "Mirage",    file: "maps/mirage.webp",   logo: "maps/mirage-logo.jpg",   cheatsheet: "maps/mirage-insta-smokes.webp" },
+  { id: "inferno",  name: "Inferno",   file: "maps/inferno.webp",  logo: "maps/inferno-logo.jpg",  cheatsheet: "maps/inferno-insta-smokes.webp" },
+  { id: "nuke",     name: "Nuke",      file: "maps/nuke.webp",     logo: "maps/nuke-logo.jpg",     cheatsheet: null },
+  { id: "ancient",  name: "Ancient",   file: "maps/ancient.webp",  logo: "maps/ancient-logo.jpg",  cheatsheet: null },
+  { id: "anubis",   name: "Anubis",    file: "maps/anubis.png",    logo: "maps/anubis-logo.jpg",   cheatsheet: "maps/anubis-insta-smokes.webp" },
+  { id: "overpass", name: "Overpass",  file: "maps/overpass.webp", logo: "maps/overpass-logo.jpg", cheatsheet: null },
+  { id: "cache",    name: "Cache",     file: "maps/cache.webp",    logo: "maps/cache-logo.jpg",    cheatsheet: null },
 ];
 
 const TYPES = [
@@ -150,6 +150,11 @@ const mapStage = document.getElementById("mapStage");
 const zoomInBtn = document.getElementById("zoomIn");
 const zoomOutBtn = document.getElementById("zoomOut");
 const zoomResetBtn = document.getElementById("zoomReset");
+const cheatsheetPanel = document.getElementById("cheatsheetPanel");
+const cheatsheetTab   = document.getElementById("cheatsheetTab");
+const cheatsheetBody  = document.getElementById("cheatsheetBody");
+const cheatsheetClose = document.getElementById("cheatsheetClose");
+const cheatsheetImg   = document.getElementById("cheatsheetImg");
 const linkSvg = document.getElementById("linkSvg");
 const currentMapName = document.getElementById("currentMapName");
 const lineupCount = document.getElementById("lineupCount");
@@ -253,7 +258,28 @@ function goHome() {
   buildHomeScreen(); // refresh counts when returning
 }
 
-/* ===================== ZOOM / PAN ===================== */
+/* ===================== CHEATSHEET ===================== */
+
+function updateCheatsheet(mapId) {
+  const m = MAPS.find(x => x.id === mapId);
+  if (m && m.cheatsheet) {
+    cheatsheetImg.src = m.cheatsheet;
+    cheatsheetPanel.classList.remove("hidden");
+    cheatsheetPanel.classList.remove("open");
+  } else {
+    cheatsheetPanel.classList.add("hidden");
+    cheatsheetPanel.classList.remove("open");
+  }
+}
+
+cheatsheetTab.onclick = () => cheatsheetPanel.classList.add("open");
+cheatsheetClose.onclick = () => cheatsheetPanel.classList.remove("open");
+
+// Click image to open fullscreen lightbox
+cheatsheetImg.onclick = () => {
+  const m = MAPS.find(x => x.id === state.mapId);
+  if (m && m.cheatsheet) openLightbox([m.cheatsheet], 0, "Instant Smokes");
+};
 
 let zoom = 1;
 let panX = 0, panY = 0;
@@ -411,6 +437,7 @@ async function selectMap(id) {
   const m = MAPS.find(x => x.id === id);
   currentMapName.textContent = m.name.toUpperCase();
   mapImage.src = m.file;
+  updateCheatsheet(id);
   await loadLineups();
 }
 
