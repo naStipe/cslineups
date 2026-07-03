@@ -186,7 +186,7 @@ button,input,select,textarea{font-family:var(--font-body);}
 
 /* ===================== MARKERS ===================== */
 .marker{
-  position:absolute;width:20px;height:20px;margin:-10px 0 0 -10px;
+  position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;
   border-radius:50%;border:2px solid var(--void);
   background:currentColor;
   box-shadow:0 0 0 5px color-mix(in srgb, currentColor 18%, transparent);
@@ -225,9 +225,9 @@ button,input,select,textarea{font-family:var(--font-body);}
 }
 .marker.landing{z-index:3;}
 .marker.throwpos{
-  width:13px;height:13px;margin:-6.5px 0 0 -6.5px;z-index:2;opacity:.9;
+  width:18px;height:18px;margin:-9px 0 0 -9px;z-index:2;opacity:.9;
 }
-.marker.throwpos::before{inset:-6px;}
+.marker.throwpos::before{inset:-7px;}
 .marker.smoke{background:var(--smoke);color:var(--smoke);}
 .marker.flash{background:var(--flash);color:var(--flash);}
 .marker.fire{background:var(--fire);color:var(--fire);}
