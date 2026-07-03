@@ -191,19 +191,15 @@ button,input,select,textarea{font-family:var(--font-body);}
   background:currentColor;
   box-shadow:0 0 0 5px color-mix(in srgb, currentColor 18%, transparent);
   cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  transition:box-shadow .12s ease;
+  transition:box-shadow .2s ease, filter .2s ease;
   transform:scale(var(--marker-scale, 1));
   transform-origin:center center;
   touch-action:manipulation;
   -webkit-tap-highlight-color:transparent;
 }
 .marker:hover{
-  box-shadow:0 0 0 7px color-mix(in srgb, currentColor 28%, transparent);
-}
-.marker::after{
-  content:'';width:5px;height:5px;border-radius:50%;
-  background:rgba(0,0,0,.3);
+  box-shadow:0 0 0 9px color-mix(in srgb, currentColor 28%, transparent);
+  filter:brightness(1.2);
 }
 .marker.landing{z-index:3;}
 .marker.throwpos{
