@@ -998,6 +998,7 @@ function renderMarkers() {
 
     const openLineup = cluster.lineups.find(l => l.id === state.selectedLineupId);
     if (openLineup) {
+      const lines = [];
       openLineup.throws.forEach((t, throwIdx) => {
         const tp = document.createElement("div");
         tp.className = `marker throwpos ${openLineup.type}`;
@@ -1012,10 +1013,21 @@ function renderMarkers() {
         line.setAttribute("y1", t.pos.y + "%");
         line.setAttribute("x2", openLineup.landing.x + "%");
         line.setAttribute("y2", openLineup.landing.y + "%");
-        line.setAttribute("stroke", getCssVarColor(typeColor(openLineup.type)));
+        const linkColor = getCssVarColor(typeColor(openLineup.type));
+        line.setAttribute("stroke", linkColor);
+        line.style.color = linkColor;
         line.setAttribute("class", "link-line");
         linkSvg.appendChild(line);
+        lines.push(line);
+
+        // Glow only the path for the hovered throw position.
+        tp.addEventListener("mouseenter", () => line.classList.add("glow"));
+        tp.addEventListener("mouseleave", () => line.classList.remove("glow"));
       });
+
+      // Hovering the lineup marker itself glows all of its paths.
+      landing.addEventListener("mouseenter", () => lines.forEach(l => l.classList.add("glow")));
+      landing.addEventListener("mouseleave", () => lines.forEach(l => l.classList.remove("glow")));
     }
   });
 }

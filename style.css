@@ -258,7 +258,14 @@ button,input,select,textarea{font-family:var(--font-body);}
   min-width:14px;height:14px;font-size:9px;opacity:.9;
 }
 
-.link-line{stroke-dasharray:3 4;stroke-width:1.4;opacity:.75;}
+.link-line{
+  stroke-dasharray:3 4;stroke-width:1.4;opacity:.75;
+  transition:filter .18s ease, opacity .18s ease;
+}
+.link-line.glow{
+  opacity:1;
+  filter:drop-shadow(0 0 2px color-mix(in srgb, currentColor 70%, transparent));
+}
 
 /* ===================== DETAIL DOSSIER OVERLAY ===================== */
 .detail-panel{
