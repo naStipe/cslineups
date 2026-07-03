@@ -21,11 +21,11 @@ const corsHeaders = {
 };
 
 module.exports = async function handler(req, res) {
+  Object.entries(corsHeaders).forEach(([k, v]) => res.setHeader(k, v));
   if (req.method === "OPTIONS") {
-    res.set(corsHeaders).status(204).end();
+    res.status(204).end();
     return;
   }
-  Object.entries(corsHeaders).forEach(([k, v]) => res.setHeader(k, v));
 
   try {
     const sb = supabase();

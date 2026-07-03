@@ -897,6 +897,23 @@ function typeColor(typeId) {
   return TYPES.find(t => t.id === typeId)?.color || "#fff";
 }
 
+// Builds a pie-chart style conic-gradient for a marker representing several
+// different lineup types clustered at the same spot, e.g. { flash: 1, fire: 1, smoke: 1 }
+// -> "conic-gradient(var(--flash) 0deg 120deg, var(--fire) 120deg 240deg, var(--smoke) 240deg 360deg)"
+function buildPieGradient(typeCounts) {
+  const total = Object.values(typeCounts).reduce((a, b) => a + b, 0);
+  let angle = 0;
+  const stops = [];
+  TYPES.forEach(t => {
+    const c = typeCounts[t.id];
+    if (!c) return;
+    const start = angle;
+    angle += (c / total) * 360;
+    stops.push(`${t.color} ${start}deg ${angle}deg`);
+  });
+  return `conic-gradient(${stops.join(", ")})`;
+}
+
 function getCssVarColor(v) {
   if (v.startsWith("var(")) {
     return getComputedStyle(document.documentElement).getPropertyValue(v.slice(4, -1)).trim();
@@ -937,6 +954,12 @@ function renderMarkers() {
     landing.className = `marker landing ${colorClass}${isPinned ? " pinned" : ""}`;
     landing.style.left = cluster.x + "%";
     landing.style.top = cluster.y + "%";
+
+    if (!sameType) {
+      const typeCounts = {};
+      cluster.lineups.forEach(l => { typeCounts[l.type] = (typeCounts[l.type] || 0) + 1; });
+      landing.style.background = buildPieGradient(typeCounts);
+    }
 
     if (count > 1) {
       landing.title = `${count} lineups here`;
