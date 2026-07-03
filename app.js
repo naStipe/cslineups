@@ -931,8 +931,9 @@ function renderMarkers() {
     const sameType = count === 1 || cluster.lineups.every(l => l.type === cluster.lineups[0].type);
     const colorClass = sameType ? cluster.lineups[0].type : "multi";
 
+    const isPinned = cluster.lineups.some(l => l.id === state.selectedLineupId);
     const landing = document.createElement("div");
-    landing.className = `marker landing ${colorClass}`;
+    landing.className = `marker landing ${colorClass}${isPinned ? " pinned" : ""}`;
     landing.style.left = cluster.x + "%";
     landing.style.top = cluster.y + "%";
 
