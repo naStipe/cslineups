@@ -141,6 +141,7 @@ let state = {
   pendingThrowFor: null, // lineup id awaiting a throw-pos click (adding to existing lineup)
   selectedLineupId: null,
   addMode: false,
+  openClusterKey: null,  // key of a stacked marker currently fanned open on the map
 };
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -183,6 +184,10 @@ const cancelType = document.getElementById("cancelType");
 const throwModal = document.getElementById("throwModal");
 const throwModalTitle = document.getElementById("throwModalTitle");
 const throwModalHint = document.getElementById("throwModalHint");
+const tmPreviewImg = document.getElementById("tmPreviewImg");
+const tmPreviewSvg = document.getElementById("tmPreviewSvg");
+const tmPreviewLanding = document.getElementById("tmPreviewLanding");
+const tmPreviewThrow = document.getElementById("tmPreviewThrow");
 const screenshotInput = document.getElementById("screenshotInput");
 const thumbGrid = document.getElementById("thumbGrid");
 const standingInput = document.getElementById("standingInput");
@@ -213,10 +218,6 @@ const deleteLineupBtn = document.getElementById("deleteLineupBtn");
 
 const exportBtn = document.getElementById("exportBtn");
 const lockBtn = document.getElementById("lockBtn");
-
-const clusterModal = document.getElementById("clusterModal");
-const clusterGrid = document.getElementById("clusterGrid");
-const cancelCluster = document.getElementById("cancelCluster");
 
 let pendingThrowDraft = null; // {x,y,screenshot,...} being built before save
 
@@ -326,7 +327,7 @@ function applyTransform(rerender = true) {
   const markerScale = 1 / zoom;
   document.documentElement.style.setProperty("--marker-scale", markerScale);
   mapStage.style.cursor = zoom > 1 ? "grab" : "";
-  if (rerender) renderMarkers();
+  if (rerender) renderMarkers(false);  // re-cluster on zoom, but no enter/exit animation (avoids flicker)
 }
 
 function resetZoom() {
@@ -461,9 +462,11 @@ function buildSidebar() {
 function buildFilters() {
   typeFilters.innerHTML = "";
   TYPES.forEach(t => {
+    const count = state.lineups.filter(l => l.type === t.id).length;
     const chip = document.createElement("div");
-    chip.className = "filter-chip";
-    chip.innerHTML = `<span class="dot" style="background:${t.color}"></span>${t.label}`;
+    chip.className = "filter-chip" + (state.activeFilters.has(t.id) ? "" : " off");
+    chip.style.setProperty("--chip-color", t.color);
+    chip.innerHTML = `<span class="dot" style="background:${t.color}"></span>${t.label}<span class="chip-count">${count}</span>`;
     chip.onclick = () => {
       if (state.activeFilters.has(t.id)) {
         state.activeFilters.delete(t.id);
@@ -495,6 +498,7 @@ async function selectMap(id) {
   state.lineups = [];
   markerLayer.innerHTML = "";
   linkSvg.innerHTML = "";
+  renderedThrowSig = null;
   detailPanel.classList.remove("open");
   setAddMode(false);
   resetZoom();
@@ -517,6 +521,7 @@ async function loadLineups() {
     if (myToken !== loadToken) return;
     state.lineups = lineups;
     lineupCount.textContent = `${lineups.length} lineup${lineups.length === 1 ? "" : "s"}`;
+    buildFilters();
     renderMarkers();
   } catch (err) {
     if (myToken !== loadToken) return;
@@ -525,6 +530,21 @@ async function loadLineups() {
   } finally {
     if (myToken === loadToken) showMapLoading(false);
   }
+}
+
+// Refresh the UI from the in-memory state.lineups after an edit — no network
+// round-trip and no loading overlay, so adds/deletes take effect instantly.
+function refreshLocal() {
+  lineupCount.textContent = `${state.lineups.length} lineup${state.lineups.length === 1 ? "" : "s"}`;
+  buildFilters();
+  renderMarkers();
+}
+
+// Insert or replace a lineup in the local cache by id.
+function upsertLocalLineup(lineup) {
+  const idx = state.lineups.findIndex(l => l.id === lineup.id);
+  if (idx >= 0) state.lineups[idx] = lineup;
+  else state.lineups.push(lineup);
 }
 
 /* ===================== ADD MODE / MAP CLICKS ===================== */
@@ -577,6 +597,12 @@ mapFrame.addEventListener("click", (e) => {
   const x = ((e.clientX - rect.left) / rect.width) * 100;
   const y = ((e.clientY - rect.top) / rect.height) * 100;
   if (x < 0 || x > 100 || y < 0 || y > 100) return;
+
+  if (state.openClusterKey) {
+    state.openClusterKey = null;
+    renderMarkers();
+    return;
+  }
 
   if (state.pendingThrowFor) {
     openThrowModal({ x, y }, state.pendingThrowFor, false);
@@ -769,7 +795,33 @@ preciseInput.onchange = async () => {
   renderPreciseThumb();
 };
 
+function renderThrowModalPreview(throwPos, landingPos, typeId) {
+  tmPreviewImg.src = mapImage.src;
+  const color = getCssVarColor(typeColor(typeId));
+  tmPreviewThrow.style.background = color;
+
+  const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  line.setAttribute("x1", throwPos.x + "%");
+  line.setAttribute("y1", throwPos.y + "%");
+  line.setAttribute("x2", landingPos.x + "%");
+  line.setAttribute("y2", landingPos.y + "%");
+  line.setAttribute("stroke", color);
+  line.setAttribute("class", "tm-preview-line");
+  tmPreviewSvg.innerHTML = "";
+  tmPreviewSvg.appendChild(line);
+
+  tmPreviewLanding.style.left = landingPos.x + "%";
+  tmPreviewLanding.style.top = landingPos.y + "%";
+  tmPreviewThrow.style.left = throwPos.x + "%";
+  tmPreviewThrow.style.top = throwPos.y + "%";
+}
+
 function openThrowModal(throwPos, lineupId, isNewLineup, typeId, landingPos, existingThrow) {
+  const existingLineup = !isNewLineup ? state.lineups.find(l => l.id === lineupId) : null;
+  landingPos = landingPos || (existingLineup && existingLineup.landing);
+  typeId = typeId || (existingLineup && existingLineup.type);
+  renderThrowModalPreview(throwPos, landingPos, typeId);
+
   pendingThrowDraft = {
     throwPos,
     lineupId,
@@ -849,6 +901,7 @@ saveThrow.onclick = async () => {
         createdAt: Date.now(),
       };
       await dbPut(lineup);
+      upsertLocalLineup(lineup);
     } else {
       let lineup = state.lineups.find(l => l.id === draft.lineupId);
       if (!lineup) {
@@ -865,6 +918,7 @@ saveThrow.onclick = async () => {
         lineup.throws.push({ id: uid(), ...throwEntryBase });
       }
       await dbPut(lineup);
+      upsertLocalLineup(lineup);
     }
 
     const wasEditing = !!draft.editingThrowId;
@@ -874,7 +928,7 @@ saveThrow.onclick = async () => {
     pendingThrowDraft = null;
     setAddMode(false);
     state.pendingThrowFor = null;
-    await loadLineups();
+    refreshLocal();
 
     // If we were editing an existing throw, reopen the dossier so changes are visible immediately
     if (wasEditing) openDetail(reopenId);
@@ -937,120 +991,288 @@ function clusterLineups(list) {
   return clusters;
 }
 
-function renderMarkers() {
-  markerLayer.innerHTML = "";
-  linkSvg.innerHTML = "";
+function clusterKey(cluster) {
+  return cluster.lineups.map(l => l.id).sort().join(",");
+}
+
+// Fans a stacked marker out into one petal per lineup, arranged evenly around
+// the hub. Clicking a petal collapses the fan back into the hub, then opens
+// that lineup exactly like a normal single-marker selection.
+function renderClusterFan(cluster, key, animate = true) {
+  const count = cluster.lineups.length;
+  const radius = 46;
+  const lineRadius = 28;
+  const startAngle = -90;
+  const step = 360 / count;
+
+  const wrap = document.createElement("div");
+  wrap.className = "cluster-fan";
+  wrap.style.left = cluster.x + "%";
+  wrap.style.top = cluster.y + "%";
+
+  const hub = document.createElement("div");
+  hub.className = "marker landing fan-hub";
+  const sameType = cluster.lineups.every(l => l.type === cluster.lineups[0].type);
+  if (sameType) {
+    hub.classList.add(cluster.lineups[0].type);
+  } else {
+    const typeCounts = {};
+    cluster.lineups.forEach(l => { typeCounts[l.type] = (typeCounts[l.type] || 0) + 1; });
+    hub.style.background = buildPieGradient(typeCounts);
+  }
+  const badge = document.createElement("span");
+  badge.className = "marker-badge";
+  badge.textContent = count;
+  hub.appendChild(badge);
+  wrap.appendChild(hub);
+
+  const lineEls = [];
+  const petalEls = [];
+
+  cluster.lineups.forEach((lineup, i) => {
+    const angle = startAngle + i * step;
+    const rad = angle * Math.PI / 180;
+    const dx = Math.round(Math.cos(rad) * radius);
+    const dy = Math.round(Math.sin(rad) * radius);
+
+    const openPetal = `translate(-50%,-50%) translate(${dx}px, ${dy}px) scale(1)`;
+    const shutPetal = "translate(-50%,-50%) translate(0,0) scale(.3)";
+
+    const line = document.createElement("div");
+    line.className = "fan-petal-line";
+    line.style.width = lineRadius + "px";
+    line.style.transform = `rotate(${angle}deg) scaleX(${animate ? 0 : 1})`;
+    wrap.appendChild(line);
+    lineEls.push({ el: line, angle });
+
+    const petal = document.createElement("div");
+    petal.className = "fan-petal" + (animate ? "" : " show");
+    petal.style.transform = animate ? shutPetal : openPetal;
+    const typeInfo = TYPES.find(t => t.id === lineup.type);
+    const label = lineup.name || `${typeInfo.label} #${i + 1}`;
+    const dot = document.createElement("div");
+    dot.className = "fan-petal-dot";
+    dot.style.background = typeInfo.color;
+    dot.style.color = getCssVarColor(typeInfo.color);  // for the currentColor hover glow
+    const labelEl = document.createElement("div");
+    labelEl.className = "fan-petal-label";
+    labelEl.textContent = label;
+    petal.appendChild(dot);
+    petal.appendChild(labelEl);
+    petal.onclick = (e) => {
+      e.stopPropagation();
+      collapseFan(wrap, lineEls, petalEls, () => {
+        state.openClusterKey = null;
+        state.selectedLineupId = lineup.id;
+        renderMarkers();
+      });
+    };
+    wrap.appendChild(petal);
+    petalEls.push({ el: petal, dx, dy });
+  });
+
+  hub.onclick = (e) => {
+    e.stopPropagation();
+    // Re-show every other marker immediately, then let the petals retract on top.
+    state.openClusterKey = null;
+    wrap.remove();                    // keep the fan out of the way of the rebuild
+    renderMarkers();                  // other markers reappear right away (fade-in)
+    markerLayer.appendChild(wrap);    // put the collapsing fan back on top
+    collapseFan(wrap, lineEls, petalEls, () => wrap.remove());
+  };
+
+  markerLayer.appendChild(wrap);
+
+  if (!animate) {
+    // Already rendered in the open position — no entrance animation (e.g. zoom re-cluster).
+    wrap.classList.add("open");
+    return;
+  }
+
+  requestAnimationFrame(() => {
+    wrap.classList.add("open");
+    lineEls.forEach(({ el, angle }) => { el.style.transform = `rotate(${angle}deg) scaleX(1)`; });
+    petalEls.forEach(({ el, dx, dy }) => {
+      el.classList.add("show");
+      el.style.transform = `translate(-50%,-50%) translate(${dx}px, ${dy}px) scale(1)`;
+    });
+  });
+}
+
+function collapseFan(wrap, lineEls, petalEls, onDone) {
+  wrap.classList.remove("open");
+  lineEls.forEach(({ el, angle }) => { el.style.transform = `rotate(${angle}deg) scaleX(0)`; });
+  petalEls.forEach(({ el }) => {
+    el.classList.remove("show");
+    el.style.transform = "translate(-50%,-50%) translate(0,0) scale(.3)";
+  });
+  setTimeout(onDone, 320);
+}
+
+let renderedThrowSig = null;
+
+// Reconciling renderer: landing markers are keyed by their cluster (the set of
+// lineup ids stacked there). Markers whose cluster is unchanged are left in the
+// DOM untouched — only clusters that actually appear or disappear animate. This
+// keeps unrelated markers from flickering when a filter is toggled or on zoom.
+function renderMarkers(animate = true) {
   const visible = state.lineups.filter(l => state.activeFilters.has(l.type));
   const clusters = clusterLineups(visible);
 
-  clusters.forEach(cluster => {
-    const count = cluster.lineups.length;
-    const sameType = count === 1 || cluster.lineups.every(l => l.type === cluster.lineups[0].type);
-    const colorClass = sameType ? cluster.lineups[0].type : "multi";
+  // Work out what should be on the map right now.
+  const desiredLandings = new Map();   // key -> { cluster, isPinned }
+  let desiredFanKey = null, fanCluster = null;
+  let pinnedCluster = null;
 
+  for (const cluster of clusters) {
+    const key = clusterKey(cluster);
+    if (state.openClusterKey && state.openClusterKey !== key) continue;
+    if (cluster.lineups.length > 1 && state.openClusterKey === key) {
+      desiredFanKey = key; fanCluster = cluster; continue;
+    }
     const isPinned = cluster.lineups.some(l => l.id === state.selectedLineupId);
-    if (state.selectedLineupId && !isPinned) return;
-    const landing = document.createElement("div");
-    landing.className = `marker landing ${colorClass}${isPinned ? " pinned" : ""}`;
-    landing.style.left = cluster.x + "%";
-    landing.style.top = cluster.y + "%";
+    if (state.selectedLineupId && !isPinned) continue;
+    desiredLandings.set(key, { cluster, isPinned });
+    if (isPinned) pinnedCluster = cluster;
+  }
 
-    if (!sameType) {
-      const typeCounts = {};
-      cluster.lineups.forEach(l => { typeCounts[l.type] = (typeCounts[l.type] || 0) + 1; });
-      landing.style.background = buildPieGradient(typeCounts);
-    }
+  // --- Fan wrap ---
+  let fanKept = false;
+  markerLayer.querySelectorAll(":scope > .cluster-fan").forEach(el => {
+    if (el.dataset.mkey === desiredFanKey) fanKept = true;
+    else el.remove();
+  });
+  if (desiredFanKey && !fanKept) renderClusterFan(fanCluster, desiredFanKey, animate);
 
-    if (count > 1) {
-      landing.title = `${count} lineups here`;
-      const badge = document.createElement("span");
-      badge.className = "marker-badge";
-      badge.textContent = count;
-      landing.appendChild(badge);
+  // --- Landing markers: keep matching keys, drop the rest, add the new ones ---
+  let pinnedLandingEl = null;
+  const seen = new Set();
+  markerLayer.querySelectorAll(":scope > .marker.landing:not(.fan-hub)").forEach(el => {
+    const key = el.dataset.mkey;
+    const d = desiredLandings.get(key);
+    if (d && !seen.has(key)) {
+      // Keep it, or revive one that was mid fade-out (e.g. rapid fan open→close),
+      // so we don't stack a second fading-in copy on top of it.
+      seen.add(key);
+      if (el._leaveTimer) { clearTimeout(el._leaveTimer); el._leaveTimer = null; }
+      el.classList.remove("leaving");
+      el.classList.toggle("pinned", !!d.isPinned);
+      if (d.isPinned) pinnedLandingEl = el;
     } else {
-      const totalThrows = cluster.lineups[0].throws.length;
-      landing.title = totalThrows > 1
-        ? `${totalThrows} throw positions for this lineup`
-        : "Click to see throw position";
-      if (totalThrows > 1) {
-        const badge = document.createElement("span");
-        badge.className = "marker-badge sub";
-        badge.textContent = totalThrows;
-        landing.appendChild(badge);
-      }
-    }
-
-    landing.onclick = (e) => {
-      e.stopPropagation();
-      if (count > 1) {
-        openClusterPicker(cluster.lineups);
-        return;
-      }
-      const lineup = cluster.lineups[0];
-      if (state.selectedLineupId === lineup.id) {
-        openDetail(lineup.id);
-      } else {
-        state.selectedLineupId = lineup.id;
-        renderMarkers();
-      }
-    };
-    markerLayer.appendChild(landing);
-
-    const openLineup = cluster.lineups.find(l => l.id === state.selectedLineupId);
-    if (openLineup) {
-      const lines = [];
-      openLineup.throws.forEach((t, throwIdx) => {
-        const tp = document.createElement("div");
-        tp.className = `marker throwpos ${openLineup.type}`;
-        tp.style.left = t.pos.x + "%";
-        tp.style.top = t.pos.y + "%";
-        tp.title = "Click to open this lineup";
-        tp.onclick = (e) => { e.stopPropagation(); openDetail(openLineup.id, throwIdx); };
-        markerLayer.appendChild(tp);
-
-        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        line.setAttribute("x1", t.pos.x + "%");
-        line.setAttribute("y1", t.pos.y + "%");
-        line.setAttribute("x2", openLineup.landing.x + "%");
-        line.setAttribute("y2", openLineup.landing.y + "%");
-        const linkColor = getCssVarColor(typeColor(openLineup.type));
-        line.setAttribute("stroke", linkColor);
-        line.style.color = linkColor;
-        line.setAttribute("class", "link-line");
-        linkSvg.appendChild(line);
-        lines.push(line);
-
-        // Glow only the path for the hovered throw position.
-        tp.addEventListener("mouseenter", () => line.classList.add("glow"));
-        tp.addEventListener("mouseleave", () => line.classList.remove("glow"));
-      });
-
-      // Hovering the lineup marker itself glows all of its paths.
-      landing.addEventListener("mouseenter", () => lines.forEach(l => l.classList.add("glow")));
-      landing.addEventListener("mouseleave", () => lines.forEach(l => l.classList.remove("glow")));
+      if (el.classList.contains("leaving")) return;  // already fading out
+      if (animate) { el.classList.add("leaving"); el._leaveTimer = setTimeout(() => el.remove(), 200); }
+      else el.remove();
     }
   });
+  desiredLandings.forEach((d, key) => {
+    if (seen.has(key)) return;
+    const el = buildLandingMarker(d.cluster, key, d.isPinned, animate);
+    markerLayer.appendChild(el);
+    if (d.isPinned) pinnedLandingEl = el;
+  });
+
+  // --- Throw positions + link lines: only rebuild when the selection changes ---
+  const openLineup = pinnedCluster && pinnedCluster.lineups.find(l => l.id === state.selectedLineupId);
+  const throwSig = openLineup
+    ? openLineup.id + "|" + openLineup.throws.map(t => `${t.pos.x},${t.pos.y}`).join(";")
+    : null;
+  if (throwSig !== renderedThrowSig) {
+    markerLayer.querySelectorAll(":scope > .marker.throwpos").forEach(el => el.remove());
+    linkSvg.innerHTML = "";
+    if (openLineup && pinnedLandingEl) buildThrows(openLineup, pinnedLandingEl, animate);
+    renderedThrowSig = throwSig;
+  }
 }
 
-function openClusterPicker(lineups) {
-  clusterGrid.innerHTML = "";
-  lineups.forEach((lineup, i) => {
-    const typeInfo = TYPES.find(t => t.id === lineup.type);
-    const label = lineup.name || `${typeInfo.label} #${i + 1}`;
-    const opt = document.createElement("div");
-    opt.className = "type-opt";
-    opt.innerHTML = `<span class="dot" style="background:${typeInfo.color}"></span>${label} — ${lineup.throws.length} position${lineup.throws.length === 1 ? "" : "s"}`;
-    opt.onclick = () => {
-      closeModal(clusterModal);
-      // Reveal throw positions on map first (same as clicking a single landing marker)
+function buildLandingMarker(cluster, key, isPinned, animate) {
+  const count = cluster.lineups.length;
+  const sameType = count === 1 || cluster.lineups.every(l => l.type === cluster.lineups[0].type);
+  const colorClass = sameType ? cluster.lineups[0].type : "multi";
+
+  const landing = document.createElement("div");
+  landing.className = `marker landing ${colorClass}${isPinned ? " pinned" : ""}${animate ? " enter" : ""}`;
+  if (animate) landing.addEventListener("animationend", () => landing.classList.remove("enter"), { once: true });
+  landing.dataset.mkey = key;
+  landing.style.left = cluster.x + "%";
+  landing.style.top = cluster.y + "%";
+
+  if (!sameType) {
+    const typeCounts = {};
+    cluster.lineups.forEach(l => { typeCounts[l.type] = (typeCounts[l.type] || 0) + 1; });
+    landing.style.background = buildPieGradient(typeCounts);
+  }
+
+  if (count > 1) {
+    landing.title = `${count} lineups here`;
+    const badge = document.createElement("span");
+    badge.className = "marker-badge";
+    badge.textContent = count;
+    landing.appendChild(badge);
+  } else {
+    const totalThrows = cluster.lineups[0].throws.length;
+    landing.title = totalThrows > 1
+      ? `${totalThrows} throw positions for this lineup`
+      : "Click to see throw position";
+    if (totalThrows > 1) {
+      const badge = document.createElement("span");
+      badge.className = "marker-badge sub";
+      badge.textContent = totalThrows;
+      landing.appendChild(badge);
+    }
+  }
+
+  landing.onclick = (e) => {
+    e.stopPropagation();
+    if (count > 1) {
+      state.openClusterKey = key;
+      renderMarkers();
+      return;
+    }
+    const lineup = cluster.lineups[0];
+    if (state.selectedLineupId === lineup.id) {
+      openDetail(lineup.id);
+    } else {
       state.selectedLineupId = lineup.id;
       renderMarkers();
-    };
-    clusterGrid.appendChild(opt);
-  });
-  clusterModal.classList.add("show");
+    }
+  };
+  return landing;
 }
-cancelCluster.onclick = () => closeModal(clusterModal);
+
+function buildThrows(openLineup, landingEl, animate) {
+  const lines = [];
+  openLineup.throws.forEach((t, throwIdx) => {
+    const tp = document.createElement("div");
+    tp.className = `marker throwpos ${openLineup.type}${animate ? " enter" : ""}`;
+    if (animate) tp.addEventListener("animationend", () => tp.classList.remove("enter"), { once: true });
+    tp.style.left = t.pos.x + "%";
+    tp.style.top = t.pos.y + "%";
+    tp.title = "Click to open this lineup";
+    tp.onclick = (e) => { e.stopPropagation(); openDetail(openLineup.id, throwIdx); };
+    markerLayer.appendChild(tp);
+
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("x1", t.pos.x + "%");
+    line.setAttribute("y1", t.pos.y + "%");
+    line.setAttribute("x2", openLineup.landing.x + "%");
+    line.setAttribute("y2", openLineup.landing.y + "%");
+    const linkColor = getCssVarColor(typeColor(openLineup.type));
+    line.setAttribute("stroke", linkColor);
+    line.style.color = linkColor;
+    line.setAttribute("class", "link-line");
+    linkSvg.appendChild(line);
+    lines.push(line);
+
+    // Glow only the path for the hovered throw position.
+    tp.onmouseenter = () => line.classList.add("glow");
+    tp.onmouseleave = () => line.classList.remove("glow");
+  });
+
+  // Hovering the lineup marker itself glows all of its paths (onmouseenter
+  // property assignment overwrites cleanly if the landing element is reused).
+  landingEl.onmouseenter = () => lines.forEach(l => l.classList.add("glow"));
+  landingEl.onmouseleave = () => lines.forEach(l => l.classList.remove("glow"));
+}
 
 /* ===================== DETAIL PANEL ===================== */
 
@@ -1076,7 +1298,7 @@ function renderDetail(lineup) {
     if (!requireUnlocked()) { detailNameInput.value = lineup.name || ""; return; }
     lineup.name = detailNameInput.value.trim();
     await dbPut(lineup);
-    await loadLineups();
+    refreshLocal();
   };
   throwList.innerHTML = "";
 
@@ -1099,11 +1321,13 @@ function renderDetail(lineup) {
     lineup.throws = lineup.throws.filter(x => x.id !== active.id);
     if (lineup.throws.length === 0) {
       await dbDelete(lineup.id);
+      state.lineups = state.lineups.filter(l => l.id !== lineup.id);
       closeDetailPanel();
     } else {
       await dbPut(lineup);
+      upsertLocalLineup(lineup);
     }
-    await loadLineups();
+    refreshLocal();
     if (state.selectedLineupId) openDetail(state.selectedLineupId, Math.max(0, selectedThrowIdx - 1));
   };
   throwList.appendChild(hero);
@@ -1436,9 +1660,11 @@ deleteLineupBtn.onclick = async () => {
   if (!requireUnlocked()) return;
   if (!state.selectedLineupId) return;
   if (!confirm("Delete this entire lineup, including all throw positions?")) return;
-  await dbDelete(state.selectedLineupId);
+  const delId = state.selectedLineupId;
+  await dbDelete(delId);
+  state.lineups = state.lineups.filter(l => l.id !== delId);
   closeDetailPanel();
-  await loadLineups();
+  refreshLocal();
 };
 
 function escapeHtml(s) {
@@ -1506,6 +1732,7 @@ document.addEventListener("keydown", (e) => {
       document.querySelectorAll(".modal-backdrop.show").forEach(m => m.classList.remove("show"));
       setAddMode(false); return;
     }
+    if (state.openClusterKey) { state.openClusterKey = null; renderMarkers(); return; }
     if (state.selectedLineupId) { state.selectedLineupId = null; renderMarkers(); return; }
     if (state.addMode) { setAddMode(false); return; }
   }

@@ -22,6 +22,9 @@
 <meta name="twitter:title"       content="Lineupr — CS2 Grenade Lineup Database">
 <meta name="twitter:description" content="Personal CS2 grenade lineup database. Smokes, flashes, molotovs across all maps.">
 <meta name="twitter:image"       content="https://cs2nadelineups.vercel.app/og-image.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -176,16 +179,6 @@
 
 </div>
 
-<!-- MODAL: pick which lineup, when several share a landing spot -->
-<div class="modal-backdrop" id="clusterModal">
-  <div class="modal">
-    <h3>Multiple lineups here</h3>
-    <p class="modal-hint">Pick which one to open.</p>
-    <div class="cluster-grid" id="clusterGrid"></div>
-    <button class="ghost-btn" id="cancelCluster">Cancel</button>
-  </div>
-</div>
-
 <!-- MODAL: new landing spot -> choose type -->
 <div class="modal-backdrop" id="typeModal">
   <div class="modal">
@@ -205,6 +198,15 @@
       <div>
         <p class="tm-eyebrow" id="throwModalHint">New lineup</p>
         <h3 id="throwModalTitle">Throw position</h3>
+      </div>
+      <div class="tm-preview-wrap">
+        <div class="tm-preview" id="tmPreview">
+          <img id="tmPreviewImg" src="" alt="">
+          <svg id="tmPreviewSvg"></svg>
+          <div class="tm-preview-dot tm-preview-landing" id="tmPreviewLanding"></div>
+          <div class="tm-preview-dot tm-preview-throw" id="tmPreviewThrow"></div>
+        </div>
+        <span class="tm-preview-caption">Tap to reposition</span>
       </div>
       <button class="icon-btn" id="cancelThrow">✕</button>
     </div>
