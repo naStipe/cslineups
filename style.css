@@ -191,20 +191,32 @@ button,input,select,textarea{font-family:var(--font-body);}
   background:currentColor;
   box-shadow:0 0 0 5px color-mix(in srgb, currentColor 18%, transparent);
   cursor:pointer;
-  transition:box-shadow .2s ease, filter .2s ease;
   transform:scale(var(--marker-scale, 1));
   transform-origin:center center;
   touch-action:manipulation;
   -webkit-tap-highlight-color:transparent;
 }
-.marker:hover{
-  box-shadow:0 0 0 9px color-mix(in srgb, currentColor 28%, transparent);
-  filter:brightness(1.2);
+.marker::before{
+  content:"";
+  position:absolute;
+  inset:-9px;
+  border-radius:50%;
+  background:currentColor;
+  opacity:0;
+  transform:scale(.4);
+  pointer-events:none;
+  transition:opacity .3s ease, transform .3s ease;
+  will-change:opacity, transform;
+}
+.marker:hover::before{
+  opacity:.35;
+  transform:scale(1);
 }
 .marker.landing{z-index:3;}
 .marker.throwpos{
   width:13px;height:13px;margin:-6.5px 0 0 -6.5px;z-index:2;opacity:.9;
 }
+.marker.throwpos::before{inset:-6px;}
 .marker.smoke{background:var(--smoke);color:var(--smoke);}
 .marker.flash{background:var(--flash);color:var(--flash);}
 .marker.fire{background:var(--fire);color:var(--fire);}
