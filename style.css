@@ -186,9 +186,10 @@ button,input,select,textarea{font-family:var(--font-body);}
 
 /* ===================== MARKERS ===================== */
 .marker{
-  position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;
-  border-radius:50%;border:3px solid currentColor;
-  background:var(--void);
+  position:absolute;width:20px;height:20px;margin:-10px 0 0 -10px;
+  border-radius:50%;border:2px solid var(--void);
+  background:currentColor;
+  box-shadow:0 0 0 5px color-mix(in srgb, currentColor 18%, transparent);
   cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   transition:box-shadow .12s ease;
@@ -197,21 +198,23 @@ button,input,select,textarea{font-family:var(--font-body);}
   touch-action:manipulation;
   -webkit-tap-highlight-color:transparent;
 }
+.marker:hover{
+  box-shadow:0 0 0 7px color-mix(in srgb, currentColor 28%, transparent);
+}
 .marker::after{
   content:'';width:5px;height:5px;border-radius:50%;
-  background:currentColor;
+  background:rgba(0,0,0,.3);
 }
-.marker:hover{box-shadow:0 0 0 3px rgba(255,165,62,.25), 0 2px 14px rgba(0,0,0,.8);}
 .marker.landing{z-index:3;}
 .marker.throwpos{
   width:13px;height:13px;margin:-6.5px 0 0 -6.5px;z-index:2;opacity:.9;
 }
-.marker.smoke{background:var(--void);color:var(--smoke);}
-.marker.flash{background:var(--void);color:var(--flash);}
-.marker.fire{background:var(--void);color:var(--fire);}
-.marker.he{background:var(--void);color:var(--he);}
-.marker.decoy{background:var(--void);color:var(--decoy);}
-.marker.multi{background:var(--void);color:var(--signal);}
+.marker.smoke{background:var(--smoke);color:var(--smoke);}
+.marker.flash{background:var(--flash);color:var(--flash);}
+.marker.fire{background:var(--fire);color:var(--fire);}
+.marker.he{background:var(--he);color:var(--he);}
+.marker.decoy{background:var(--decoy);color:var(--decoy);}
+.marker.multi{background:var(--signal);color:var(--signal);}
 
 .marker-badge{
   position:absolute;top:-7px;right:-7px;
