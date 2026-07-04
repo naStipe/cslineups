@@ -81,8 +81,17 @@ function isValidPos(p) {
 // user's private image path. Bulk import (admin restore of official data)
 // always passes userId = null/undefined, so private URLs are rejected
 // outright there.
+// Belt-and-suspenders on top of the prefix check below: a legitimate URL
+// from our own upload flow is built from a UUID (userId) and a
+// `${timestamp}-${random}.${ext}` filename, so it never contains quote or
+// angle-bracket characters. Rejecting them here means that even if some
+// render path ever forgets to HTML-escape one of these URLs, there's no
+// attribute-breakout payload for it to render in the first place.
+const HTML_BREAKOUT_CHARS = /["'<>]/;
+
 function isOwnStorageUrl(url, userId) {
   if (typeof url !== "string" || url.length >= 500) return false;
+  if (HTML_BREAKOUT_CHARS.test(url)) return false;
   const publicBase = `${process.env.SUPABASE_URL}/storage/v1/object/public/lineup-images/`;
   if (url.startsWith(publicBase)) return true;
   if (!userId) return false;

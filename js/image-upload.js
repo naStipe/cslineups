@@ -1,5 +1,6 @@
 import { authUser, getAccessToken } from "./auth.js";
 import { preciseInput, preciseThumbWrap, screenshotInput, standingInput, standingThumbGrid, thumbGrid } from "./dom.js";
+import { escapeHtml } from "./html-utils.js";
 import { hydrateImages } from "./private-images.js";
 import { pendingThrowDraft } from "./throw-modal.js";
 
@@ -139,7 +140,7 @@ export function renderThumbGrid() {
   (pendingThrowDraft.screenshots || []).forEach((src, i) => {
     const t = document.createElement("div");
     t.className = "thumb";
-    t.innerHTML = `<img data-real-src="${src}"><button class="thumb-remove" type="button">✕</button>`;
+    t.innerHTML = `<img data-real-src="${escapeHtml(src)}"><button class="thumb-remove" type="button">✕</button>`;
     t.querySelector(".thumb-remove").onclick = () => {
       pendingThrowDraft.screenshots.splice(i, 1);
       renderThumbGrid();
@@ -154,7 +155,7 @@ export function renderPreciseThumb() {
   if (!pendingThrowDraft.precise) return;
   const t = document.createElement("div");
   t.className = "thumb";
-  t.innerHTML = `<img data-real-src="${pendingThrowDraft.precise}"><button class="thumb-remove" type="button">✕</button>`;
+  t.innerHTML = `<img data-real-src="${escapeHtml(pendingThrowDraft.precise)}"><button class="thumb-remove" type="button">✕</button>`;
   t.querySelector(".thumb-remove").onclick = () => {
     pendingThrowDraft.precise = null;
     renderPreciseThumb();
@@ -168,7 +169,7 @@ export function renderStandingThumbGrid() {
   (pendingThrowDraft.standing || []).forEach((src, i) => {
     const t = document.createElement("div");
     t.className = "thumb";
-    t.innerHTML = `<img data-real-src="${src}"><button class="thumb-remove" type="button">✕</button>`;
+    t.innerHTML = `<img data-real-src="${escapeHtml(src)}"><button class="thumb-remove" type="button">✕</button>`;
     t.querySelector(".thumb-remove").onclick = () => {
       pendingThrowDraft.standing.splice(i, 1);
       renderStandingThumbGrid();

@@ -11,6 +11,7 @@ import { canModifyLineup, requireLineupEditable } from "./permissions.js";
 import { buildTypeGrid } from "./sidebar.js";
 import { state } from "./state.js";
 import { hydrateImages, resolveImageSrc } from "./private-images.js";
+import { escapeHtml } from "./html-utils.js";
 import { openThrowModal } from "./throw-modal.js";
 
 export let selectedThrowIdx = 0;
@@ -325,11 +326,3 @@ deleteLineupBtn.onclick = async () => {
   refreshLocal();
 };
 
-export function escapeHtml(s) {
-  return String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
