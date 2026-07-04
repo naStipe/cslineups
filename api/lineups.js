@@ -42,6 +42,85 @@ function mapRow(row) {
   };
 }
 
+// Kept in sync with js/constants.js — only these values should ever be
+// stored, since the client UI only ever offers these choices. Anything
+// else can only have arrived via a hand-crafted request, and would
+// otherwise get rendered unescaped into the detail panel's HTML on the
+// read side (range/movement render as `LABELS[x] || x`, so an
+// unrecognized value falls through as raw, attacker-controlled text).
+const VALID_TYPES = ["smoke", "flash", "fire", "he", "decoy"];
+const VALID_RANGES = ["throw", "mid-throw", "close-throw"];
+const VALID_MOVEMENTS = [
+  "none", "jumpthrow", "w-throw", "w-jumpthrow", "run", "run-throw",
+  "run-jumpthrow", "shift-w-throw", "shift-w-jumpthrow", "crouch",
+  "crouchjump", "crouchaim-jump", "crouchaim-crouchjump",
+];
+const MAX_THROWS = 20;
+const MAX_SCREENSHOTS = 5;
+const MAX_STANDING = 3;
+const MAX_NAME_LEN = 200;
+const MAX_NOTES_LEN = 2000;
+
+function isFiniteNum(n) { return typeof n === "number" && Number.isFinite(n); }
+
+function isValidPos(p) {
+  return p && typeof p === "object" && isFiniteNum(p.x) && isFiniteNum(p.y);
+}
+
+// Screenshots/standing/precise should only ever be URLs our own upload
+// flow produced. Rejecting anything else prevents both stored-XSS via
+// crafted `src` values and use of the lineups table to point at
+// arbitrary external images.
+function isOwnStorageUrl(url) {
+  const base = `${process.env.SUPABASE_URL}/storage/v1/object/public/lineup-images/`;
+  return typeof url === "string" && url.length < 500 && url.startsWith(base);
+}
+
+// Validates and normalizes one throw entry. Returns the cleaned object,
+// or throws with a message describing what was wrong.
+function sanitizeThrow(t, i) {
+  if (!t || typeof t !== "object") throw new Error(`throws[${i}] is not an object`);
+  if (typeof t.id !== "string" || !t.id) throw new Error(`throws[${i}].id is missing`);
+  if (!isValidPos(t.pos)) throw new Error(`throws[${i}].pos is invalid`);
+  if (!VALID_RANGES.includes(t.range)) throw new Error(`throws[${i}].range is invalid`);
+  if (!VALID_MOVEMENTS.includes(t.movement)) throw new Error(`throws[${i}].movement is invalid`);
+
+  const screenshots = Array.isArray(t.screenshots) ? t.screenshots.slice(0, MAX_SCREENSHOTS) : [];
+  const standing = Array.isArray(t.standing) ? t.standing.slice(0, MAX_STANDING) : [];
+  screenshots.forEach((u, j) => { if (!isOwnStorageUrl(u)) throw new Error(`throws[${i}].screenshots[${j}] is not a valid image URL`); });
+  standing.forEach((u, j) => { if (!isOwnStorageUrl(u)) throw new Error(`throws[${i}].standing[${j}] is not a valid image URL`); });
+  if (t.precise != null && !isOwnStorageUrl(t.precise)) throw new Error(`throws[${i}].precise is not a valid image URL`);
+
+  return {
+    id: t.id,
+    pos: { x: t.pos.x, y: t.pos.y },
+    range: t.range,
+    movement: t.movement,
+    notes: typeof t.notes === "string" ? t.notes.slice(0, MAX_NOTES_LEN) : "",
+    screenshots,
+    standing,
+    precise: t.precise != null ? t.precise : null,
+  };
+}
+
+// Validates a whole lineup payload before it's ever written to the DB.
+// Throws with a descriptive message on the first problem found.
+function sanitizeLineup(body) {
+  if (typeof body.mapId !== "string" || !body.mapId) throw new Error("mapId is missing");
+  if (!VALID_TYPES.includes(body.type)) throw new Error("type is invalid");
+  if (!isValidPos(body.landing)) throw new Error("landing is invalid");
+  if (!Array.isArray(body.throws) || body.throws.length === 0) throw new Error("throws must be a non-empty array");
+  if (body.throws.length > MAX_THROWS) throw new Error(`too many throws (max ${MAX_THROWS})`);
+
+  return {
+    mapId: body.mapId,
+    type: body.type,
+    name: typeof body.name === "string" ? body.name.slice(0, MAX_NAME_LEN) : "",
+    landing: { x: body.landing.x, y: body.landing.y },
+    throws: body.throws.map(sanitizeThrow),
+  };
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin":  "*",
   "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
@@ -106,22 +185,40 @@ module.exports = async function handler(req, res) {
       // Bulk import (backup restore) — official data only, admins only.
       if (Array.isArray(body.records)) {
         if (!admin) { res.status(403).json({ error: "Admin access required" }); return; }
+        let imported = 0;
+        const skipped = [];
         for (const r of body.records) {
           if (!r || !r.id) continue;
+          let clean;
+          try {
+            clean = sanitizeLineup(r);
+          } catch (e) {
+            skipped.push({ id: r.id, reason: e.message });
+            continue;
+          }
           const { error } = await sb.from("lineups").upsert({
-            id: r.id, map_id: r.mapId, type: r.type, name: r.name || "",
-            landing: r.landing, throws: r.throws,
+            id: r.id, map_id: clean.mapId, type: clean.type, name: clean.name,
+            landing: clean.landing, throws: clean.throws,
             created_at: r.createdAt || Date.now(),
             is_official: true, owner_id: null,
           });
           if (error) throw new Error(error.message);
+          imported++;
         }
-        res.status(200).json({ ok: true, count: body.records.length });
+        res.status(200).json({ ok: true, count: imported, skipped });
         return;
       }
 
       if (!body.id) {
         res.status(400).json({ error: "Missing id" });
+        return;
+      }
+
+      let clean;
+      try {
+        clean = sanitizeLineup(body);
+      } catch (e) {
+        res.status(400).json({ error: e.message });
         return;
       }
 
@@ -145,8 +242,8 @@ module.exports = async function handler(req, res) {
       }
 
       const { error } = await sb.from("lineups").upsert({
-        id: body.id, map_id: body.mapId, type: body.type, name: body.name || "",
-        landing: body.landing, throws: body.throws,
+        id: body.id, map_id: clean.mapId, type: clean.type, name: clean.name,
+        landing: clean.landing, throws: clean.throws,
         created_at: body.createdAt || Date.now(),
         is_official: isOfficial, owner_id: ownerId,
       });

@@ -6,10 +6,27 @@ export const MAX_SCREENSHOTS = 5;
 
 export const MAX_STANDING = 3;
 
+// Client-side guardrails only — a determined attacker can call the storage
+// API directly with their own token and skip this file entirely, so the
+// real enforcement has to live in the Supabase Storage bucket's own
+// settings (allowed MIME types + a max file size on the `lineup-images`
+// bucket). This just stops honest users from accidentally uploading huge
+// or non-image files, and gives a clear error instead of a confusing
+// server-side failure.
+const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const MAX_UPLOAD_BYTES = 15 * 1024 * 1024; // 15 MB
+
 export async function uploadFileToSupabase(file) {
   const url = window.__SUPABASE_URL;
   const anonKey = window.__SUPABASE_ANON_KEY;
   if (!url || !anonKey) throw new Error("Supabase config not available — check SUPABASE_URL and SUPABASE_ANON_KEY in Vercel");
+
+  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    throw new Error(`"${file.type || "unknown"}" isn't a supported image type. Use JPEG, PNG, WEBP, or GIF.`);
+  }
+  if (file.size > MAX_UPLOAD_BYTES) {
+    throw new Error(`That file is too large (max ${MAX_UPLOAD_BYTES / (1024 * 1024)}MB).`);
+  }
 
   // Needs the signed-in user's own access token here, not the anon/publishable
   // key — Storage parses whatever is in Authorization as a JWT to check

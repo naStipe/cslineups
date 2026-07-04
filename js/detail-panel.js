@@ -159,7 +159,7 @@ export function renderDetail(lineup) {
       thumb.className = "detail-strip-thumb" + (i === selectedThrowIdx ? " active" : "");
       const preview = (t.screenshots && t.screenshots[0]) || (t.standing && t.standing[0]) || "";
       thumb.innerHTML = `
-        ${preview ? `<img src="${preview}" alt="Variant ${i+1}">` : `<div class="strip-thumb-empty"></div>`}
+        ${preview ? `<img src="${escapeHtml(preview)}" alt="Variant ${i+1}">` : `<div class="strip-thumb-empty"></div>`}
         <span class="strip-thumb-label">V${String(i+1).padStart(2,"0")}</span>
       `;
       thumb.onclick = () => {
@@ -184,7 +184,7 @@ export function buildHeroHtml(t, idx, lineup) {
       <div class="tc-carousel" data-class="${cssClass}">
         <div class="tc-carousel-label">${label}</div>
         <div class="tc-carousel-inner">
-          <img class="tc-carousel-img ${cssClass}" src="${imgs[0]}" data-imgs='${JSON.stringify(imgs)}' data-idx="0" alt="${label}">
+          <img class="tc-carousel-img ${cssClass}" src="${escapeHtml(imgs[0])}" data-imgs='${escapeHtml(JSON.stringify(imgs))}' data-idx="0" alt="${label}">
           ${multi ? `<button class="tc-arrow tc-prev" type="button">‹</button>
                      <button class="tc-arrow tc-next" type="button">›</button>
                      <div class="tc-dots">${imgs.map((_,i) => `<span class="tc-dot${i===0?" active":""}"></span>`).join("")}</div>` : ""}
@@ -196,7 +196,7 @@ export function buildHeroHtml(t, idx, lineup) {
     <div class="tc-carousel">
       <div class="tc-carousel-label">Precise</div>
       <div class="tc-carousel-inner">
-        <img class="tc-carousel-img" src="${t.precise}" alt="Precise lineup">
+        <img class="tc-carousel-img" src="${escapeHtml(t.precise)}" alt="Precise lineup">
       </div>
     </div>` : "";
 
@@ -204,8 +204,8 @@ export function buildHeroHtml(t, idx, lineup) {
     <div class="hero-header">
       <span class="variant-tag">VARIANT ${String(idx+1).padStart(2,"0")}</span>
       <div class="throw-meta">
-        <span class="tag">${RANGE_LABELS[t.range] || t.range}</span>
-        <span class="tag">${MOVEMENT_LABELS[t.movement] || t.movement}</span>
+        <span class="tag">${RANGE_LABELS[t.range] || escapeHtml(t.range)}</span>
+        <span class="tag">${MOVEMENT_LABELS[t.movement] || escapeHtml(t.movement)}</span>
       </div>
       <div class="throw-card-actions">
         <button class="save-btn">☆ Save to my map</button>
@@ -323,7 +323,10 @@ deleteLineupBtn.onclick = async () => {
 };
 
 export function escapeHtml(s) {
-  const d = document.createElement("div");
-  d.textContent = s;
-  return d.innerHTML;
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
