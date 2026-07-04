@@ -1,25 +1,92 @@
-/* ===================== EDIT LOCK ===================== */
+/* ===================== AUTH (Supabase Auth) ===================== */
 
-const PW_STORAGE_KEY = "lineups-edit-password";
+let sbClient = null;      // supabase-js client, created once config is loaded
+let authUser = null;      // current auth.users row (or null when signed out)
+let authProfile = null;   // { is_admin } from public.profiles
+let authReady = false;    // true once the initial session restore has resolved
 
-function getEditPassword() {
-  return sessionStorage.getItem(PW_STORAGE_KEY) || "";
+function getAuthClient() {
+  if (!sbClient) {
+    sbClient = window.supabase.createClient(window.__SUPABASE_URL, window.__SUPABASE_ANON_KEY);
+  }
+  return sbClient;
 }
-function setEditPassword(pw) {
-  sessionStorage.setItem(PW_STORAGE_KEY, pw);
+
+async function getAccessToken() {
+  if (!authUser) return null;
+  const sb = getAuthClient();
+  const { data } = await sb.auth.getSession();
+  return data && data.session ? data.session.access_token : null;
 }
-function isUnlocked() {
-  return !!getEditPassword();
+
+function authHeaders() {
+  return getAccessToken().then(token => token ? { "Authorization": `Bearer ${token}` } : {});
 }
-function lockEditing() {
-  sessionStorage.removeItem(PW_STORAGE_KEY);
-  applyLockState();
+
+async function refreshProfile() {
+  if (!authUser) { authProfile = null; return; }
+  const sb = getAuthClient();
+  const { data, error } = await sb.from("profiles").select("is_admin").eq("id", authUser.id).maybeSingle();
+  authProfile = error ? { is_admin: false } : { is_admin: !!(data && data.is_admin) };
 }
-function applyLockState() {
-  const unlocked = isUnlocked();
-  document.body.classList.toggle("locked", !unlocked);
-  lockBtn.textContent = unlocked ? "🔓 Editing unlocked" : "🔒 Unlock editing";
-  lockBtn.classList.toggle("unlocked", unlocked);
+
+function isAdmin() {
+  return !!(authProfile && authProfile.is_admin);
+}
+
+async function signUpWithPassword(email, password) {
+  const sb = getAuthClient();
+  const { error } = await sb.auth.signUp({ email, password });
+  if (error) throw error;
+}
+
+async function signInWithPassword(email, password) {
+  const sb = getAuthClient();
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+}
+
+async function signInWithGoogle() {
+  const sb = getAuthClient();
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: window.location.origin + window.location.pathname,
+      queryParams: { prompt: "select_account" },
+    },
+  });
+  if (error) throw error;
+}
+
+async function signOut() {
+  const sb = getAuthClient();
+  await sb.auth.signOut();
+}
+
+async function initAuth() {
+  const sb = getAuthClient();
+  const { data } = await sb.auth.getSession();
+  authUser = data && data.session ? data.session.user : null;
+  await refreshProfile();
+  authReady = true;
+  applyAuthState();
+
+  sb.auth.onAuthStateChange(async (_event, session) => {
+    authUser = session ? session.user : null;
+    await refreshProfile();
+    applyAuthState();
+    // Personal view depends entirely on being signed in — bounce back to
+    // the official view (and reload) whenever auth state changes under it.
+    if (state.viewMode === "personal" && !authUser) setViewMode("official");
+    else if (appShell && !appShell.hasAttribute("hidden")) loadLineups();
+  });
+}
+
+function applyAuthState() {
+  document.body.classList.toggle("signed-in", !!authUser);
+  document.body.classList.toggle("is-admin", isAdmin());
+  if (authEmailLabel) authEmailLabel.textContent = authUser ? authUser.email : "";
+  if (personalViewBtn) personalViewBtn.classList.toggle("hidden", !authUser);
 }
 
 
@@ -65,10 +132,12 @@ const MOVEMENT_LABELS = {
   "crouchaim-crouchjump":  "Crouch-aim + Crouch-Jumpthrow",
 };
 
-/* ===================== STORAGE (Netlify Function API) ===================== */
+/* ===================== STORAGE (Vercel Function API) ===================== */
 
 const API_URL = "/api/lineups";
+const SAVED_URL = "/api/saved-lineups";
 
+// Official lineups for the current map — public, no auth required.
 async function dbGetAll() {
   const res = await fetch(`${API_URL}?mapId=${encodeURIComponent(state.mapId)}`);
   if (!res.ok) {
@@ -79,7 +148,7 @@ async function dbGetAll() {
 }
 
 async function dbGetAllMaps() {
-  // Fetch all lineups across every map for export
+  // Fetch official lineups across every map, for export
   const res = await fetch(API_URL);
   if (!res.ok) {
     const msg = await res.text().catch(() => "");
@@ -88,52 +157,107 @@ async function dbGetAllMaps() {
   return res.json();
 }
 
-async function dbPut(record) {
+// The signed-in user's own personal (non-official) lineups for the current map.
+async function dbGetMine() {
+  const headers = await authHeaders();
+  const res = await fetch(`${API_URL}?mapId=${encodeURIComponent(state.mapId)}&mine=true`, { headers });
+  if (!res.ok) {
+    const msg = await res.text().catch(() => "");
+    throw new Error(`Failed to load your lineups (${res.status}): ${msg}`);
+  }
+  return res.json();
+}
+
+// Full lineup records the user has bookmarked from the official set, for the current map.
+async function dbGetSaved() {
+  const headers = await authHeaders();
+  const res = await fetch(`${SAVED_URL}?mapId=${encodeURIComponent(state.mapId)}`, { headers });
+  if (!res.ok) {
+    const msg = await res.text().catch(() => "");
+    throw new Error(`Failed to load saved lineups (${res.status}): ${msg}`);
+  }
+  return res.json();
+}
+
+async function dbSaveLineup(lineupId, throwId) {
+  const headers = await authHeaders();
+  const res = await fetch(SAVED_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify({ lineupId, throwId }),
+  });
+  if (!res.ok) throw new Error("Failed to save this throw position to your map");
+}
+
+async function dbUnsaveLineup(lineupId, throwId) {
+  const headers = await authHeaders();
+  const res = await fetch(`${SAVED_URL}?lineupId=${encodeURIComponent(lineupId)}&throwId=${encodeURIComponent(throwId)}`, {
+    method: "DELETE",
+    headers,
+  });
+  if (!res.ok) throw new Error("Failed to remove this throw position from your map");
+}
+
+// Composite key used to track which individual throw positions (not whole
+// lineups) the signed-in user has bookmarked.
+function throwKey(lineupId, throwId) {
+  return `${lineupId}::${throwId}`;
+}
+
+// dbGetSaved() already returns each lineup with `.throws` filtered down to
+// just the bookmarked ones — every throw present there is, by definition, saved.
+function buildSavedThrowKeys(savedLineups) {
+  const keys = new Set();
+  savedLineups.forEach(l => l.throws.forEach(t => keys.add(throwKey(l.id, t.id))));
+  return keys;
+}
+
+async function dbPut(record, isOfficial) {
+  const headers = await authHeaders();
   const res = await fetch(API_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-Edit-Password": getEditPassword() },
-    body: JSON.stringify(record),
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify({ ...record, isOfficial: !!isOfficial }),
   });
-  if (res.status === 401) throw new Error("LOCKED");
+  if (res.status === 401) throw new Error("SIGN_IN_REQUIRED");
+  if (res.status === 403) throw new Error("FORBIDDEN");
   if (!res.ok) {
     const msg = await res.text().catch(() => "");
     throw new Error(`Failed to save lineup (${res.status}): ${msg}`);
   }
+  return res.json();
 }
 
 async function dbDelete(id) {
+  const headers = await authHeaders();
   const res = await fetch(`${API_URL}?id=${encodeURIComponent(id)}`, {
     method: "DELETE",
-    headers: { "X-Edit-Password": getEditPassword() },
+    headers,
   });
-  if (res.status === 401) throw new Error("LOCKED");
+  if (res.status === 401) throw new Error("SIGN_IN_REQUIRED");
+  if (res.status === 403) throw new Error("FORBIDDEN");
   if (!res.ok) throw new Error("Failed to delete lineup");
 }
 
 async function dbImportBulk(records) {
+  const headers = await authHeaders();
   const res = await fetch(API_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-Edit-Password": getEditPassword() },
+    headers: { "Content-Type": "application/json", ...headers },
     body: JSON.stringify({ records }),
   });
-  if (res.status === 401) throw new Error("LOCKED");
+  if (res.status === 401) throw new Error("SIGN_IN_REQUIRED");
+  if (res.status === 403) throw new Error("FORBIDDEN");
   if (!res.ok) throw new Error("Failed to import lineups");
-}
-
-async function verifyPassword(pw) {
-  const res = await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Edit-Password": pw },
-    body: JSON.stringify({ checkPassword: true }),
-  });
-  return res.ok;
 }
 
 /* ===================== STATE ===================== */
 
 let state = {
   mapId: MAPS[0].id,
-  lineups: [],          // all lineups for current map, loaded from DB
+  viewMode: "official",  // "official" (public map) or "personal" (signed-in user's own map)
+  lineups: [],          // all lineups for current map + view, loaded from DB
+  savedThrowKeys: new Set(), // `${lineupId}::${throwId}` for every individual throw position the user has bookmarked
   activeFilters: new Set(TYPES.map(t => t.id)),
   pendingType: null,
   pendingName: "",     // type chosen in type modal, awaiting landing click
@@ -209,15 +333,33 @@ const lightboxNext = document.getElementById("lightboxNext");
 
 const detailPanel = document.getElementById("detailPanel");
 const detailType = document.getElementById("detailType");
+const detailOwnerBadge = document.getElementById("detailOwnerBadge");
 const detailTitle = document.getElementById("detailTitle");
 const detailNameInput = document.getElementById("detailNameInput");
 const throwList = document.getElementById("throwList");
 const closeDetail = document.getElementById("closeDetail");
 const addThrowBtn = document.getElementById("addThrowBtn");
 const deleteLineupBtn = document.getElementById("deleteLineupBtn");
+const saveLineupBtn = document.getElementById("saveLineupBtn");
 
 const exportBtn = document.getElementById("exportBtn");
-const lockBtn = document.getElementById("lockBtn");
+
+const signInBtn = document.getElementById("signInBtn");
+const signOutBtn = document.getElementById("signOutBtn");
+const authEmailLabel = document.getElementById("authEmailLabel");
+const officialViewBtn = document.getElementById("officialViewBtn");
+const personalViewBtn = document.getElementById("personalViewBtn");
+
+const authModal = document.getElementById("authModal");
+const authModalTitle = document.getElementById("authModalTitle");
+const authError = document.getElementById("authError");
+const authEmailInput = document.getElementById("authEmailInput");
+const authPasswordInput = document.getElementById("authPasswordInput");
+const authSubmitBtn = document.getElementById("authSubmitBtn");
+const authGoogleBtn = document.getElementById("authGoogleBtn");
+const authSwitchText = document.getElementById("authSwitchText");
+const authSwitchLink = document.getElementById("authSwitchLink");
+const cancelAuth = document.getElementById("cancelAuth");
 
 let pendingThrowDraft = null; // {x,y,screenshot,...} being built before save
 
@@ -507,6 +649,9 @@ async function selectMap(id) {
   currentMapName.textContent = m.name.toUpperCase();
   mapImage.src = m.file;
   updateCheatsheet(id);
+  if (!authUser && state.viewMode === "personal") state.viewMode = "official";
+  if (officialViewBtn) officialViewBtn.classList.toggle("active", state.viewMode === "official");
+  if (personalViewBtn) personalViewBtn.classList.toggle("active", state.viewMode === "personal");
   await loadLineups();
 }
 
@@ -514,10 +659,28 @@ let loadToken = 0;
 
 async function loadLineups() {
   const myToken = ++loadToken;
+
+  if (state.viewMode === "personal" && !authUser) {
+    setViewMode("official");
+    return;
+  }
+
   lineupCount.textContent = "loading…";
   showMapLoading(true);
   try {
-    const lineups = await dbGetAll();
+    let lineups;
+    if (state.viewMode === "personal") {
+      const [mine, saved] = await Promise.all([dbGetMine(), dbGetSaved()]);
+      state.savedThrowKeys = buildSavedThrowKeys(saved);
+      lineups = [...mine, ...saved];
+    } else {
+      lineups = await dbGetAll();
+      if (authUser) {
+        dbGetSaved()
+          .then(saved => { state.savedThrowKeys = buildSavedThrowKeys(saved); })
+          .catch(() => {});
+      }
+    }
     if (myToken !== loadToken) return;
     state.lineups = lineups;
     lineupCount.textContent = `${lineups.length} lineup${lineups.length === 1 ? "" : "s"}`;
@@ -559,30 +722,39 @@ function setAddMode(on) {
   if (on) addHint.textContent = "Click anywhere on the map to drop the landing spot for a new lineup.";
 }
 
-lockBtn.onclick = async () => {
-  if (isUnlocked()) {
-    lockEditing();
-    return;
-  }
-  const pw = prompt("Enter edit password:");
-  if (pw === null) return;
-  const ok = await verifyPassword(pw);
-  if (ok) {
-    setEditPassword(pw);
-    applyLockState();
-  } else {
-    alert("Wrong password.");
-  }
-};
+/* ===================== PERMISSIONS ===================== */
 
-function requireUnlocked() {
-  if (isUnlocked()) return true;
-  lockBtn.click();
-  return false;
+function canModifyLineup(lineup) {
+  if (!authUser || !lineup) return false;
+  if (lineup.isOfficial) return isAdmin();
+  return lineup.ownerId === authUser.id;
+}
+
+// Creating a brand-new lineup: official view needs an admin, personal view
+// just needs to be signed in.
+function requireCanCreate() {
+  if (!authUser) { openAuthModal("signin"); return false; }
+  if (state.viewMode === "official" && !isAdmin()) {
+    alert('Only admins can add official lineups. Switch to "My Map" to add your own.');
+    return false;
+  }
+  return true;
+}
+
+// Editing/renaming/deleting an existing lineup.
+function requireLineupEditable(lineup) {
+  if (!authUser) { openAuthModal("signin"); return false; }
+  if (!canModifyLineup(lineup)) {
+    alert(lineup && lineup.isOfficial
+      ? "Only admins can edit official lineups."
+      : "You can only edit your own lineups.");
+    return false;
+  }
+  return true;
 }
 
 addModeBtn.onclick = () => {
-  if (!requireUnlocked()) return;
+  if (!requireCanCreate()) return;
   setAddMode(true);
   openTypeModal((typeId) => {
     state.pendingType = typeId;
@@ -591,6 +763,82 @@ addModeBtn.onclick = () => {
     addHint.textContent = "Now click where this nade lands.";
   });
 };
+
+/* ===================== VIEW MODE (Official / My Map) ===================== */
+
+function setViewMode(mode) {
+  if (mode === "personal" && !authUser) { openAuthModal("signin"); return; }
+  state.viewMode = mode;
+  if (officialViewBtn) officialViewBtn.classList.toggle("active", mode === "official");
+  if (personalViewBtn) personalViewBtn.classList.toggle("active", mode === "personal");
+  state.selectedLineupId = null;
+  closeDetailPanel();
+  loadLineups();
+}
+if (officialViewBtn) officialViewBtn.onclick = () => setViewMode("official");
+if (personalViewBtn) personalViewBtn.onclick = () => setViewMode("personal");
+
+/* ===================== AUTH MODAL ===================== */
+
+let authMode = "signin";
+
+function openAuthModal(mode) {
+  authMode = mode || "signin";
+  updateAuthModalMode();
+  authError.hidden = true;
+  authError.classList.remove("info");
+  authEmailInput.value = "";
+  authPasswordInput.value = "";
+  authModal.classList.add("show");
+}
+function updateAuthModalMode() {
+  const isSignup = authMode === "signup";
+  authModalTitle.textContent = isSignup ? "Create account" : "Sign in";
+  authSubmitBtn.textContent = isSignup ? "Sign up" : "Sign in";
+  authSwitchText.textContent = isSignup ? "Already have an account?" : "Don't have an account?";
+  authSwitchLink.textContent = isSignup ? "Sign in" : "Sign up";
+}
+authSwitchLink.onclick = (e) => {
+  e.preventDefault();
+  authMode = authMode === "signup" ? "signin" : "signup";
+  updateAuthModalMode();
+};
+cancelAuth.onclick = () => closeModal(authModal);
+
+authSubmitBtn.onclick = async () => {
+  const email = authEmailInput.value.trim();
+  const password = authPasswordInput.value;
+  if (!email || !password) {
+    authError.textContent = "Enter an email and password.";
+    authError.hidden = false;
+    return;
+  }
+  authSubmitBtn.disabled = true;
+  try {
+    if (authMode === "signup") {
+      await signUpWithPassword(email, password);
+      authError.textContent = "Check your email to confirm your account, then sign in.";
+      authError.classList.add("info");
+      authError.hidden = false;
+    } else {
+      await signInWithPassword(email, password);
+      closeModal(authModal);
+    }
+  } catch (err) {
+    authError.classList.remove("info");
+    authError.textContent = (err && err.message) || "Something went wrong.";
+    authError.hidden = false;
+  } finally {
+    authSubmitBtn.disabled = false;
+  }
+};
+
+authGoogleBtn.onclick = async () => {
+  try { await signInWithGoogle(); } catch (err) { alert((err && err.message) || "Google sign-in failed."); }
+};
+
+signInBtn.onclick = () => openAuthModal("signin");
+signOutBtn.onclick = async () => { await signOut(); };
 
 mapFrame.addEventListener("click", (e) => {
   const rect = mapImage.getBoundingClientRect();
@@ -860,7 +1108,12 @@ cancelThrow.onclick = () => {
 
 saveThrow.onclick = async () => {
   if (!pendingThrowDraft) return;
-  if (!requireUnlocked()) return;
+  if (pendingThrowDraft.isNewLineup) {
+    if (!requireCanCreate()) return;
+  } else {
+    const existingLineup = state.lineups.find(l => l.id === pendingThrowDraft.lineupId);
+    if (!requireLineupEditable(existingLineup)) return;
+  }
   if (pendingThrowDraft.screenshots.length === 0) {
     if (!confirm("No screenshots attached — save anyway?")) return;
   }
@@ -891,6 +1144,7 @@ saveThrow.onclick = async () => {
     };
 
     if (draft.isNewLineup) {
+      const isOfficial = state.viewMode === "official" && isAdmin();
       const lineup = {
         id: draft.lineupId,
         mapId: state.mapId,
@@ -899,8 +1153,10 @@ saveThrow.onclick = async () => {
         landing: draft.landingPos,
         throws: [{ id: uid(), ...throwEntryBase }],
         createdAt: Date.now(),
+        isOfficial,
+        ownerId: isOfficial ? null : (authUser ? authUser.id : null),
       };
-      await dbPut(lineup);
+      await dbPut(lineup, isOfficial);
       upsertLocalLineup(lineup);
     } else {
       let lineup = state.lineups.find(l => l.id === draft.lineupId);
@@ -917,7 +1173,7 @@ saveThrow.onclick = async () => {
       } else {
         lineup.throws.push({ id: uid(), ...throwEntryBase });
       }
-      await dbPut(lineup);
+      await dbPut(lineup, lineup.isOfficial);
       upsertLocalLineup(lineup);
     }
 
@@ -935,9 +1191,9 @@ saveThrow.onclick = async () => {
   } catch (err) {
     console.error(err);
     alert(
-      err && err.message === "LOCKED"
-        ? "Editing is locked — unlock it first."
-        : "Could not save: " + (err && err.message ? err.message : err)
+      err && err.message === "SIGN_IN_REQUIRED" ? "Please sign in first." :
+      err && err.message === "FORBIDDEN"        ? "You don't have permission to do that." :
+      "Could not save: " + (err && err.message ? err.message : err)
     );
   } finally {
     saveThrow.disabled = false;
@@ -992,7 +1248,11 @@ function clusterLineups(list) {
 }
 
 function clusterKey(cluster) {
-  return cluster.lineups.map(l => l.id).sort().join(",");
+  // Include each lineup's throw count so that saving/removing an individual
+  // throw position (which changes the marker's badge number) counts as a
+  // real change in cluster identity — otherwise the reconciler below sees
+  // "same lineup ids here" and leaves the stale marker/badge in place.
+  return cluster.lineups.map(l => `${l.id}:${l.throws.length}`).sort().join(",");
 }
 
 // Fans a stacked marker out into one petal per lineup, arranged evenly around
@@ -1289,15 +1549,35 @@ function openDetail(lineupId, throwIdx) {
 }
 
 function renderDetail(lineup) {
-  renderDetailType(lineup);
+  const editable = canModifyLineup(lineup);
+  const canBookmark = state.viewMode === "official" && lineup.isOfficial && !!authUser;
+  const isBookmarkedRef = state.viewMode === "personal" && lineup.isOfficial;
+
+  renderDetailType(lineup, editable);
   detailTitle.textContent = `${lineup.throws.length} variant${lineup.throws.length === 1 ? "" : "s"}`;
+
+  if (detailOwnerBadge) {
+    detailOwnerBadge.textContent = lineup.isOfficial ? "Official" : "My lineup";
+    detailOwnerBadge.classList.toggle("badge-official", lineup.isOfficial);
+    detailOwnerBadge.classList.toggle("badge-personal", !lineup.isOfficial);
+  }
+
+  addThrowBtn.classList.toggle("hidden", !editable);
+  // Whole-lineup delete only applies to content you actually own/administer.
+  // Bookmarked references are removed one throw position at a time instead
+  // (see the per-throw button in the hero card below).
+  deleteLineupBtn.classList.toggle("hidden", !editable);
+  deleteLineupBtn.textContent = "Delete this lineup";
+
+  if (saveLineupBtn) saveLineupBtn.classList.add("hidden"); // superseded by the per-throw button in the hero card
 
   // Name field
   detailNameInput.value = lineup.name || "";
+  detailNameInput.disabled = !editable;
   detailNameInput.onchange = async () => {
-    if (!requireUnlocked()) { detailNameInput.value = lineup.name || ""; return; }
+    if (!editable) { detailNameInput.value = lineup.name || ""; return; }
     lineup.name = detailNameInput.value.trim();
-    await dbPut(lineup);
+    await dbPut(lineup, lineup.isOfficial);
     refreshLocal();
   };
   throwList.innerHTML = "";
@@ -1312,24 +1592,86 @@ function renderDetail(lineup) {
   hero.className = "detail-hero";
   hero.innerHTML = buildHeroHtml(active, selectedThrowIdx, lineup);
   wireCarousels(hero, active);
-  hero.querySelector(".edit-btn").onclick = () => {
-    if (!requireUnlocked()) return;
-    openThrowModal(active.pos, lineup.id, false, lineup.type, lineup.landing, active);
-  };
-  hero.querySelector(".remove-btn").onclick = async () => {
-    if (!requireUnlocked()) return;
-    lineup.throws = lineup.throws.filter(x => x.id !== active.id);
-    if (lineup.throws.length === 0) {
-      await dbDelete(lineup.id);
-      state.lineups = state.lineups.filter(l => l.id !== lineup.id);
-      closeDetailPanel();
-    } else {
-      await dbPut(lineup);
-      upsertLocalLineup(lineup);
-    }
-    refreshLocal();
-    if (state.selectedLineupId) openDetail(state.selectedLineupId, Math.max(0, selectedThrowIdx - 1));
-  };
+  const heroEditBtn = hero.querySelector(".edit-btn");
+  const heroRemoveBtn = hero.querySelector(".remove-btn");
+  const heroSaveBtn = hero.querySelector(".save-btn");
+  if (editable) {
+    heroEditBtn.onclick = () => {
+      openThrowModal(active.pos, lineup.id, false, lineup.type, lineup.landing, active);
+    };
+    heroRemoveBtn.onclick = async () => {
+      lineup.throws = lineup.throws.filter(x => x.id !== active.id);
+      if (lineup.throws.length === 0) {
+        await dbDelete(lineup.id);
+        state.lineups = state.lineups.filter(l => l.id !== lineup.id);
+        closeDetailPanel();
+      } else {
+        await dbPut(lineup, lineup.isOfficial);
+        upsertLocalLineup(lineup);
+      }
+      refreshLocal();
+      if (state.selectedLineupId) openDetail(state.selectedLineupId, Math.max(0, selectedThrowIdx - 1));
+    };
+  } else {
+    heroEditBtn.style.display = "none";
+    heroRemoveBtn.style.display = "none";
+  }
+
+  // Bookmarking works per throw position, not per whole lineup: in the
+  // official view, any signed-in user can save just this variant; in the
+  // personal view, a bookmarked (non-owned) variant can be removed the
+  // same way, one at a time.
+  if (canBookmark) {
+    const saved = state.savedThrowKeys.has(throwKey(lineup.id, active.id));
+    heroSaveBtn.style.display = "";
+    heroSaveBtn.textContent = saved ? "★ Saved" : "☆ Save to my map";
+    heroSaveBtn.classList.toggle("saved", saved);
+    heroSaveBtn.onclick = async () => {
+      heroSaveBtn.disabled = true;
+      try {
+        if (saved) {
+          await dbUnsaveLineup(lineup.id, active.id);
+          state.savedThrowKeys.delete(throwKey(lineup.id, active.id));
+        } else {
+          await dbSaveLineup(lineup.id, active.id);
+          state.savedThrowKeys.add(throwKey(lineup.id, active.id));
+        }
+        renderDetail(lineup);
+      } catch (err) {
+        alert((err && err.message) || "Something went wrong.");
+      } finally {
+        heroSaveBtn.disabled = false;
+      }
+    };
+  } else if (isBookmarkedRef) {
+    heroSaveBtn.style.display = "";
+    heroSaveBtn.textContent = "✕ Remove from my map";
+    heroSaveBtn.classList.remove("saved");
+    heroSaveBtn.onclick = async () => {
+      if (!confirm("Remove this throw position from your personal map?")) return;
+      heroSaveBtn.disabled = true;
+      try {
+        await dbUnsaveLineup(lineup.id, active.id);
+        state.savedThrowKeys.delete(throwKey(lineup.id, active.id));
+        lineup.throws = lineup.throws.filter(x => x.id !== active.id);
+        if (lineup.throws.length === 0) {
+          state.lineups = state.lineups.filter(l => l.id !== lineup.id);
+          closeDetailPanel();
+          refreshLocal();
+        } else {
+          upsertLocalLineup(lineup);
+          refreshLocal();
+          openDetail(lineup.id, Math.max(0, selectedThrowIdx - 1));
+        }
+      } catch (err) {
+        alert((err && err.message) || "Something went wrong.");
+        heroSaveBtn.disabled = false;
+      }
+    };
+  } else {
+    heroSaveBtn.style.display = "none";
+  }
+
   throwList.appendChild(hero);
 
   // ── THUMBNAIL STRIP ──
@@ -1390,6 +1732,7 @@ function buildHeroHtml(t, idx, lineup) {
         <span class="tag">${MOVEMENT_LABELS[t.movement] || t.movement}</span>
       </div>
       <div class="throw-card-actions">
+        <button class="save-btn">☆ Save to my map</button>
         <button class="edit-btn">Edit</button>
         <button class="remove-btn">Remove</button>
       </div>
@@ -1445,14 +1788,15 @@ function wireCarousels(container, t) {
   });
 }
 
-function renderDetailType(lineup) {
+function renderDetailType(lineup, editable) {
   const typeInfo = TYPES.find(t => t.id === lineup.type);
-  detailType.textContent = typeInfo.label + " ✎";
+  detailType.textContent = editable ? typeInfo.label + " ✎" : typeInfo.label;
   detailType.style.color = "#0a0d0e";
   detailType.style.background = getCssVarColor(typeInfo.color);
-  detailType.title = "Click to change nade type";
+  detailType.style.cursor = editable ? "pointer" : "default";
+  detailType.title = editable ? "Click to change nade type" : "";
   detailType.onclick = () => {
-    if (!requireUnlocked()) return;
+    if (!editable) return;
     openTypeModalForEdit(lineup);
   };
 }
@@ -1461,7 +1805,7 @@ function openTypeModalForEdit(lineup) {
   buildTypeGrid(async (typeId) => {
     closeModal(typeModal);
     lineup.type = typeId;
-    await dbPut(lineup);
+    await dbPut(lineup, lineup.isOfficial);
     await loadLineups();
     openDetail(lineup.id);
   });
@@ -1649,16 +1993,22 @@ detailPanel.addEventListener("click", (e) => {
 });
 
 addThrowBtn.onclick = () => {
-  if (!requireUnlocked()) return;
+  const lineup = state.lineups.find(l => l.id === state.selectedLineupId);
+  if (!requireLineupEditable(lineup)) return;
   state.pendingThrowFor = state.selectedLineupId;
   setAddMode(true);
   addHint.textContent = "Click the spot you throw from.";
   detailPanel.classList.remove("open");
 };
 
+// Only ever visible when the lineup is editable (own/admin content) — see
+// renderDetail(). Bookmarked references are removed one throw position at a
+// time via the "Remove from my map" button in the hero card instead.
 deleteLineupBtn.onclick = async () => {
-  if (!requireUnlocked()) return;
   if (!state.selectedLineupId) return;
+  const lineup = state.lineups.find(l => l.id === state.selectedLineupId);
+  if (!lineup) return;
+  if (!requireLineupEditable(lineup)) return;
   if (!confirm("Delete this entire lineup, including all throw positions?")) return;
   const delId = state.selectedLineupId;
   await dbDelete(delId);
@@ -1773,5 +2123,7 @@ async function loadConfig() {
 
 buildSidebar();
 buildFilters();
-applyLockState();
-loadConfig().then(() => buildHomeScreen());
+loadConfig().then(async () => {
+  await initAuth();
+  buildHomeScreen();
+});

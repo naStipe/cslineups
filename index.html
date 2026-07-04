@@ -26,6 +26,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
 <body>
 
@@ -76,7 +77,15 @@
     <nav class="map-list" id="mapList"></nav>
 
     <div class="sidebar-footer">
-      <button id="lockBtn" class="ghost-btn">🔒 Unlock editing</button>
+      <div class="auth-box">
+        <div class="auth-signed-out">
+          <button id="signInBtn" class="ghost-btn">Sign in</button>
+        </div>
+        <div class="auth-signed-in">
+          <span class="auth-email" id="authEmailLabel"></span>
+          <button id="signOutBtn" class="ghost-btn">Sign out</button>
+        </div>
+      </div>
       <button id="exportBtn" class="ghost-btn">Export backup</button>
     </div>
   </aside>
@@ -96,6 +105,10 @@
         <div class="topbar-divider"></div>
         <h2 class="topbar-map-name" id="currentMapName">DUST II</h2>
         <span class="count-pill" id="lineupCount">0 lineups</span>
+        <div class="view-toggle" id="viewToggle">
+          <button class="view-toggle-btn active" id="officialViewBtn" data-view="official">Official</button>
+          <button class="view-toggle-btn hidden" id="personalViewBtn" data-view="personal">My Map</button>
+        </div>
       </div>
 
       <div class="filters" id="typeFilters"></div>
@@ -164,11 +177,15 @@
         <div>
           <p class="dossier-eyebrow">Dossier</p>
           <span class="type-chip" id="detailType">SMOKE</span>
+          <span class="owner-badge" id="detailOwnerBadge"></span>
         </div>
         <div class="detail-name-wrap">
           <input class="detail-name-input" id="detailNameInput" type="text" placeholder="Unnamed position" maxlength="40">
         </div>
-        <button class="icon-btn" id="closeDetail">✕</button>
+        <div class="detail-head-actions">
+          <button class="ghost-btn hidden" id="saveLineupBtn">☆ Save to my map</button>
+          <button class="icon-btn" id="closeDetail">✕</button>
+        </div>
       </div>
       <h3 id="detailTitle">Lineup</h3>
       <div class="throw-list" id="throwList"></div>
@@ -177,6 +194,22 @@
     </div>
   </div>
 
+</div>
+
+<!-- MODAL: sign in / sign up -->
+<div class="modal-backdrop" id="authModal">
+  <div class="modal auth-modal">
+    <h3 id="authModalTitle">Sign in</h3>
+    <p class="auth-error info" id="authError" hidden></p>
+    <label class="field-label">Email</label>
+    <input type="email" id="authEmailInput" autocomplete="email" placeholder="you@example.com">
+    <label class="field-label">Password</label>
+    <input type="password" id="authPasswordInput" autocomplete="current-password" placeholder="At least 6 characters">
+    <button class="primary-btn auth-submit-btn" id="authSubmitBtn">Sign in</button>
+    <button class="ghost-btn auth-google-btn" id="authGoogleBtn">Continue with Google</button>
+    <p class="auth-switch"><span id="authSwitchText">Don't have an account?</span> <a href="#" id="authSwitchLink">Sign up</a></p>
+    <button class="ghost-btn" id="cancelAuth">Cancel</button>
+  </div>
 </div>
 
 <!-- MODAL: new landing spot -> choose type -->

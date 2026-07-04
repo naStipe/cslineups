@@ -408,6 +408,8 @@ button,input,select,textarea{font-family:var(--font-body);}
 }
 .throw-card-actions button.edit-btn:hover{color:var(--signal);}
 .throw-card-actions button.remove-btn:hover{color:var(--fire);}
+.throw-card-actions button.save-btn:hover{color:var(--signal);}
+.throw-card-actions button.save-btn.saved{color:var(--signal);}
 
 /* ===================== MODALS ===================== */
 .modal-backdrop{
@@ -1145,3 +1147,61 @@ button,input,select,textarea{font-family:var(--font-body);}
   display: block;
   cursor: zoom-in;
 }
+
+/* ===================== ACCOUNTS / PERSONAL MAPS ===================== */
+
+.hidden{ display:none !important; }
+
+/* Sidebar auth box */
+.auth-box{ display:flex; flex-direction:column; gap:6px; }
+.auth-signed-in{ display:none; align-items:center; justify-content:space-between; gap:8px; }
+body.signed-in .auth-signed-in{ display:flex; }
+body.signed-in .auth-signed-out{ display:none; }
+.auth-email{
+  font-family:var(--font-mono); font-size:11px; color:var(--text-dim);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;
+}
+
+/* Topbar Official / My Map toggle */
+.view-toggle{
+  display:flex; align-items:center; gap:2px; margin-left:8px;
+  background:var(--panel-2); border:1px solid var(--line); border-radius:5px; padding:2px;
+}
+.view-toggle-btn{
+  font-family:var(--font-mono); font-size:11px; letter-spacing:.04em; text-transform:uppercase;
+  background:none; border:none; color:var(--text-faint); padding:5px 11px; border-radius:4px;
+  cursor:pointer; transition:.15s;
+}
+.view-toggle-btn:hover{ color:var(--text-dim); }
+.view-toggle-btn.active{ background:var(--signal); color:#221305; }
+
+/* Official / personal badge in the dossier */
+.owner-badge{
+  display:inline-block; margin-left:8px; font-family:var(--font-mono); font-size:9px;
+  letter-spacing:.1em; text-transform:uppercase; padding:3px 7px; border-radius:3px;
+  background:var(--panel-2); border:1px solid var(--line); color:var(--text-faint); vertical-align:middle;
+}
+.owner-badge.badge-official{ color:var(--signal); border-color:var(--signal); }
+.owner-badge.badge-personal{ color:var(--he); border-color:var(--he); }
+
+/* Save/bookmark button in the dossier */
+/* #saveLineupBtn is no longer used — bookmarking moved to a per-throw button in the hero card, see .save-btn above */
+
+/* Auth modal */
+.auth-modal input[type=email], .auth-modal input[type=password]{
+  background:var(--void); border:1px solid var(--line); color:var(--text);
+  border-radius:4px; padding:9px 10px; font-size:14px; width:100%;
+}
+.auth-modal input:focus{ outline:1px solid var(--signal); border-color:var(--signal); }
+.auth-submit-btn{ margin-top:6px; }
+.auth-google-btn{ text-align:center; }
+.auth-error{
+  font-size:12px; color:var(--fire); background:rgba(255,106,69,.1);
+  border:1px solid var(--fire); border-radius:4px; padding:8px 10px; margin:0;
+}
+.auth-error.info{ color:var(--he); background:rgba(121,224,126,.1); border-color:var(--he); }
+.auth-switch{ font-size:12px; color:var(--text-faint); margin:4px 0 0; }
+.auth-switch a{ color:var(--signal); text-decoration:none; }
+.auth-switch a:hover{ text-decoration:underline; }
+
+.detail-head-actions{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
