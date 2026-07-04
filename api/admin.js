@@ -79,6 +79,31 @@ async function removeStorageObject(sb, url) {
   }
 }
 
+// Copies one image out of the private bucket into the public one and returns
+// its new public URL, for publishing a user submission to the official map
+// (official lineups must be world-readable, private-bucket URLs aren't). URLs
+// that are already public (or not ours) pass straight through unchanged.
+// Throws on any copy failure so the caller can abort before mutating the row.
+async function copyToPublic(sb, url) {
+  const parsed = parseStoragePath(url);
+  if (!parsed || !parsed.isPrivate) return url;
+
+  const { data: blob, error: dlErr } = await sb.storage.from(parsed.bucket).download(parsed.path);
+  if (dlErr || !blob) throw new Error(`could not read source image (${parsed.path}): ${dlErr ? dlErr.message : "no data"}`);
+
+  // Public-bucket objects live at the bucket root as a bare filename (see
+  // js/image-upload.js); mint a fresh collision-proof one rather than reusing
+  // the private path (which is namespaced under the owner's user id).
+  const ext = (parsed.path.split(".").pop() || "jpg").toLowerCase();
+  const filename = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const buf = Buffer.from(await blob.arrayBuffer());
+  const contentType = blob.type || `image/${ext === "jpg" ? "jpeg" : ext}`;
+
+  const { error: upErr } = await sb.storage.from("lineup-images").upload(filename, buf, { contentType, upsert: false });
+  if (upErr) throw new Error(`could not write public image: ${upErr.message}`);
+  return `${process.env.SUPABASE_URL}/storage/v1/object/public/lineup-images/${filename}`;
+}
+
 // Pulls every image URL off a throw across all three slots.
 const IMAGE_SLOTS = ["standing", "screenshots", "precise"];
 function throwImageUrls(t) {
@@ -172,11 +197,51 @@ module.exports = async function handler(req, res) {
     }
 
     // POST — mark a lineup reviewed ("approve": leave the content in place,
-    // just take it off the queue) or un-review it.
+    // just take it off the queue), un-review it, or "publish" it to the
+    // official public map.
     if (req.method === "POST") {
       const body = req.body || {};
       const { action, lineupId } = body;
       if (!lineupId) { res.status(400).json({ error: "Missing lineupId" }); return; }
+
+      // Publish — promote a user's personal submission to an official lineup:
+      // copy every screenshot into the public bucket, rewrite the URLs, flip
+      // the row to official (owner cleared, marked reviewed), then clean up the
+      // now-orphaned private originals. Images are copied first so that if any
+      // copy fails we abort before touching the row (leaving the submission
+      // untouched, at the cost of a few orphaned public objects).
+      if (action === "publish") {
+        const { data: row, error: fetchErr } = await sb.from("lineups")
+          .select("id, is_official, throws").eq("id", lineupId).maybeSingle();
+        if (fetchErr) throw new Error(fetchErr.message);
+        if (!row) { res.status(404).json({ error: "Not found" }); return; }
+        if (row.is_official) { res.status(400).json({ error: "That lineup is already official" }); return; }
+
+        const orphans = [];
+        const newThrows = [];
+        for (const t of (row.throws || [])) {
+          const nt = { ...t };
+          nt.screenshots = [];
+          for (const u of (t.screenshots || [])) { const nu = await copyToPublic(sb, u); nt.screenshots.push(nu); if (nu !== u) orphans.push(u); }
+          nt.standing = [];
+          for (const u of (t.standing || [])) { const nu = await copyToPublic(sb, u); nt.standing.push(nu); if (nu !== u) orphans.push(u); }
+          if (t.precise) { const nu = await copyToPublic(sb, t.precise); nt.precise = nu; if (nu !== t.precise) orphans.push(t.precise); }
+          newThrows.push(nt);
+        }
+
+        const { error: updErr } = await sb.from("lineups").update({
+          throws: newThrows,
+          is_official: true,
+          owner_id: null,
+          moderation_reviewed_at: new Date().toISOString(),
+        }).eq("id", lineupId);
+        if (updErr) throw new Error(updErr.message);
+
+        await Promise.all(orphans.map(u => removeStorageObject(sb, u)));
+        res.status(200).json({ ok: true, published: true });
+        return;
+      }
+
       if (action !== "approve" && action !== "unreview") {
         res.status(400).json({ error: "Unknown action" });
         return;

@@ -168,6 +168,7 @@ function renderCard(item) {
       ${item.reviewedAt
         ? `<button class="ghost-btn" data-action="unreview" data-lineup="${escapeHtml(item.id)}">↩ Move back to pending</button>`
         : `<button class="primary-btn" data-action="approve" data-lineup="${escapeHtml(item.id)}">✓ Approve (mark reviewed)</button>`}
+      <button class="ghost-btn admin-publish" data-action="publish" data-lineup="${escapeHtml(item.id)}">★ Publish to official map</button>
       <button class="ghost-btn danger" data-action="delete-lineup" data-lineup="${escapeHtml(item.id)}">Delete whole lineup</button>
     </div>`;
 
@@ -179,6 +180,7 @@ function renderCard(item) {
   });
   card.querySelector('[data-action="approve"]')?.addEventListener("click", () => markReviewed(item.id, "approve", card));
   card.querySelector('[data-action="unreview"]')?.addEventListener("click", () => markReviewed(item.id, "unreview", card));
+  card.querySelector('[data-action="publish"]')?.addEventListener("click", () => publishLineup(item.id, card));
   card.querySelector('[data-action="delete-lineup"]')?.addEventListener("click", () => deleteLineup(item.id, card));
 
   return card;
@@ -269,6 +271,27 @@ function deleteLineup(lineupId, card) {
     refreshCounts();
     alert(`Failed to delete: ${e.message}`);
   });
+}
+
+// Publishing copies every screenshot to the public bucket server-side, so it
+// takes a moment — show a busy state and only remove the card on success,
+// rather than optimistically (a failure would otherwise flash it out and back).
+function publishLineup(lineupId, card) {
+  if (!confirm("Publish this lineup and its screenshots to the official public map?\n\nIt becomes visible to everyone, the submitter's private copy is converted, and it leaves your review queue.")) return;
+  const buttons = [...card.querySelectorAll(".admin-card-actions button")];
+  const publishBtn = card.querySelector('[data-action="publish"]');
+  const label = publishBtn ? publishBtn.textContent : "";
+  buttons.forEach(b => { b.disabled = true; });
+  card.classList.add("is-busy");
+  if (publishBtn) publishBtn.textContent = "Publishing…";
+  sendAction("POST", "", { action: "publish", lineupId })
+    .then(() => { detach(card); refreshCounts(); })
+    .catch(e => {
+      card.classList.remove("is-busy");
+      buttons.forEach(b => { b.disabled = false; });
+      if (publishBtn) publishBtn.textContent = label;
+      alert(`Failed to publish: ${e.message}`);
+    });
 }
 
 // Recompute the header count line from what's still on the page (avoids a

@@ -1278,3 +1278,8 @@ body.is-admin .admin-link{ display:block; }
 .admin-shot-reject:hover{ background:var(--fire); color:var(--void); border-color:var(--fire); }
 
 .admin-card-actions{ display:flex; gap:10px; margin-top:8px; padding-top:14px; border-top:1px solid var(--line-soft); flex-wrap:wrap; }
+.admin-publish{ color:var(--signal); border-color:color-mix(in srgb, var(--signal) 40%, var(--line)); }
+.admin-publish:hover{ border-color:var(--signal); background:color-mix(in srgb, var(--signal) 12%, var(--panel)); }
+.admin-card.is-busy{ opacity:.6; }
+.admin-card-actions button:disabled{ opacity:.5; cursor:default; }
+.admin-card-actions button:disabled:hover{ background:transparent; }
