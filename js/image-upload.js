@@ -1,3 +1,4 @@
+import { getAccessToken } from "./auth.js";
 import { preciseInput, preciseThumbWrap, screenshotInput, standingInput, standingThumbGrid, thumbGrid } from "./dom.js";
 import { pendingThrowDraft } from "./throw-modal.js";
 
@@ -6,12 +7,18 @@ export const MAX_SCREENSHOTS = 5;
 export const MAX_STANDING = 3;
 
 export async function uploadFileToSupabase(file) {
-  if (!window.__SUPABASE_URL || !window.__SUPABASE_ANON_KEY) {
-    await loadConfig();
-  }
   const url = window.__SUPABASE_URL;
-  const key = window.__SUPABASE_ANON_KEY;
-  if (!url || !key) throw new Error("Supabase config not available — check SUPABASE_URL and SUPABASE_ANON_KEY in Vercel");
+  const anonKey = window.__SUPABASE_ANON_KEY;
+  if (!url || !anonKey) throw new Error("Supabase config not available — check SUPABASE_URL and SUPABASE_ANON_KEY in Vercel");
+
+  // Needs the signed-in user's own access token here, not the anon/publishable
+  // key — Storage parses whatever is in Authorization as a JWT to check
+  // auth.uid() against the bucket's policies, and Supabase's newer
+  // "publishable" keys aren't JWTs at all, which is exactly what produced
+  // "Invalid Compact JWS": the anon key was being sent as if it were a
+  // logged-in user's token.
+  const token = await getAccessToken();
+  if (!token) throw new Error("You need to be signed in to upload images.");
 
   const blob = await maybeResize(file);
   const ext  = blob.type.split("/")[1] || "jpg";
@@ -22,7 +29,8 @@ export async function uploadFileToSupabase(file) {
     {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${key}`,
+        "Authorization": `Bearer ${token}`,
+        "apikey": anonKey,
         "Content-Type": blob.type,
         "x-upsert": "false",
       },
