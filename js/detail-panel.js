@@ -10,6 +10,7 @@ import { closeModal } from "./modal-utils.js";
 import { canModifyLineup, requireLineupEditable } from "./permissions.js";
 import { buildTypeGrid } from "./sidebar.js";
 import { state } from "./state.js";
+import { hydrateImages, resolveImageSrc } from "./private-images.js";
 import { openThrowModal } from "./throw-modal.js";
 
 export let selectedThrowIdx = 0;
@@ -68,6 +69,7 @@ export function renderDetail(lineup) {
   hero.className = "detail-hero";
   hero.innerHTML = buildHeroHtml(active, selectedThrowIdx, lineup);
   wireCarousels(hero, active);
+  hydrateImages(hero);
   const heroEditBtn = hero.querySelector(".edit-btn");
   const heroRemoveBtn = hero.querySelector(".remove-btn");
   const heroSaveBtn = hero.querySelector(".save-btn");
@@ -159,7 +161,7 @@ export function renderDetail(lineup) {
       thumb.className = "detail-strip-thumb" + (i === selectedThrowIdx ? " active" : "");
       const preview = (t.screenshots && t.screenshots[0]) || (t.standing && t.standing[0]) || "";
       thumb.innerHTML = `
-        ${preview ? `<img src="${escapeHtml(preview)}" alt="Variant ${i+1}">` : `<div class="strip-thumb-empty"></div>`}
+        ${preview ? `<img data-real-src="${escapeHtml(preview)}" alt="Variant ${i+1}">` : `<div class="strip-thumb-empty"></div>`}
         <span class="strip-thumb-label">V${String(i+1).padStart(2,"0")}</span>
       `;
       thumb.onclick = () => {
@@ -169,6 +171,7 @@ export function renderDetail(lineup) {
       strip.appendChild(thumb);
     });
     throwList.appendChild(strip);
+    hydrateImages(strip);
   }
 }
 
@@ -184,7 +187,7 @@ export function buildHeroHtml(t, idx, lineup) {
       <div class="tc-carousel" data-class="${cssClass}">
         <div class="tc-carousel-label">${label}</div>
         <div class="tc-carousel-inner">
-          <img class="tc-carousel-img ${cssClass}" src="${escapeHtml(imgs[0])}" data-imgs='${escapeHtml(JSON.stringify(imgs))}' data-idx="0" alt="${label}">
+          <img class="tc-carousel-img ${cssClass}" data-real-src="${escapeHtml(imgs[0])}" data-imgs='${escapeHtml(JSON.stringify(imgs))}' data-idx="0" alt="${label}">
           ${multi ? `<button class="tc-arrow tc-prev" type="button">‹</button>
                      <button class="tc-arrow tc-next" type="button">›</button>
                      <div class="tc-dots">${imgs.map((_,i) => `<span class="tc-dot${i===0?" active":""}"></span>`).join("")}</div>` : ""}
@@ -196,7 +199,7 @@ export function buildHeroHtml(t, idx, lineup) {
     <div class="tc-carousel">
       <div class="tc-carousel-label">Precise</div>
       <div class="tc-carousel-inner">
-        <img class="tc-carousel-img" src="${escapeHtml(t.precise)}" alt="Precise lineup">
+        <img class="tc-carousel-img" data-real-src="${escapeHtml(t.precise)}" alt="Precise lineup">
       </div>
     </div>` : "";
 
@@ -237,7 +240,7 @@ export function wireCarousels(container, t) {
     let cur = 0;
     const go = (n) => {
       cur = (n + imgs.length) % imgs.length;
-      img.src = imgs[cur];
+      resolveImageSrc(imgs[cur]).then(src => { img.src = src; });
       img.dataset.idx = cur;
       dots.forEach((d, i) => d.classList.toggle("active", i === cur));
     };

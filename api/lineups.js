@@ -71,14 +71,28 @@ function isValidPos(p) {
 // flow produced. Rejecting anything else prevents both stored-XSS via
 // crafted `src` values and use of the lineups table to point at
 // arbitrary external images.
-function isOwnStorageUrl(url) {
-  const base = `${process.env.SUPABASE_URL}/storage/v1/object/public/lineup-images/`;
-  return typeof url === "string" && url.length < 500 && url.startsWith(base);
+//
+// Two valid shapes now exist:
+//  - public bucket (official lineups): .../object/public/lineup-images/<file>
+//  - private bucket (personal lineups): .../object/authenticated/lineup-images-private/<userId>/<file>
+// The private form is only accepted when we know which user is making this
+// request (userId), and only when the folder segment matches that user's
+// own id — this stops one user's lineup payload from referencing another
+// user's private image path. Bulk import (admin restore of official data)
+// always passes userId = null/undefined, so private URLs are rejected
+// outright there.
+function isOwnStorageUrl(url, userId) {
+  if (typeof url !== "string" || url.length >= 500) return false;
+  const publicBase = `${process.env.SUPABASE_URL}/storage/v1/object/public/lineup-images/`;
+  if (url.startsWith(publicBase)) return true;
+  if (!userId) return false;
+  const privateBase = `${process.env.SUPABASE_URL}/storage/v1/object/authenticated/lineup-images-private/${userId}/`;
+  return url.startsWith(privateBase);
 }
 
 // Validates and normalizes one throw entry. Returns the cleaned object,
 // or throws with a message describing what was wrong.
-function sanitizeThrow(t, i) {
+function sanitizeThrow(t, i, userId) {
   if (!t || typeof t !== "object") throw new Error(`throws[${i}] is not an object`);
   if (typeof t.id !== "string" || !t.id) throw new Error(`throws[${i}].id is missing`);
   if (!isValidPos(t.pos)) throw new Error(`throws[${i}].pos is invalid`);
@@ -87,9 +101,9 @@ function sanitizeThrow(t, i) {
 
   const screenshots = Array.isArray(t.screenshots) ? t.screenshots.slice(0, MAX_SCREENSHOTS) : [];
   const standing = Array.isArray(t.standing) ? t.standing.slice(0, MAX_STANDING) : [];
-  screenshots.forEach((u, j) => { if (!isOwnStorageUrl(u)) throw new Error(`throws[${i}].screenshots[${j}] is not a valid image URL`); });
-  standing.forEach((u, j) => { if (!isOwnStorageUrl(u)) throw new Error(`throws[${i}].standing[${j}] is not a valid image URL`); });
-  if (t.precise != null && !isOwnStorageUrl(t.precise)) throw new Error(`throws[${i}].precise is not a valid image URL`);
+  screenshots.forEach((u, j) => { if (!isOwnStorageUrl(u, userId)) throw new Error(`throws[${i}].screenshots[${j}] is not a valid image URL`); });
+  standing.forEach((u, j) => { if (!isOwnStorageUrl(u, userId)) throw new Error(`throws[${i}].standing[${j}] is not a valid image URL`); });
+  if (t.precise != null && !isOwnStorageUrl(t.precise, userId)) throw new Error(`throws[${i}].precise is not a valid image URL`);
 
   return {
     id: t.id,
@@ -105,7 +119,7 @@ function sanitizeThrow(t, i) {
 
 // Validates a whole lineup payload before it's ever written to the DB.
 // Throws with a descriptive message on the first problem found.
-function sanitizeLineup(body) {
+function sanitizeLineup(body, userId) {
   if (typeof body.mapId !== "string" || !body.mapId) throw new Error("mapId is missing");
   if (!VALID_TYPES.includes(body.type)) throw new Error("type is invalid");
   if (!isValidPos(body.landing)) throw new Error("landing is invalid");
@@ -117,7 +131,7 @@ function sanitizeLineup(body) {
     type: body.type,
     name: typeof body.name === "string" ? body.name.slice(0, MAX_NAME_LEN) : "",
     landing: { x: body.landing.x, y: body.landing.y },
-    throws: body.throws.map(sanitizeThrow),
+    throws: body.throws.map((t, i) => sanitizeThrow(t, i, userId)),
   };
 }
 
@@ -191,7 +205,7 @@ module.exports = async function handler(req, res) {
           if (!r || !r.id) continue;
           let clean;
           try {
-            clean = sanitizeLineup(r);
+            clean = sanitizeLineup(r, null); // bulk import: official data only, never private-bucket URLs
           } catch (e) {
             skipped.push({ id: r.id, reason: e.message });
             continue;
@@ -216,7 +230,7 @@ module.exports = async function handler(req, res) {
 
       let clean;
       try {
-        clean = sanitizeLineup(body);
+        clean = sanitizeLineup(body, user.id);
       } catch (e) {
         res.status(400).json({ error: e.message });
         return;

@@ -1,5 +1,6 @@
-import { getAccessToken } from "./auth.js";
+import { authUser, getAccessToken } from "./auth.js";
 import { preciseInput, preciseThumbWrap, screenshotInput, standingInput, standingThumbGrid, thumbGrid } from "./dom.js";
+import { hydrateImages } from "./private-images.js";
 import { pendingThrowDraft } from "./throw-modal.js";
 
 export const MAX_SCREENSHOTS = 5;
@@ -9,14 +10,21 @@ export const MAX_STANDING = 3;
 // Client-side guardrails only — a determined attacker can call the storage
 // API directly with their own token and skip this file entirely, so the
 // real enforcement has to live in the Supabase Storage bucket's own
-// settings (allowed MIME types + a max file size on the `lineup-images`
-// bucket). This just stops honest users from accidentally uploading huge
-// or non-image files, and gives a clear error instead of a confusing
+// settings (allowed MIME types + a max file size on the storage buckets).
+// This just stops honest users from accidentally uploading huge or
+// non-image files, and gives a clear error instead of a confusing
 // server-side failure.
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_UPLOAD_BYTES = 15 * 1024 * 1024; // 15 MB
 
-export async function uploadFileToSupabase(file) {
+// Official lineups are admin-curated and meant to be visible to every
+// visitor, so their images stay in the existing public bucket exactly as
+// before. Personal lineups are private to their owner, so their images go
+// into a separate, non-public bucket instead — under a per-user folder
+// that Storage's own RLS policies restrict to that same signed-in user.
+// A plain public URL can't express "only the uploader can see this", which
+// is the whole point here.
+export async function uploadFileToSupabase(file, isOfficial) {
   const url = window.__SUPABASE_URL;
   const anonKey = window.__SUPABASE_ANON_KEY;
   if (!url || !anonKey) throw new Error("Supabase config not available — check SUPABASE_URL and SUPABASE_ANON_KEY in Vercel");
@@ -36,13 +44,17 @@ export async function uploadFileToSupabase(file) {
   // logged-in user's token.
   const token = await getAccessToken();
   if (!token) throw new Error("You need to be signed in to upload images.");
+  if (!isOfficial && !authUser) throw new Error("You need to be signed in to upload images.");
 
   const blob = await maybeResize(file);
   const ext  = blob.type.split("/")[1] || "jpg";
   const filename = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}.${ext}`;
 
+  const bucket = isOfficial ? "lineup-images" : "lineup-images-private";
+  const path = isOfficial ? filename : `${authUser.id}/${filename}`;
+
   const res = await fetch(
-    `${url}/storage/v1/object/lineup-images/${filename}`,
+    `${url}/storage/v1/object/${bucket}/${path}`,
     {
       method: "POST",
       headers: {
@@ -58,17 +70,26 @@ export async function uploadFileToSupabase(file) {
     const err = await res.text().catch(() => "");
     throw new Error(`Image upload failed (${res.status}): ${err}`);
   }
-  return `${url}/storage/v1/object/public/lineup-images/${filename}`;
+
+  // Public-bucket objects are fetched via the unauthenticated /public/ path
+  // (works for anyone, no sign-in needed — right for official content).
+  // Private-bucket objects are fetched via the /authenticated/ path, which
+  // requires a valid session token and is subject to the bucket's RLS
+  // policies — the client resolves these through private-images.js instead
+  // of using them directly as an <img src>.
+  return isOfficial
+    ? `${url}/storage/v1/object/public/${bucket}/${path}`
+    : `${url}/storage/v1/object/authenticated/${bucket}/${path}`;
 }
 
-export async function uploadDataUrlToSupabase(dataUrl) {
+export async function uploadDataUrlToSupabase(dataUrl, isOfficial) {
   if (!dataUrl || !dataUrl.startsWith("data:")) return dataUrl; // already a URL
   const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
   if (!match) return dataUrl;
   const [, mime, b64] = match;
   const buf = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
   const blob = new Blob([buf], { type: mime });
-  return uploadFileToSupabase(blob);
+  return uploadFileToSupabase(blob, isOfficial);
 }
 
 export async function maybeResize(file) {
@@ -108,18 +129,24 @@ export function readAsDataUrl(file) {
   });
 }
 
+// Thumbnails here can hold either a fresh local data: URI (just picked,
+// not uploaded yet — used as-is) or an already-uploaded storage URL (when
+// editing an existing throw's images), which may be a private one that
+// needs an authenticated fetch. data-real-src + hydrateImages handles
+// both cases the same way; passthrough is instant for data: URIs.
 export function renderThumbGrid() {
   thumbGrid.innerHTML = "";
   (pendingThrowDraft.screenshots || []).forEach((src, i) => {
     const t = document.createElement("div");
     t.className = "thumb";
-    t.innerHTML = `<img src="${src}"><button class="thumb-remove" type="button">✕</button>`;
+    t.innerHTML = `<img data-real-src="${src}"><button class="thumb-remove" type="button">✕</button>`;
     t.querySelector(".thumb-remove").onclick = () => {
       pendingThrowDraft.screenshots.splice(i, 1);
       renderThumbGrid();
     };
     thumbGrid.appendChild(t);
   });
+  hydrateImages(thumbGrid);
 }
 
 export function renderPreciseThumb() {
@@ -127,12 +154,13 @@ export function renderPreciseThumb() {
   if (!pendingThrowDraft.precise) return;
   const t = document.createElement("div");
   t.className = "thumb";
-  t.innerHTML = `<img src="${pendingThrowDraft.precise}"><button class="thumb-remove" type="button">✕</button>`;
+  t.innerHTML = `<img data-real-src="${pendingThrowDraft.precise}"><button class="thumb-remove" type="button">✕</button>`;
   t.querySelector(".thumb-remove").onclick = () => {
     pendingThrowDraft.precise = null;
     renderPreciseThumb();
   };
   preciseThumbWrap.appendChild(t);
+  hydrateImages(preciseThumbWrap);
 }
 
 export function renderStandingThumbGrid() {
@@ -140,13 +168,14 @@ export function renderStandingThumbGrid() {
   (pendingThrowDraft.standing || []).forEach((src, i) => {
     const t = document.createElement("div");
     t.className = "thumb";
-    t.innerHTML = `<img src="${src}"><button class="thumb-remove" type="button">✕</button>`;
+    t.innerHTML = `<img data-real-src="${src}"><button class="thumb-remove" type="button">✕</button>`;
     t.querySelector(".thumb-remove").onclick = () => {
       pendingThrowDraft.standing.splice(i, 1);
       renderStandingThumbGrid();
     };
     standingThumbGrid.appendChild(t);
   });
+  hydrateImages(standingThumbGrid);
 }
 
 standingInput.onchange = async () => {

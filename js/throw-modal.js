@@ -93,11 +93,29 @@ saveThrow.onclick = async () => {
   try {
     const draft = pendingThrowDraft;
 
+    // Officialness has to be known BEFORE uploading, since it decides
+    // which storage bucket the images go into (public for official,
+    // private-per-user for personal) — not just something we compute
+    // afterward for the DB row.
+    let isOfficial;
+    let existingLineup = null;
+    if (draft.isNewLineup) {
+      isOfficial = state.viewMode === "official" && isAdmin();
+    } else {
+      existingLineup = state.lineups.find(l => l.id === draft.lineupId);
+      if (!existingLineup) {
+        const all = await dbGetAll();
+        existingLineup = all.find(l => l.id === draft.lineupId);
+      }
+      if (!existingLineup) throw new Error("Could not find the lineup to save this throw position to.");
+      isOfficial = existingLineup.isOfficial;
+    }
+
     // Upload any local data URLs to Supabase now (parallel)
     const [standing, screenshots, precise] = await Promise.all([
-      Promise.all(draft.standing.map(uploadDataUrlToSupabase)),
-      Promise.all(draft.screenshots.map(uploadDataUrlToSupabase)),
-      draft.precise ? uploadDataUrlToSupabase(draft.precise) : Promise.resolve(null),
+      Promise.all(draft.standing.map(u => uploadDataUrlToSupabase(u, isOfficial))),
+      Promise.all(draft.screenshots.map(u => uploadDataUrlToSupabase(u, isOfficial))),
+      draft.precise ? uploadDataUrlToSupabase(draft.precise, isOfficial) : Promise.resolve(null),
     ]);
 
     saveThrow.textContent = "Saving…";
@@ -113,7 +131,6 @@ saveThrow.onclick = async () => {
     };
 
     if (draft.isNewLineup) {
-      const isOfficial = state.viewMode === "official" && isAdmin();
       const lineup = {
         id: draft.lineupId,
         mapId: state.mapId,
@@ -128,12 +145,7 @@ saveThrow.onclick = async () => {
       await dbPut(lineup, isOfficial);
       upsertLocalLineup(lineup);
     } else {
-      let lineup = state.lineups.find(l => l.id === draft.lineupId);
-      if (!lineup) {
-        const all = await dbGetAll();
-        lineup = all.find(l => l.id === draft.lineupId);
-      }
-      if (!lineup) throw new Error("Could not find the lineup to save this throw position to.");
+      const lineup = existingLineup;
 
       if (draft.editingThrowId) {
         const idx = lineup.throws.findIndex(t => t.id === draft.editingThrowId);

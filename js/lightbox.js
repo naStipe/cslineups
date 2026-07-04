@@ -1,5 +1,6 @@
 import { lightboxCaption, lightboxClose, lightboxImage, lightboxModal, lightboxNext, lightboxPrev } from "./dom.js";
 import { zoom } from "./pan-zoom.js";
+import { resolveImageSrc } from "./private-images.js";
 
 export let lightboxState = { images: [], index: 0, caption: "" };
 
@@ -49,9 +50,16 @@ export function openLightbox(images, index, caption) {
   lightboxModal.classList.add("show");
 }
 
-export function renderLightbox() {
+let renderToken = 0;
+
+export async function renderLightbox() {
   lbResetZoom();
-  lightboxImage.src = lightboxState.images[lightboxState.index];
+  const myToken = ++renderToken;
+  const raw = lightboxState.images[lightboxState.index];
+  lightboxImage.src = "";
+  const src = await resolveImageSrc(raw);
+  if (myToken !== renderToken) return; // a newer render superseded this one
+  lightboxImage.src = src;
   const multi = lightboxState.images.length > 1;
   lightboxPrev.style.display = multi ? "" : "none";
   lightboxNext.style.display = multi ? "" : "none";
