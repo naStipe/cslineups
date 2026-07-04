@@ -8,7 +8,7 @@ import { renderMarkers, resetRenderedThrowSig } from "./markers.js";
 import { resetZoom } from "./pan-zoom.js";
 import { buildFilters, buildSidebar, showMapLoading } from "./sidebar.js";
 import { state } from "./state.js";
-import { setViewMode } from "./view-mode.js";
+import { applyViewModeClass, setViewMode } from "./view-mode.js";
 
 export async function selectMap(id) {
   state.mapId = id;
@@ -28,6 +28,7 @@ export async function selectMap(id) {
   if (!authUser && state.viewMode === "personal") state.viewMode = "official";
   if (officialViewBtn) officialViewBtn.classList.toggle("active", state.viewMode === "official");
   if (personalViewBtn) personalViewBtn.classList.toggle("active", state.viewMode === "personal");
+  applyViewModeClass();
   await loadLineups();
 }
 

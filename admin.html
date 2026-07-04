@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Admin — Screenshot Review · Lineupr</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+</head>
+<body class="admin-body">
+
+<div class="admin-wrap">
+  <header class="admin-header">
+    <div class="home-brand">
+      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="28" height="28">
+        <circle cx="20" cy="20" r="17" stroke="#ffa53e" stroke-width="2.2"/>
+        <circle cx="20" cy="20" r="9"  stroke="#ffa53e" stroke-width="1" opacity="0.3"/>
+        <circle cx="20" cy="20" r="3.5" fill="#ffa53e"/>
+      </svg>
+      <span class="home-wordmark">lineup<span class="home-wordmark-r">r</span> <span class="admin-tag">admin</span></span>
+    </div>
+    <div class="admin-header-right">
+      <div class="admin-status-toggle" id="statusToggle" hidden>
+        <button class="view-toggle-btn active" data-status="unreviewed">Pending</button>
+        <button class="view-toggle-btn" data-status="all">All</button>
+      </div>
+      <span class="auth-email" id="adminEmail"></span>
+      <a href="/" class="ghost-btn">← Back to site</a>
+      <button id="adminSignOut" class="ghost-btn" hidden>Sign out</button>
+    </div>
+  </header>
+
+  <!-- Sign-in gate (shown when signed out) -->
+  <div class="admin-signin" id="adminSignin" hidden>
+    <h3>Admin sign in</h3>
+    <p class="auth-error info" id="adminError" hidden></p>
+    <label class="field-label">Email</label>
+    <input type="email" id="adminEmailInput" autocomplete="email" placeholder="you@example.com">
+    <label class="field-label">Password</label>
+    <input type="password" id="adminPasswordInput" autocomplete="current-password" placeholder="Password">
+    <button class="primary-btn" id="adminSigninBtn">Sign in</button>
+    <button class="ghost-btn" id="adminGoogleBtn">Continue with Google</button>
+  </div>
+
+  <!-- Access denied (signed in but not admin) -->
+  <div class="admin-denied" id="adminDenied" hidden>
+    <h3>Access denied</h3>
+    <p>This account isn't an administrator.</p>
+  </div>
+
+  <!-- Moderation queue -->
+  <main class="admin-main" id="adminMain" hidden>
+    <p class="admin-hint" id="adminHint">Loading…</p>
+    <div class="admin-queue" id="adminQueue"></div>
+  </main>
+</div>
+
+<!-- fullscreen image viewer -->
+<div class="modal-backdrop lightbox-backdrop" id="adminLightbox">
+  <button class="icon-btn lightbox-close" id="adminLightboxClose">✕</button>
+  <img id="adminLightboxImg" class="lightbox-image" alt="screenshot">
+</div>
+
+<script type="module" src="js/admin.js"></script>
+</body>
+</html>
