@@ -199,7 +199,7 @@ button,input,select,textarea{font-family:var(--font-body);}
   background:currentColor;
   cursor:pointer;
   filter:saturate(.5) brightness(.82);
-  transition:filter .25s ease, box-shadow .25s ease;
+  transition:filter .25s ease, box-shadow .25s ease, opacity .25s ease;
   transform:scale(var(--marker-scale, 1));
   transform-origin:center center;
   touch-action:manipulation;
@@ -274,7 +274,13 @@ button,input,select,textarea{font-family:var(--font-body);}
     0 0 0 0 color-mix(in srgb, currentColor 18%, transparent),
     0 2px 8px rgba(0,0,0,.5);
   filter:saturate(.5) brightness(.82);
-  transition:filter .2s ease, box-shadow .2s ease;
+  transition:filter .2s ease, box-shadow .2s ease, transform .15s ease;
+  /* Keep the fan's petal markers in sync with map zoom, same as regular
+     markers — otherwise they stay full-size while every other marker
+     shrinks/grows around them. The parent .fan-petal already owns a
+     transform (translate + open/close scale), so the zoom compensation
+     has to live on this inner element instead of clashing with it. */
+  transform:scale(var(--marker-scale, 1));
 }
 .fan-petal-dot::before{
   content:"";position:absolute;inset:-7px;border-radius:50%;
@@ -294,6 +300,10 @@ button,input,select,textarea{font-family:var(--font-body);}
   font-family:var(--font-mono);font-size:9px;font-weight:700;color:var(--text);
   background:var(--hull);border:1px solid var(--line);border-radius:4px;
   padding:2px 6px;white-space:nowrap;
+  /* Scale down with zoom like the dot above it, anchored at the top edge
+     (closest to the dot) so it shrinks toward the marker instead of drifting. */
+  transform:scale(var(--marker-scale, 1));
+  transform-origin:top center;
 }
 .marker.throwpos{
   width:18px;height:18px;margin:-9px 0 0 -9px;z-index:2;opacity:.9;
