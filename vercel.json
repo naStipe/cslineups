@@ -18,9 +18,5 @@
       "source": "/:map(dust2|mirage|inferno|nuke|ancient|anubis|overpass|cache)/:type(smoke|flash|fire|he|decoy)/:slug",
       "destination": "/api/render?page=lineup&map=:map&type=:type&slug=:slug"
     }
-  ],
-  "functions": {
-    "api/render.js": { "includeFiles": "shared/**" },
-    "api/sitemap.js": { "includeFiles": "shared/**" }
-  }
+  ]
 }

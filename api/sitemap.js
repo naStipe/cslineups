@@ -1,7 +1,7 @@
 // Dynamic sitemap.xml (rewritten from /sitemap.xml in vercel.json).
 // Lists the SPA root, the /maps index, the 8 map pages, and every official
 // lineup page.
-const { SITE, supabase, loadConstants, fetchOfficialLineups, lineupPath } = require("./_lib/seo");
+const { SITE, CONSTANTS, supabase, fetchOfficialLineups, lineupPath } = require("./_lib/seo");
 
 function escXml(s) {
   return String(s)
@@ -26,7 +26,7 @@ function isoDate(ms) {
 
 module.exports = async function handler(req, res) {
   try {
-    const { MAPS } = await loadConstants();
+    const { MAPS } = CONSTANTS;
     const lineups = await fetchOfficialLineups(supabase());
 
     const urls = [

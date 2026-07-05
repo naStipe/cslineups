@@ -6,7 +6,7 @@
 // The interactive SPA stays at / — these pages exist so search engines get
 // real content, and they link into the SPA for the interactive experience.
 const {
-  SITE, supabase, loadConstants, fetchOfficialLineups,
+  SITE, CONSTANTS, supabase, fetchOfficialLineups,
   esc, isPublicStorageUrl, lineupPath, shortIdOf, lineupDisplayName,
 } = require("./_lib/seo");
 
@@ -360,7 +360,7 @@ function notFound(res) {
 
 module.exports = async function handler(req, res) {
   try {
-    const C = await loadConstants();
+    const C = CONSTANTS;
     const q = req.query || {};
     // Params are whitelisted in the vercel.json rewrites, but this function
     // is also directly reachable at /api/render — validate again here.
