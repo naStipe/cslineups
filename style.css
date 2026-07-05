@@ -1278,6 +1278,18 @@ body.is-admin .admin-link{ display:block; }
 .admin-shot-reject:hover{ background:var(--fire); color:var(--void); border-color:var(--fire); }
 
 .admin-card-actions{ display:flex; gap:10px; margin-top:8px; padding-top:14px; border-top:1px solid var(--line-soft); flex-wrap:wrap; }
+
+/* Email-confirmation landing page (confirmed.html) */
+.confirm-wrap{ max-width:420px; margin:0 auto; padding:60px 22px; display:flex; flex-direction:column; gap:26px; align-items:center; }
+.confirm-brand{ justify-content:center; }
+.confirm-card{ width:100%; background:var(--panel); border:1px solid var(--line); border-top:2px solid var(--signal);
+  border-radius:8px; padding:32px 28px; text-align:center; box-shadow:0 26px 70px rgba(0,0,0,.5); }
+.confirm-card h3{ margin:0 0 8px; font-size:20px; color:var(--text); letter-spacing:.02em; }
+.confirm-icon{ width:52px; height:52px; margin:0 auto 18px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-size:24px; color:var(--he); border:2px solid var(--he); background:color-mix(in srgb, var(--he) 10%, var(--panel)); }
+.confirm-icon-err{ color:var(--fire); border-color:var(--fire); background:color-mix(in srgb, var(--fire) 10%, var(--panel)); }
+.confirm-text{ color:var(--text-dim); font-size:14px; margin:0 0 22px; line-height:1.55; }
+.confirm-btn{ display:inline-block; text-decoration:none; }
 .admin-publish{ color:var(--signal); border-color:color-mix(in srgb, var(--signal) 40%, var(--line)); }
 .admin-publish:hover{ border-color:var(--signal); background:color-mix(in srgb, var(--signal) 12%, var(--panel)); }
 .admin-card.is-busy{ opacity:.6; }

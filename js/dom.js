@@ -150,6 +150,14 @@ export const authEmailInput = document.getElementById("authEmailInput");
 
 export const authPasswordInput = document.getElementById("authPasswordInput");
 
+export const authUsernameField = document.getElementById("authUsernameField");
+
+export const authUsernameInput = document.getElementById("authUsernameInput");
+
+export const authPasswordConfirmField = document.getElementById("authPasswordConfirmField");
+
+export const authPasswordConfirmInput = document.getElementById("authPasswordConfirmInput");
+
 export const authSubmitBtn = document.getElementById("authSubmitBtn");
 
 export const authGoogleBtn = document.getElementById("authGoogleBtn");
