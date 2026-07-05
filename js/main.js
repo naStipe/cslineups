@@ -3,6 +3,7 @@ import { initAuth } from "./auth.js";
 import { closeDetailPanel } from "./detail-panel.js";
 import { backBtn, detailPanel, lightboxModal, lightboxNext, lightboxPrev } from "./dom.js";
 import "./export-import.js"; // side effect only: wires up the export-backup button
+import "./profile-modal.js"; // side effect only: wires up the profile button + modal
 import { buildHomeScreen, goHome } from "./home-screen.js";
 import { renderMarkers } from "./markers.js";
 import { resetZoom } from "./pan-zoom.js";

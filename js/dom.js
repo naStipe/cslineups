@@ -167,3 +167,35 @@ export const authSwitchText = document.getElementById("authSwitchText");
 export const authSwitchLink = document.getElementById("authSwitchLink");
 
 export const cancelAuth = document.getElementById("cancelAuth");
+
+export const profileBtn = document.getElementById("profileBtn");
+
+export const profileAvatar = document.getElementById("profileAvatar");
+
+export const profileModal = document.getElementById("profileModal");
+
+export const profileModalAvatar = document.getElementById("profileModalAvatar");
+
+export const profileModalName = document.getElementById("profileModalName");
+
+export const profileModalEmail = document.getElementById("profileModalEmail");
+
+export const closeProfile = document.getElementById("closeProfile");
+
+export const profileUsernameInput = document.getElementById("profileUsernameInput");
+
+export const saveUsernameBtn = document.getElementById("saveUsernameBtn");
+
+export const usernameMsg = document.getElementById("usernameMsg");
+
+export const profileNewPassword = document.getElementById("profileNewPassword");
+
+export const profileNewPassword2 = document.getElementById("profileNewPassword2");
+
+export const changePasswordBtn = document.getElementById("changePasswordBtn");
+
+export const passwordMsg = document.getElementById("passwordMsg");
+
+export const deleteAccountBtn = document.getElementById("deleteAccountBtn");
+
+export const deleteMsg = document.getElementById("deleteMsg");

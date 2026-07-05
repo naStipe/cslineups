@@ -1,4 +1,4 @@
-import { appShell, authEmailLabel, personalViewBtn } from "./dom.js";
+import { appShell, authEmailLabel, personalViewBtn, profileAvatar } from "./dom.js";
 import { loadLineups } from "./map-data.js";
 import { state } from "./state.js";
 import { setViewMode } from "./view-mode.js";
@@ -154,8 +154,10 @@ export function applyAuthState() {
   if (authEmailLabel) {
     // Prefer the username; fall back to the email if a profile row somehow
     // has none. The email stays available on hover.
-    authEmailLabel.textContent = authUser ? ((authProfile && authProfile.username) || authUser.email) : "";
+    const name = authUser ? ((authProfile && authProfile.username) || authUser.email) : "";
+    authEmailLabel.textContent = name;
     authEmailLabel.title = authUser ? authUser.email : "";
+    if (profileAvatar) profileAvatar.textContent = name ? name[0].toUpperCase() : "";
   }
   if (personalViewBtn) personalViewBtn.classList.toggle("hidden", !authUser);
 }

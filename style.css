@@ -1279,6 +1279,52 @@ body.is-admin .admin-link{ display:block; }
 
 .admin-card-actions{ display:flex; gap:10px; margin-top:8px; padding-top:14px; border-top:1px solid var(--line-soft); flex-wrap:wrap; }
 
+/* Profile button (sidebar footer) + profile modal */
+.profile-btn{
+  display:flex; align-items:center; gap:9px; width:100%;
+  background:var(--panel); border:1px solid var(--line); border-radius:6px;
+  padding:7px 10px; cursor:pointer; transition:.15s; text-align:left; min-width:0;
+}
+.profile-btn:hover{ border-color:var(--signal); background:var(--panel-2); }
+.profile-btn:hover .profile-chevron{ color:var(--signal); transform:translateX(2px); }
+.profile-btn .auth-email{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.profile-chevron{ color:var(--text-faint); flex-shrink:0; transition:.15s; }
+.profile-avatar{
+  width:24px; height:24px; border-radius:50%; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(135deg, var(--signal), #ff7a3e);
+  color:var(--void); font-family:var(--font-mono); font-weight:700; font-size:12px;
+}
+.profile-avatar-lg{ width:52px; height:52px; font-size:22px; border-radius:12px; }
+
+.profile-modal{ width:440px; gap:0; }
+.profile-head{ display:flex; align-items:center; gap:14px; padding-bottom:16px; border-bottom:1px solid var(--line-soft); }
+.profile-head-text{ flex:1; min-width:0; }
+.profile-head-text h3{ margin:0; font-size:18px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.profile-email{ margin:2px 0 0; font-family:var(--font-mono); font-size:11px; color:var(--text-faint);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+.profile-section{ padding:16px 0; border-bottom:1px solid var(--line-soft); display:flex; flex-direction:column; gap:8px; }
+.profile-section:last-child{ border-bottom:none; padding-bottom:4px; }
+.profile-section-title{ margin:0; font-family:var(--font-mono); font-size:10px; text-transform:uppercase;
+  letter-spacing:.08em; color:var(--text-dim); }
+.profile-row{ display:flex; gap:8px; }
+.profile-row input{ flex:1; min-width:0; }
+.profile-modal input[type=password]{
+  background:var(--void); border:1px solid var(--line); color:var(--text);
+  border-radius:4px; padding:9px 10px; font-size:14px; width:100%;
+}
+.profile-modal input[type=password]:focus{ outline:1px solid var(--signal); border-color:var(--signal); }
+.profile-pw-btn{ align-self:flex-start; }
+.profile-msg{ margin:0; font-size:12px; color:var(--he); }
+.profile-msg.error{ color:var(--fire); }
+
+.profile-danger{ margin-top:2px; }
+.profile-danger-title{ color:var(--fire); }
+.profile-danger-text{ margin:0; font-size:12px; color:var(--text-dim); line-height:1.5; }
+.profile-danger .danger{ align-self:flex-start; color:var(--fire);
+  border-color:color-mix(in srgb, var(--fire) 45%, var(--line)); }
+
 /* Email-confirmation landing page (confirmed.html) */
 .confirm-wrap{ max-width:420px; margin:0 auto; padding:60px 22px; display:flex; flex-direction:column; gap:26px; align-items:center; }
 .confirm-brand{ justify-content:center; }

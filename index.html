@@ -78,7 +78,11 @@
           <button id="signInBtn" class="ghost-btn">Sign in</button>
         </div>
         <div class="auth-signed-in">
-          <span class="auth-email" id="authEmailLabel"></span>
+          <button class="profile-btn" id="profileBtn" title="Open your profile">
+            <span class="profile-avatar" id="profileAvatar"></span>
+            <span class="auth-email" id="authEmailLabel"></span>
+            <svg class="profile-chevron" width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M3 1.5L6.5 5L3 8.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
           <button id="signOutBtn" class="ghost-btn">Sign out</button>
         </div>
       </div>
@@ -214,6 +218,46 @@
     <button class="ghost-btn auth-google-btn" id="authGoogleBtn">Continue with Google</button>
     <p class="auth-switch"><span id="authSwitchText">Don't have an account?</span> <a href="#" id="authSwitchLink">Sign up</a></p>
     <button class="ghost-btn" id="cancelAuth">Cancel</button>
+  </div>
+</div>
+
+<!-- MODAL: user profile -->
+<div class="modal-backdrop" id="profileModal">
+  <div class="modal profile-modal">
+    <div class="profile-head">
+      <div class="profile-avatar profile-avatar-lg" id="profileModalAvatar"></div>
+      <div class="profile-head-text">
+        <h3 id="profileModalName"></h3>
+        <p class="profile-email" id="profileModalEmail"></p>
+      </div>
+      <button class="icon-btn" id="closeProfile">✕</button>
+    </div>
+
+    <div class="profile-section">
+      <p class="profile-section-title">Username</p>
+      <div class="profile-row">
+        <input type="text" id="profileUsernameInput" maxlength="32" autocomplete="username" placeholder="Your username">
+        <button class="primary-btn" id="saveUsernameBtn">Save</button>
+      </div>
+      <p class="profile-msg" id="usernameMsg" hidden></p>
+    </div>
+
+    <div class="profile-section">
+      <p class="profile-section-title">Change password</p>
+      <label class="field-label">New password</label>
+      <input type="password" id="profileNewPassword" autocomplete="new-password" placeholder="At least 6 characters">
+      <label class="field-label">Repeat new password</label>
+      <input type="password" id="profileNewPassword2" autocomplete="new-password" placeholder="Repeat it">
+      <button class="ghost-btn profile-pw-btn" id="changePasswordBtn">Change password</button>
+      <p class="profile-msg" id="passwordMsg" hidden></p>
+    </div>
+
+    <div class="profile-section profile-danger">
+      <p class="profile-section-title profile-danger-title">Danger zone</p>
+      <p class="profile-danger-text">Deleting your account permanently removes your personal lineups, saved bookmarks and uploaded screenshots. This cannot be undone.</p>
+      <button class="ghost-btn danger" id="deleteAccountBtn">Delete my account</button>
+      <p class="profile-msg" id="deleteMsg" hidden></p>
+    </div>
   </div>
 </div>
 
