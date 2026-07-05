@@ -623,6 +623,18 @@ body.view-official:not(.is-admin) #addModeBtn{display:none;}
   margin:0 0 30px;text-align:center;
 }
 
+.home-footer{
+  padding:18px 48px 26px;text-align:center;
+}
+.home-footer-links{
+  display:flex;flex-wrap:wrap;justify-content:center;gap:6px 18px;
+  font-size:12.5px;
+}
+.home-footer-links a{
+  color:var(--text-faint);text-decoration:none;
+}
+.home-footer-links a:hover{color:var(--text-dim);text-decoration:underline;}
+
 .home-grid{
   display:flex;align-items:center;justify-content:center;
   max-width:100%;overflow:hidden;

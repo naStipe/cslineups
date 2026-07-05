@@ -42,7 +42,7 @@ export function enterMap(id) {
   homeScreen.style.display = "none";
   appShell.removeAttribute("hidden");
   closeSidebar();
-  selectMap(id);
+  return selectMap(id);
 }
 
 export function goHome() {

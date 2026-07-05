@@ -1,10 +1,11 @@
 import { setAddMode } from "./add-mode.js";
 import { initAuth } from "./auth.js";
-import { closeDetailPanel } from "./detail-panel.js";
+import { MAPS } from "./constants.js";
+import { closeDetailPanel, openDetail } from "./detail-panel.js";
 import { backBtn, detailPanel, lightboxModal, lightboxNext, lightboxPrev } from "./dom.js";
 import "./export-import.js"; // side effect only: wires up the export-backup button
 import "./profile-modal.js"; // side effect only: wires up the profile button + modal
-import { buildHomeScreen, goHome } from "./home-screen.js";
+import { buildHomeScreen, enterMap, goHome } from "./home-screen.js";
 import { renderMarkers } from "./markers.js";
 import { resetZoom } from "./pan-zoom.js";
 import { buildFilters, buildSidebar } from "./sidebar.js";
@@ -55,7 +56,30 @@ buildSidebar();
 
 buildFilters();
 
+// Deep links from the server-rendered SEO pages ("Open in interactive
+// map"): /?map=dust2 opens that map, /?map=dust2&lineup=<id> also opens the
+// lineup's detail panel once its lineups have loaded.
+async function handleDeepLink() {
+  const params = new URLSearchParams(window.location.search);
+  const mapId = params.get("map");
+  if (!mapId || !MAPS.some(m => m.id === mapId)) return;
+  await enterMap(mapId);
+  const lineupId = params.get("lineup");
+  if (!lineupId) return;
+  // The initial auth event can restart the lineup load mid-flight (see
+  // auth.js onAuthStateChange -> loadLineups), cancelling the load we just
+  // awaited — so poll briefly for the lineup instead of checking once.
+  for (let i = 0; i < 50; i++) {
+    if (state.lineups.some(l => l.id === lineupId)) {
+      openDetail(lineupId, 0);
+      return;
+    }
+    await new Promise(r => setTimeout(r, 100));
+  }
+}
+
 loadConfig().then(async () => {
   await initAuth();
   buildHomeScreen();
+  handleDeepLink();
 });
