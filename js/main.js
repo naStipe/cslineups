@@ -11,7 +11,21 @@ import { resetZoom } from "./pan-zoom.js";
 import { buildFilters, buildSidebar } from "./sidebar.js";
 import { state } from "./state.js";
 
-backBtn.onclick = goHome;
+// The map view is its own history entry above the chooser, so "Maps" pops
+// back to the chooser (keeping Back/Forward symmetric). Fall back to a direct
+// render if there's no map entry to pop (shouldn't happen in normal flow).
+backBtn.onclick = () => {
+  if (history.state && history.state.view === "map") history.back();
+  else goHome();
+};
+
+// Browser Back/Forward between the chooser and a map view. URL-driven and
+// render-only — never pushes, or Back would get stuck.
+window.addEventListener("popstate", () => {
+  const id = new URLSearchParams(window.location.search).get("map");
+  if (id && MAPS.some(m => m.id === id)) enterMap(id);
+  else goHome();
+});
 
 document.addEventListener("keydown", (e) => {
   const tag = e.target.tagName;
@@ -63,6 +77,10 @@ async function handleDeepLink() {
   const params = new URLSearchParams(window.location.search);
   const mapId = params.get("map");
   if (!mapId || !MAPS.some(m => m.id === mapId)) return;
+  // Seed a chooser entry beneath this map view so Back / the "Maps" button
+  // land on the chooser even when the user deep-linked straight to a map.
+  history.replaceState({ view: "home" }, "", "/");
+  history.pushState({ view: "map", map: mapId }, "", `/?map=${mapId}`);
   await enterMap(mapId);
   const lineupId = params.get("lineup");
   if (!lineupId) return;

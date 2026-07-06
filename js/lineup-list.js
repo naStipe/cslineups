@@ -10,7 +10,7 @@ import { MOVEMENT_LABELS, RANGE_LABELS, TYPES } from "./constants.js";
 import { lineupList, lineupSearchInput, markerLayer } from "./dom.js";
 import { escapeHtml } from "./html-utils.js";
 import { openLightbox } from "./lightbox.js";
-import { centerOnMapPercent } from "./pan-zoom.js";
+import { renderMarkers } from "./markers.js";
 import { hydrateImages } from "./private-images.js";
 import { buildFilters } from "./sidebar.js";
 import { state } from "./state.js";
@@ -183,12 +183,9 @@ export function focusLineup(id) {
   state.selectedLineupId = id;
 
   // Note: we deliberately don't close the mobile drawer here — the inline
-  // detail we're about to expand lives inside it. The map focus is applied
-  // underneath, ready for when the user dismisses the drawer.
-
-  // centerOnMapPercent → applyTransform → renderMarkers, so the pinned marker
-  // exists by the time we look for it on the next frame.
-  centerOnMapPercent(lineup.landing.x, lineup.landing.y);
+  // detail we're about to expand lives inside it. And we don't zoom/pan the
+  // map: the marker is just pinned and flashed in place at the current view.
+  renderMarkers();
   syncLineupListSelection();
 
   requestAnimationFrame(() => {

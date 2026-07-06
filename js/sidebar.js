@@ -1,6 +1,6 @@
 import { MAPS, TYPES } from "./constants.js";
 import { mapList, mapLoading, mobileMenuBtn, sidebar, sidebarOverlay, typeFilters, typeGrid } from "./dom.js";
-import { selectMap } from "./map-data.js";
+import { switchMap } from "./home-screen.js";
 import { renderMarkers } from "./markers.js";
 import { state } from "./state.js";
 
@@ -10,7 +10,7 @@ export function buildSidebar() {
     const el = document.createElement("div");
     el.className = "map-item" + (m.id === state.mapId ? " active" : "");
     el.innerHTML = `<span class="swatch"></span>${m.name}`;
-    el.onclick = () => { closeSidebar(); selectMap(m.id); };
+    el.onclick = () => { closeSidebar(); switchMap(m.id); };
     mapList.appendChild(el);
   });
 }
