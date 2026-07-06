@@ -87,6 +87,20 @@
     <p class="rail-label">Maps</p>
     <nav class="map-list" id="mapList"></nav>
 
+    <!-- Lineups on the current map: searchable list that focuses the
+         matching marker on the map when clicked. -->
+    <div class="lineup-rail">
+      <p class="rail-label">Lineups on this map</p>
+      <div class="lineup-search">
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <circle cx="6" cy="6" r="4.3" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="9.3" y1="9.3" x2="12.5" y2="12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <input type="search" id="lineupSearchInput" placeholder="Search lineups…" autocomplete="off" aria-label="Search lineups on this map">
+      </div>
+      <nav class="lineup-list" id="lineupList"></nav>
+    </div>
+
     <div class="sidebar-footer">
       <div class="auth-box">
         <div class="auth-signed-out">
@@ -185,6 +199,21 @@
 
     </div>
   </main>
+
+  <!-- Always-present map links (also crawlable). Mirrors the home-screen footer. -->
+  <footer class="app-footer">
+    <nav class="app-footer-links" aria-label="Browse lineups by map">
+      <a href="/maps">All maps</a>
+      <a href="/dust2">Dust II lineups</a>
+      <a href="/mirage">Mirage lineups</a>
+      <a href="/inferno">Inferno lineups</a>
+      <a href="/nuke">Nuke lineups</a>
+      <a href="/ancient">Ancient lineups</a>
+      <a href="/anubis">Anubis lineups</a>
+      <a href="/overpass">Overpass lineups</a>
+      <a href="/cache">Cache lineups</a>
+    </nav>
+  </footer>
 
   <!-- EXPANDED LINEUP PANEL -->
   <div class="detail-panel" id="detailPanel">

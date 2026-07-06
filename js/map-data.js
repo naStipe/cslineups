@@ -3,7 +3,8 @@ import { buildSavedThrowKeys, dbGetAll, dbGetMine, dbGetSaved } from "./api.js";
 import { authUser } from "./auth.js";
 import { updateCheatsheet } from "./cheatsheet.js";
 import { MAPS } from "./constants.js";
-import { currentMapName, detailPanel, lineupCount, linkSvg, mapImage, markerLayer, officialViewBtn, personalViewBtn } from "./dom.js";
+import { currentMapName, detailPanel, lineupCount, lineupSearchInput, linkSvg, mapImage, markerLayer, officialViewBtn, personalViewBtn } from "./dom.js";
+import { buildLineupList } from "./lineup-list.js";
 import { renderMarkers, resetRenderedThrowSig } from "./markers.js";
 import { resetZoom } from "./pan-zoom.js";
 import { buildFilters, buildSidebar, showMapLoading } from "./sidebar.js";
@@ -20,6 +21,8 @@ export async function selectMap(id) {
   detailPanel.classList.remove("open");
   setAddMode(false);
   resetZoom();
+  if (lineupSearchInput) lineupSearchInput.value = ""; // fresh search per map
+  buildLineupList();                                   // clear the previous map's list right away
   buildSidebar();
   const m = MAPS.find(x => x.id === id);
   currentMapName.textContent = m.name.toUpperCase();
@@ -62,6 +65,7 @@ export async function loadLineups() {
     state.lineups = lineups;
     lineupCount.textContent = `${lineups.length} lineup${lineups.length === 1 ? "" : "s"}`;
     buildFilters();
+    buildLineupList();
     renderMarkers();
   } catch (err) {
     if (myToken !== loadToken) return;
@@ -75,6 +79,7 @@ export async function loadLineups() {
 export function refreshLocal() {
   lineupCount.textContent = `${state.lineups.length} lineup${state.lineups.length === 1 ? "" : "s"}`;
   buildFilters();
+  buildLineupList();
   renderMarkers();
 }
 

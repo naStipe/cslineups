@@ -69,9 +69,42 @@ ul.plain .sub{color:var(--faint);font-size:13px;margin-left:8px}
 .shots figcaption{font-size:12px;color:var(--faint);margin-top:4px}
 .foot{margin-top:44px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--faint)}
 .foot a{color:var(--dim)}
+.shots img{cursor:zoom-in}
+.lb{position:fixed;inset:0;background:rgba(4,6,7,.93);display:none;align-items:center;justify-content:center;z-index:100;overflow:hidden}
+.lb.show{display:flex}
+.lb img{max-width:94vw;max-height:92vh;border-radius:4px;user-select:none;-webkit-user-drag:none;transform-origin:center;will-change:transform}
+.lb-close{position:absolute;top:12px;right:16px;background:none;border:none;color:#fff;font-size:32px;line-height:1;cursor:pointer;padding:4px 10px}
+.lb-hint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);color:var(--dim);font-size:12px;pointer-events:none}
 `.trim();
 
-function layout({ title, description, path, ogImage, ogType, jsonLd, crumbs, body }) {
+// Self-contained click-to-zoom lightbox for the screenshot <img>s. Vanilla,
+// inline, no dependencies — click a shot to open it fullscreen; wheel or
+// click to zoom, drag to pan, Esc/×/backdrop to close.
+const LIGHTBOX_HTML = `<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Screenshot viewer">
+<button class="lb-close" id="lbClose" aria-label="Close">&times;</button>
+<img id="lbImg" alt="">
+<div class="lb-hint">Scroll or click to zoom · drag to pan · Esc to close</div>
+</div>
+<script>
+(function(){
+var o=document.getElementById('lb'),im=document.getElementById('lbImg'),z=1,x=0,y=0,d=false,sx=0,sy=0,px=0,py=0;
+function t(){im.style.transform='translate('+x+'px,'+y+'px) scale('+z+')';im.style.cursor=z>1?'grab':'zoom-in';}
+function open(s,a){im.src=s;im.alt=a||'';z=1;x=0;y=0;t();o.classList.add('show');document.body.style.overflow='hidden';}
+function close(){o.classList.remove('show');im.removeAttribute('src');document.body.style.overflow='';}
+var shots=document.querySelectorAll('.shots img');
+for(var i=0;i<shots.length;i++){(function(img){img.addEventListener('click',function(){open(img.currentSrc||img.src,img.alt);});})(shots[i]);}
+document.getElementById('lbClose').addEventListener('click',close);
+o.addEventListener('click',function(e){if(e.target===o)close();});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&o.classList.contains('show'))close();});
+o.addEventListener('wheel',function(e){e.preventDefault();z=Math.min(Math.max(z*(e.deltaY<0?1.2:1/1.2),1),6);if(z===1){x=0;y=0;}t();},{passive:false});
+im.addEventListener('click',function(e){e.stopPropagation();if(z>1){z=1;x=0;y=0;}else{z=2.5;}t();});
+im.addEventListener('mousedown',function(e){if(z<=1)return;e.preventDefault();d=true;sx=e.clientX;sy=e.clientY;px=x;py=y;im.style.cursor='grabbing';});
+window.addEventListener('mousemove',function(e){if(!d)return;x=px+(e.clientX-sx);y=py+(e.clientY-sy);t();});
+window.addEventListener('mouseup',function(){if(d){d=false;t();}});
+})();
+</script>`;
+
+function layout({ title, description, path, ogImage, ogType, jsonLd, crumbs, body, lightbox }) {
   const canonical = SITE + path;
   const image = ogImage || `${SITE}/og-image.svg`;
   return `<!doctype html>
@@ -107,6 +140,7 @@ ${body}
 <p><a href="/">Lineupr</a> — the interactive CS2 grenade lineup map. <a href="/maps">Browse lineups by map</a>.</p>
 </footer>
 </div>
+${lightbox ? LIGHTBOX_HTML : ""}
 </body>
 </html>`;
 }
@@ -347,6 +381,7 @@ ${relatedHtml}
     jsonLd,
     crumbs: `<a href="/">Home</a> › <a href="/maps">Maps</a> › <a href="/${esc(map.id)}">${esc(map.name)}</a> › ${esc(displayName)}`,
     body,
+    lightbox: true,
   }), CACHE_OK);
 }
 

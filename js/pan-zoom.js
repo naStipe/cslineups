@@ -50,6 +50,20 @@ export function resetZoom() {
   mapStage.style.cursor = "";
 }
 
+// Pan (and optionally zoom) so a given point on the map frame, expressed in
+// the same 0–100% coords lineups use for landing/throw positions, ends up
+// centered in the map stage. Used by the sidebar lineup list to "fly to" a
+// marker. clampPan() inside applyTransform keeps the frame on-screen, so
+// markers near the edges land as close to center as the bounds allow.
+export function centerOnMapPercent(xPct, yPct, targetZoom = 2.4) {
+  zoom = Math.min(Math.max(targetZoom, 1), MAX_ZOOM);
+  const fw = mapFrame.offsetWidth;
+  const fh = mapFrame.offsetHeight;
+  panX = -((xPct - 50) / 100) * fw * zoom;
+  panY = -((yPct - 50) / 100) * fh * zoom;
+  applyTransform();
+}
+
 export function zoomAt(clientX, clientY, factor) {
   const newZoom = Math.min(Math.max(zoom * factor, 1), MAX_ZOOM);
   if (newZoom === zoom) return;

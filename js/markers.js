@@ -1,6 +1,7 @@
 import { TYPES } from "./constants.js";
 import { openDetail } from "./detail-panel.js";
 import { linkSvg, markerLayer } from "./dom.js";
+import { syncLineupListSelection } from "./lineup-list.js";
 import { zoom } from "./pan-zoom.js";
 import { state } from "./state.js";
 
@@ -279,6 +280,9 @@ export function renderMarkers(animate = true) {
     if (openLineup && pinnedLandingEl) buildThrows(openLineup, pinnedLandingEl, animate);
     renderedThrowSig = throwSig;
   }
+
+  // Keep the sidebar lineup list's highlight in step with map selection.
+  syncLineupListSelection();
 }
 
 export function buildLandingMarker(cluster, key, isPinned, animate) {

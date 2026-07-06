@@ -1,5 +1,9 @@
 export const mapList = document.getElementById("mapList");
 
+export const lineupList = document.getElementById("lineupList");
+
+export const lineupSearchInput = document.getElementById("lineupSearchInput");
+
 export const homeScreen = document.getElementById("homeScreen");
 
 export const homeGrid = document.getElementById("homeGrid");

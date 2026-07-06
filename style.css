@@ -44,11 +44,28 @@ button,input,select,textarea{font-family:var(--font-body);}
 .app{
   display:grid;
   grid-template-columns:248px 1fr;
+  grid-template-rows:1fr auto;
   height:100vh;
   background:
     radial-gradient(ellipse 900px 500px at 70% -10%, rgba(255,165,62,.05), transparent 60%),
     var(--void);
 }
+
+/* Always-present footer with map links, spanning the full width below the
+   sidebar + main. (.sidebar-overlay and .detail-panel are position:fixed, so
+   they don't participate in this grid.) */
+.app-footer{
+  grid-column:1 / -1;
+  border-top:1px solid var(--line);
+  background:var(--hull);
+  padding:9px 20px;
+}
+.app-footer-links{
+  display:flex;flex-wrap:wrap;justify-content:center;gap:5px 16px;
+  font-size:12px;
+}
+.app-footer-links a{color:var(--text-faint);text-decoration:none;}
+.app-footer-links a:hover{color:var(--signal);text-decoration:underline;}
 
 /* ===================== SIDEBAR ===================== */
 .sidebar{
@@ -70,7 +87,7 @@ button,input,select,textarea{font-family:var(--font-body);}
   color:var(--text-faint);margin:14px 4px 6px;
 }
 
-.map-list{display:flex;flex-direction:column;gap:3px;flex:1;}
+.map-list{display:flex;flex-direction:column;gap:3px;flex:none;}
 .map-item{
   position:relative;display:flex;align-items:center;gap:10px;
   padding:9px 10px 9px 14px;border-radius:4px;cursor:pointer;
@@ -87,6 +104,86 @@ button,input,select,textarea{font-family:var(--font-body);}
   width:5px;height:5px;border-radius:50%;background:var(--text-faint);flex-shrink:0;
 }
 .map-item.active .swatch{background:var(--signal);box-shadow:0 0 6px var(--signal);}
+
+/* ===================== SIDEBAR LINEUP LIST ===================== */
+/* Takes the remaining sidebar height and scrolls internally, so the maps
+   list above and the auth footer below stay put. */
+.lineup-rail{
+  display:flex;flex-direction:column;flex:1;min-height:0;margin-top:12px;
+}
+.lineup-search{
+  display:flex;align-items:center;gap:7px;
+  background:var(--panel);border:1px solid var(--line);border-radius:5px;
+  padding:0 9px;margin:0 2px 8px;color:var(--text-faint);
+}
+.lineup-search:focus-within{border-color:var(--text-dim);color:var(--text-dim);}
+.lineup-search svg{flex-shrink:0;}
+.lineup-search input{
+  flex:1;min-width:0;background:none;border:none;outline:none;
+  color:var(--text);font-family:var(--font-body);font-size:12.5px;
+  padding:7px 0;
+}
+.lineup-search input::placeholder{color:var(--text-faint);}
+.lineup-search input::-webkit-search-cancel-button{filter:grayscale(1) opacity(.5);cursor:pointer;}
+
+.lineup-list{
+  flex:1;min-height:0;overflow-y:auto;
+  display:flex;flex-direction:column;gap:1px;
+  scrollbar-width:thin;
+}
+.lineup-item{
+  display:flex;align-items:center;gap:9px;width:100%;text-align:left;
+  background:none;border:none;cursor:pointer;
+  padding:7px 8px;border-radius:4px;color:var(--text-dim);
+  font-family:var(--font-body);font-size:12.5px;transition:.12s ease;
+  border-left:2px solid transparent;
+}
+.lineup-item:hover{background:var(--panel);color:var(--text);}
+.lineup-item.active{
+  background:var(--panel);color:var(--signal);border-left-color:var(--signal);
+}
+.lineup-item-dot{
+  width:7px;height:7px;border-radius:50%;flex-shrink:0;
+  box-shadow:0 0 5px currentColor;
+}
+.lineup-item-name{
+  flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.lineup-item-meta{
+  flex-shrink:0;font-family:var(--font-mono);font-size:10px;color:var(--text-faint);
+}
+.lineup-item-chevron{
+  flex-shrink:0;color:var(--text-faint);font-size:14px;line-height:1;
+  transition:transform .15s ease;transform:rotate(0deg);
+}
+.lineup-entry.expanded .lineup-item-chevron{transform:rotate(90deg);color:var(--signal);}
+.lineup-list-empty{
+  color:var(--text-faint);font-size:11.5px;font-style:italic;padding:8px 4px;margin:0;
+}
+
+/* Inline expandable detail inside a lineup row */
+.lineup-item-detail{display:none;}
+.lineup-entry.expanded .lineup-item-detail{
+  display:block;padding:4px 8px 10px 19px;
+  border-left:2px solid var(--line);margin:0 0 4px 8px;
+}
+.lli-throw{margin-top:8px;}
+.lli-throw:first-child{margin-top:2px;}
+.lli-throw-head{
+  font-family:var(--font-mono);font-size:10.5px;letter-spacing:.02em;
+  color:var(--text);
+}
+.lli-throw-tech{color:var(--text-faint);}
+.lli-notes{
+  margin:3px 0 5px;font-size:11.5px;line-height:1.45;color:var(--text-dim);
+  white-space:pre-wrap;word-break:break-word;
+}
+.lli-thumbs{display:flex;flex-wrap:wrap;gap:5px;}
+.lli-thumb{
+  width:52px;height:38px;object-fit:cover;border-radius:3px;cursor:zoom-in;
+  border:1px solid var(--line);background:var(--panel-2);transition:.12s ease;
+}
+.lli-thumb:hover{border-color:var(--signal);transform:scale(1.04);}
 
 .sidebar-footer{display:flex;flex-direction:column;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line-soft);}
 
@@ -174,6 +271,14 @@ body.view-official:not(.is-admin) #addModeBtn{display:none;}
 .map-frame img{display:block;max-width:80vw;max-height:80vh;width:auto;border-radius:1px;}
 #linkSvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
 #markerLayer{position:absolute;inset:0;}
+
+/* Brief ring pulse when a marker is focused from the sidebar lineup list. */
+@keyframes focusFlash{
+  0%   {box-shadow:0 0 0 0 rgba(255,165,62,.75);}
+  70%  {box-shadow:0 0 0 16px rgba(255,165,62,0);}
+  100% {box-shadow:0 0 0 0 rgba(255,165,62,0);}
+}
+.marker.focus-flash{animation:focusFlash .7s ease-out 2;}
 
 .hint{
   position:absolute;bottom:18px;left:50%;transform:translateX(-50%);
@@ -517,6 +622,15 @@ body.view-official:not(.is-admin) #addModeBtn{display:none;}
 
   /* App shell */
   .app{grid-template-columns:1fr;}
+
+  /* Footer: single scrollable line so it stays slim next to the map */
+  .app-footer{padding:8px 12px;}
+  .app-footer-links{
+    flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;gap:14px;
+    scrollbar-width:none;
+  }
+  .app-footer-links::-webkit-scrollbar{display:none;}
+  .app-footer-links a{white-space:nowrap;flex-shrink:0;}
 
   /* Sidebar becomes a slide-in drawer */
   .sidebar{
