@@ -16,10 +16,12 @@ const TYPE_PLURALS = {
   he: "HE Grenades", decoy: "Decoys",
 };
 
-// Pages are cached at the edge so crawls don't hammer Supabase. New/edited
-// official lineups show up when the cache revalidates (at most 1h stale for
-// repeat visitors, refreshed in the background).
-const CACHE_OK = "public, s-maxage=3600, stale-while-revalidate=86400";
+// Pages are cached at the edge so crawls don't hammer Supabase, but the
+// window is kept short (60s fresh) so an admin's edit — rename, new throw,
+// delete — shows up within about a minute. stale-while-revalidate lets the
+// edge serve the slightly-stale copy instantly while it refreshes in the
+// background, so Supabase is still shielded under crawl bursts.
+const CACHE_OK = "public, s-maxage=60, stale-while-revalidate=600";
 const CACHE_MISS = "public, s-maxage=60";
 
 function sendHtml(res, status, html, cacheControl) {
