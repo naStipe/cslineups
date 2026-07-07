@@ -204,6 +204,9 @@ export function resetRenderedThrowSig() {
 }
 
 export function renderMarkers(animate = true) {
+  // The reposition overlay owns the marker/link layers while it's active —
+  // don't let a stray re-render (zoom, filter toggle, etc.) wipe its dots.
+  if (state.reposition) return;
   const visible = state.lineups.filter(l => state.activeFilters.has(l.type));
   const clusters = clusterLineups(visible);
 

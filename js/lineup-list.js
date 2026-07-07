@@ -6,13 +6,17 @@
 // Independent of the topbar type-filter chips: the list is a "find any
 // lineup" tool, so a chip being toggled off doesn't hide it here — focusing
 // simply re-enables that type's markers if needed.
+import { dbPut } from "./api.js";
 import { MOVEMENT_LABELS, RANGE_LABELS, TYPES } from "./constants.js";
 import { lineupList, lineupSearchInput, markerLayer } from "./dom.js";
 import { escapeHtml } from "./html-utils.js";
 import { openLightbox } from "./lightbox.js";
+import { refreshLocal } from "./map-data.js";
 import { renderMarkers } from "./markers.js";
+import { canModifyLineup } from "./permissions.js";
 import { hydrateImages } from "./private-images.js";
-import { buildFilters } from "./sidebar.js";
+import { startLandingReposition } from "./reposition.js";
+import { buildFilters, closeSidebar } from "./sidebar.js";
 import { state } from "./state.js";
 
 // Which lineup's inline detail is currently expanded (survives map-selection
@@ -149,7 +153,15 @@ function renderInlineDetail(container, l) {
     </div>`;
   }).join("");
 
-  container.innerHTML = html || `<p class="lli-notes">No throw details.</p>`;
+  // Lineup-level action: move the landing marker (editable lineups only).
+  // The landing is shared across the lineup's throws, so this is offered once
+  // per lineup rather than per throw.
+  const editable = canModifyLineup(l);
+  const actions = editable
+    ? `<div class="lli-actions"><button type="button" class="lli-move-landing">⤢ Move landing marker</button></div>`
+    : "";
+
+  container.innerHTML = actions + (html || `<p class="lli-notes">No throw details.</p>`);
   hydrateImages(container); // resolves private-bucket images; public ones pass through
 
   container.querySelectorAll(".lli-thumb").forEach(img => {
@@ -159,6 +171,26 @@ function renderInlineDetail(container, l) {
       openLightbox(throwImages(th), +img.dataset.idx, `${displayName(l)} — throw ${+img.dataset.throw + 1}`);
     };
   });
+
+  const moveBtn = container.querySelector(".lli-move-landing");
+  if (moveBtn) moveBtn.onclick = () => {
+    closeSidebar(); // on mobile, get the drawer out of the way of the map
+    startLandingReposition({
+      typeId: l.type,
+      landing: l.landing,
+      throws: l.throws.map(t => t.pos),
+      onDone: async (result) => {
+        if (!result) return;
+        l.landing = result.landing; // l is the live state object → mutating updates the map
+        refreshLocal();
+        try {
+          await dbPut(l, l.isOfficial);
+        } catch (err) {
+          alert("Could not save the landing position: " + (err && err.message ? err.message : err));
+        }
+      },
+    });
+  };
 }
 
 // Keep the list's highlighted row in sync with the map selection (e.g. when a
@@ -189,12 +221,23 @@ export function focusLineup(id) {
   syncLineupListSelection();
 
   requestAnimationFrame(() => {
-    const el = markerLayer.querySelector(".marker.landing.pinned");
+    // The freshly pinned marker — not a previously-selected one still fading
+    // out (which keeps .pinned while it leaves), or the flash lands on the
+    // wrong element and never shows.
+    const el = markerLayer.querySelector(".marker.landing.pinned:not(.leaving):not(.fan-hub)");
     if (!el) return;
     el.classList.remove("focus-flash");
     void el.offsetWidth; // restart the animation if it's already applied
     el.classList.add("focus-flash");
-    el.addEventListener("animationend", () => el.classList.remove("focus-flash"), { once: true });
+    // Only clean up when the flash itself ends — the marker's own enter/leave
+    // animations also fire animationend on this element and would otherwise
+    // strip the class after ~0.2s, cutting the pulse short.
+    const onEnd = (e) => {
+      if (e.animationName !== "focusFlash") return;
+      el.classList.remove("focus-flash");
+      el.removeEventListener("animationend", onEnd);
+    };
+    el.addEventListener("animationend", onEnd);
   });
 }
 

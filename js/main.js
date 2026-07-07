@@ -28,6 +28,10 @@ window.addEventListener("popstate", () => {
 });
 
 document.addEventListener("keydown", (e) => {
+  // While repositioning, the reposition overlay owns the keyboard (its own
+  // Escape = cancel). Don't let the global shortcuts below also fire.
+  if (state.reposition) return;
+
   const tag = e.target.tagName;
   const typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
 

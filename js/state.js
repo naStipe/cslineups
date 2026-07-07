@@ -13,6 +13,7 @@ export let state = {
   selectedLineupId: null,
   addMode: false,
   openClusterKey: null,  // key of a stacked marker currently fanned open on the map
+  reposition: false,     // true while the drag-to-reposition-a-throw overlay is active
 };
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);

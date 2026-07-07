@@ -1,13 +1,14 @@
-import { setAddMode } from "./add-mode.js";
+import { setAddMode, showAddFlow } from "./add-mode.js";
 import { dbDelete, dbPut, dbSaveLineup, dbUnsaveLineup, throwKey } from "./api.js";
 import { authUser } from "./auth.js";
 import { MOVEMENT_LABELS, RANGE_LABELS, TYPES } from "./constants.js";
-import { addHint, addThrowBtn, closeDetail, deleteLineupBtn, detailNameInput, detailOwnerBadge, detailPanel, detailTitle, detailType, saveLineupBtn, throwList, typeModal } from "./dom.js";
+import { addThrowBtn, closeDetail, deleteLineupBtn, detailNameInput, detailOwnerBadge, detailPanel, detailTitle, detailType, saveLineupBtn, throwList, typeModal } from "./dom.js";
 import { openLightbox } from "./lightbox.js";
 import { loadLineups, refreshLocal, upsertLocalLineup } from "./map-data.js";
 import { getCssVarColor, renderMarkers } from "./markers.js";
 import { closeModal } from "./modal-utils.js";
 import { canModifyLineup, requireLineupEditable } from "./permissions.js";
+import { startReposition } from "./reposition.js";
 import { buildTypeGrid } from "./sidebar.js";
 import { state } from "./state.js";
 import { hydrateImages, resolveImageSrc } from "./private-images.js";
@@ -73,10 +74,37 @@ export function renderDetail(lineup) {
   hydrateImages(hero);
   const heroEditBtn = hero.querySelector(".edit-btn");
   const heroRemoveBtn = hero.querySelector(".remove-btn");
+  const heroReposBtn = hero.querySelector(".reposition-btn");
   const heroSaveBtn = hero.querySelector(".save-btn");
   if (editable) {
     heroEditBtn.onclick = () => {
       openThrowModal(active.pos, lineup.id, false, lineup.type, lineup.landing, active);
+    };
+    // Reposition just this throw-from spot: close the dossier, drag on the
+    // full map, then reopen the dossier on the same throw.
+    heroReposBtn.onclick = () => {
+      const throwIdx = selectedThrowIdx;
+      detailPanel.classList.remove("open"); // hide dossier but keep selection
+      startReposition({
+        typeId: lineup.type,
+        landing: lineup.landing,
+        throwPos: lineup.throws[throwIdx].pos,
+        onDone: async (result) => {
+          if (result) {
+            lineup.throws[throwIdx].pos = result.throwPos;
+            upsertLocalLineup(lineup);
+            refreshLocal();       // reflect the new spot on the map immediately
+            openDetail(lineup.id, throwIdx);
+            try {
+              await dbPut(lineup, lineup.isOfficial); // persist in the background
+            } catch (err) {
+              alert("Could not save the new position: " + (err && err.message ? err.message : err));
+            }
+          } else {
+            openDetail(lineup.id, throwIdx);
+          }
+        },
+      });
     };
     heroRemoveBtn.onclick = async () => {
       lineup.throws = lineup.throws.filter(x => x.id !== active.id);
@@ -94,6 +122,7 @@ export function renderDetail(lineup) {
   } else {
     heroEditBtn.style.display = "none";
     heroRemoveBtn.style.display = "none";
+    heroReposBtn.style.display = "none";
   }
 
   // Bookmarking works per throw position, not per whole lineup: in the
@@ -213,6 +242,7 @@ export function buildHeroHtml(t, idx, lineup) {
       </div>
       <div class="throw-card-actions">
         <button class="save-btn">☆ Save to my map</button>
+        <button class="reposition-btn">⤢ Reposition</button>
         <button class="edit-btn">Edit</button>
         <button class="remove-btn">Remove</button>
       </div>
@@ -309,7 +339,7 @@ addThrowBtn.onclick = () => {
   if (!requireLineupEditable(lineup)) return;
   state.pendingThrowFor = state.selectedLineupId;
   setAddMode(true);
-  addHint.textContent = "Click the spot you throw from.";
+  showAddFlow(null, null, "Click on the map where you throw from.");
   detailPanel.classList.remove("open");
 };
 

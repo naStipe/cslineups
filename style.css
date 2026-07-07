@@ -184,6 +184,13 @@ button,input,select,textarea{font-family:var(--font-body);}
   border:1px solid var(--line);background:var(--panel-2);transition:.12s ease;
 }
 .lli-thumb:hover{border-color:var(--signal);transform:scale(1.04);}
+.lli-actions{margin:2px 0 6px;}
+.lli-move-landing{
+  width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--signal);
+  font-family:var(--font-mono);font-size:10.5px;letter-spacing:.02em;
+  padding:6px 8px;border-radius:5px;cursor:pointer;transition:.15s ease;
+}
+.lli-move-landing:hover{border-color:var(--signal);background:var(--panel);}
 
 .sidebar-footer{display:flex;flex-direction:column;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line-soft);}
 
@@ -272,13 +279,89 @@ body.view-official:not(.is-admin) #addModeBtn{display:none;}
 #linkSvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
 #markerLayer{position:absolute;inset:0;}
 
-/* Brief ring pulse when a marker is focused from the sidebar lineup list. */
+/* Brief ring pulse when a marker is focused from the sidebar lineup list.
+   Runs on a dedicated ::after so it's independent of the marker's own
+   enter/leave `animation` and its ::before glow — otherwise those would
+   override it (both use the `animation` shorthand) and the pulse would be
+   swallowed when the marker is freshly built on a selection change. */
 @keyframes focusFlash{
-  0%   {box-shadow:0 0 0 0 rgba(255,165,62,.75);}
-  70%  {box-shadow:0 0 0 16px rgba(255,165,62,0);}
+  0%   {box-shadow:0 0 0 0 rgba(255,165,62,.8);}
+  70%  {box-shadow:0 0 0 15px rgba(255,165,62,0);}
   100% {box-shadow:0 0 0 0 rgba(255,165,62,0);}
 }
-.marker.focus-flash{animation:focusFlash .7s ease-out 2;}
+.marker.focus-flash::after{
+  content:"";position:absolute;inset:0;border-radius:50%;
+  pointer-events:none;z-index:2;
+  animation:focusFlash .7s ease-out 2;
+}
+
+/* ===================== REPOSITION OVERLAY ===================== */
+.reposition-bar{
+  position:absolute;bottom:18px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:16px;z-index:20;
+  background:var(--panel);border:1px solid var(--signal);border-radius:8px;
+  padding:10px 16px;box-shadow:0 14px 44px rgba(0,0,0,.55);
+  max-width:calc(100% - 32px);
+}
+.reposition-bar[hidden]{display:none;}
+.reposition-text{font-size:12.5px;color:var(--text-dim);}
+.reposition-text b{color:var(--signal);}
+.reposition-actions{display:flex;gap:8px;flex-shrink:0;}
+.reposition-actions .primary-btn{padding:8px 14px;}
+
+.repos-dot{
+  position:absolute;border-radius:50%;
+  transform:scale(var(--marker-scale,1));transform-origin:center;z-index:6;
+  display:flex;align-items:center;justify-content:center;
+}
+/* Fixed landing = hollow ring (the "where it lands" anchor). */
+.repos-dot.is-landing.is-fixed{
+  width:20px;height:20px;margin:-10px 0 0 -10px;
+  background:transparent;border:2.5px solid var(--dot-color,var(--signal));
+  box-shadow:0 0 0 2px rgba(0,0,0,.45);opacity:.9;
+}
+/* Fixed throw = small filled dot. */
+.repos-dot.is-throw.is-fixed{
+  width:14px;height:14px;margin:-7px 0 0 -7px;
+  background:var(--dot-color,var(--signal));border:2px solid var(--void);opacity:.85;
+}
+/* Draggable dot (whichever) = solid filled disc with a move glyph + glow. */
+.repos-dot.is-drag{
+  width:26px;height:26px;margin:-13px 0 0 -13px;
+  background:var(--dot-color,var(--signal));border:2px solid var(--void);
+  cursor:grab;touch-action:none;
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, var(--dot-color) 26%, transparent),
+    0 0 18px 4px color-mix(in srgb, var(--dot-color) 60%, transparent);
+}
+.repos-dot.is-drag:active,.repos-dot.is-drag.dragging{cursor:grabbing;}
+.repos-glyph{
+  color:#0a0d0e;font-size:13px;line-height:1;font-weight:700;pointer-events:none;
+}
+.repos-label{
+  position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%);
+  font-family:var(--font-mono);font-size:9px;letter-spacing:.04em;white-space:nowrap;
+  color:var(--text);background:var(--panel);border:1px solid var(--line);
+  border-radius:3px;padding:1px 5px;pointer-events:none;
+}
+.repos-dot.is-drag .repos-label{color:var(--signal);border-color:var(--signal-dim);}
+
+/* Guided marker-placement bar (creating a lineup / adding a throw) */
+.addflow-bar{
+  position:absolute;bottom:18px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:12px;z-index:20;
+  background:var(--panel);border:1px solid var(--signal);border-radius:8px;
+  padding:9px 12px;box-shadow:0 14px 44px rgba(0,0,0,.55);
+  max-width:calc(100% - 32px);
+}
+.addflow-bar[hidden]{display:none;}
+.addflow-badge{
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.03em;
+  color:#221305;background:var(--signal);border-radius:4px;padding:3px 8px;flex-shrink:0;
+}
+.addflow-badge[hidden]{display:none;}
+.addflow-text{font-size:12.5px;color:var(--text);}
+.addflow-bar .ghost-btn{flex-shrink:0;padding:6px 12px;}
 
 .hint{
   position:absolute;bottom:18px;left:50%;transform:translateX(-50%);
@@ -527,6 +610,7 @@ body.view-official:not(.is-admin) #addModeBtn{display:none;}
   font-family:var(--font-mono);letter-spacing:.03em;
 }
 .throw-card-actions button.edit-btn:hover{color:var(--signal);}
+.throw-card-actions button.reposition-btn:hover{color:var(--signal);}
 .throw-card-actions button.remove-btn:hover{color:var(--fire);}
 .throw-card-actions button.save-btn:hover{color:var(--signal);}
 .throw-card-actions button.save-btn.saved{color:var(--signal);}
@@ -867,6 +951,12 @@ body.view-official:not(.is-admin) #addModeBtn{display:none;}
   font-family: var(--font-mono); font-size: 8.5px; letter-spacing: .1em;
   text-transform: uppercase; color: var(--text-faint);
 }
+.tm-reposition-btn{
+  background:var(--panel-2); border:1px solid var(--line); color:var(--signal);
+  font-family:var(--font-mono); font-size:9.5px; letter-spacing:.03em;
+  padding:5px 9px; border-radius:5px; cursor:pointer; transition:.15s ease; white-space:nowrap;
+}
+.tm-reposition-btn:hover{ border-color:var(--signal); background:var(--panel); }
 .tm-eyebrow{
   margin: 0 0 4px;
   font-family: var(--font-mono);
@@ -1017,10 +1107,13 @@ body.view-official:not(.is-admin) #addModeBtn{display:none;}
 .tm-footer{
   padding: 16px 24px;
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   background: var(--hull);
   border-top: 1px solid var(--line-soft);
 }
+.tm-footer .primary-btn{ margin-left: auto; }
 
 /* ===================== DOSSIER CARD CAROUSELS ===================== */
 .tc-galleries{
@@ -1295,6 +1388,8 @@ body.view-official:not(.is-admin) #addModeBtn{display:none;}
 
 /* Sidebar auth box */
 .auth-box{ display:flex; flex-direction:column; gap:6px; }
+.auth-signed-out{ display:flex; justify-content:center; }
+.auth-signed-out #signInBtn{ min-width:160px; }
 .auth-signed-in{ display:none; align-items:center; justify-content:space-between; gap:8px; }
 body.signed-in .auth-signed-in{ display:flex; }
 body.signed-in .auth-signed-out{ display:none; }

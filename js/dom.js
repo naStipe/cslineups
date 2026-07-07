@@ -56,6 +56,26 @@ export const addModeBtn = document.getElementById("addModeBtn");
 
 export const addHint = document.getElementById("addHint");
 
+export const repositionBar = document.getElementById("repositionBar");
+
+export const repositionText = document.getElementById("repositionText");
+
+export const repositionSave = document.getElementById("repositionSave");
+
+export const repositionCancel = document.getElementById("repositionCancel");
+
+export const repositionOnMapBtn = document.getElementById("repositionOnMapBtn");
+
+export const addFlowBar = document.getElementById("addFlowBar");
+
+export const addFlowStep = document.getElementById("addFlowStep");
+
+export const addFlowText = document.getElementById("addFlowText");
+
+export const addFlowCancel = document.getElementById("addFlowCancel");
+
+export const cancelThrowBtn = document.getElementById("cancelThrowBtn");
+
 export const typeModal = document.getElementById("typeModal");
 
 export const typeGrid = document.getElementById("typeGrid");

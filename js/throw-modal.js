@@ -2,12 +2,13 @@ import { setAddMode } from "./add-mode.js";
 import { dbGetAll, dbPut } from "./api.js";
 import { authUser, isAdmin } from "./auth.js";
 import { openDetail } from "./detail-panel.js";
-import { cancelThrow, mapImage, movementSelect, notesInput, saveThrow, throwModal, throwModalHint, throwModalTitle, throwRangeSelect, tmPreviewImg, tmPreviewLanding, tmPreviewSvg, tmPreviewThrow } from "./dom.js";
+import { cancelThrow, cancelThrowBtn, mapImage, movementSelect, notesInput, repositionOnMapBtn, saveThrow, throwModal, throwModalHint, throwModalTitle, throwRangeSelect, tmPreviewImg, tmPreviewLanding, tmPreviewSvg, tmPreviewThrow } from "./dom.js";
 import { renderPreciseThumb, renderStandingThumbGrid, renderThumbGrid, uploadDataUrlToSupabase } from "./image-upload.js";
 import { refreshLocal, upsertLocalLineup } from "./map-data.js";
 import { getCssVarColor, typeColor } from "./markers.js";
 import { closeModal } from "./modal-utils.js";
 import { requireCanCreate, requireLineupEditable } from "./permissions.js";
+import { startReposition } from "./reposition.js";
 import { state, uid } from "./state.js";
 
 export let pendingThrowDraft = null; // {x,y,screenshot,...} being built before save
@@ -60,20 +61,45 @@ export function openThrowModal(throwPos, lineupId, isNewLineup, typeId, landingP
 
   if (existingThrow) {
     throwModalTitle.textContent = "Edit throw position";
-    throwModalHint.textContent = "Editing this throw position's details. The map position stays the same.";
+    throwModalHint.textContent = "Update details below, or use ⤢ Reposition on map to move the throw spot.";
   } else {
     throwModalTitle.textContent = isNewLineup ? "New lineup — throw position" : "Add throw position";
-    throwModalHint.textContent = "Click confirmed. Fill in the details below.";
+    throwModalHint.textContent = "Add screenshots and technique. Not quite right? ⤢ Reposition on map to nudge the spot.";
   }
   throwModal.classList.add("show");
 }
 
-cancelThrow.onclick = () => {
+// Hide the modal, let the user drag the throw-from spot on the full map, then
+// reopen the modal with the updated position (no save yet — the throw is only
+// persisted when the modal's Save button is pressed).
+if (repositionOnMapBtn) {
+  repositionOnMapBtn.onclick = () => {
+    const draft = pendingThrowDraft;
+    if (!draft) return;
+    throwModal.classList.remove("show");
+    startReposition({
+      typeId: draft.typeId,
+      landing: draft.landingPos,
+      throwPos: draft.throwPos,
+      onDone: (result) => {
+        if (result) {
+          draft.throwPos = result.throwPos;
+          renderThrowModalPreview(draft.throwPos, draft.landingPos, draft.typeId);
+        }
+        throwModal.classList.add("show");
+      },
+    });
+  };
+}
+
+function cancelThrowFlow() {
   closeModal(throwModal);
   pendingThrowDraft = null;
   setAddMode(false);
   state.pendingThrowFor = null;
-};
+}
+cancelThrow.onclick = cancelThrowFlow;
+if (cancelThrowBtn) cancelThrowBtn.onclick = cancelThrowFlow;
 
 saveThrow.onclick = async () => {
   if (!pendingThrowDraft) return;

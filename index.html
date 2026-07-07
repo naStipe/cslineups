@@ -165,6 +165,22 @@
         <button class="zoom-btn" id="zoomOut">−</button>
       </div>
 
+      <!-- Drag-to-reposition overlay bar (shown only while repositioning a throw) -->
+      <div class="reposition-bar" id="repositionBar" hidden>
+        <span class="reposition-text" id="repositionText">Drag the <b>throw</b> marker to where you throw from, then save.</span>
+        <div class="reposition-actions">
+          <button class="ghost-btn" id="repositionCancel">Cancel</button>
+          <button class="primary-btn" id="repositionSave">Save position</button>
+        </div>
+      </div>
+
+      <!-- Guided marker-placement bar for creating a lineup / adding a throw -->
+      <div class="addflow-bar" id="addFlowBar" hidden>
+        <span class="addflow-badge" id="addFlowStep">Step 1 of 2</span>
+        <span class="addflow-text" id="addFlowText">Click on the map where the nade lands.</span>
+        <button class="ghost-btn" id="addFlowCancel">Cancel</button>
+      </div>
+
       <!-- Cheatsheet panel -->
       <div class="cheatsheet-panel" id="cheatsheetPanel">
         <button class="cheatsheet-tab" id="cheatsheetTab">
@@ -332,7 +348,7 @@
           <div class="tm-preview-dot tm-preview-landing" id="tmPreviewLanding"></div>
           <div class="tm-preview-dot tm-preview-throw" id="tmPreviewThrow"></div>
         </div>
-        <span class="tm-preview-caption">Tap to reposition</span>
+        <button type="button" class="tm-reposition-btn" id="repositionOnMapBtn">⤢ Reposition on map</button>
       </div>
       <button class="icon-btn" id="cancelThrow">✕</button>
     </div>
@@ -410,6 +426,7 @@
     </div>
 
     <div class="tm-footer">
+      <button class="ghost-btn" id="cancelThrowBtn">Cancel</button>
       <button class="primary-btn" id="saveThrow">Save position</button>
     </div>
 
