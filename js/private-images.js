@@ -8,16 +8,17 @@ import { getAccessToken } from "./auth.js";
 const blobUrlCache = new Map();
 
 function isPrivateStorageUrl(url) {
-  return typeof url === "string" && url.includes("/object/authenticated/");
+  return typeof url === "string" && url.startsWith("/api/private-image?path=");
 }
 
-// Personal-lineup images live in a private Supabase Storage bucket and
-// can only be fetched with the viewer's own auth token — a plain
-// <img src="..."> can't attach that header, so this downloads the bytes
-// ourselves and hands back a local blob: URL for the <img> to point at
-// instead. Official-lineup images are still plain public URLs and pass
-// straight through untouched, same for local data: URIs (still-unsaved
-// drafts) and anything else.
+// Personal-lineup images live in a private R2 bucket and can only be
+// fetched by their owner — a plain <img src="..."> can't attach an auth
+// header, so this hits our own /api/private-image with the viewer's token
+// (which checks ownership and 302s to a short-lived presigned R2 URL), then
+// hands back a local blob: URL for the <img> to point at instead.
+// Official-lineup images are still plain public URLs and pass straight
+// through untouched, same for local data: URIs (still-unsaved drafts) and
+// anything else.
 export async function resolveImageSrc(url) {
   if (!url || !isPrivateStorageUrl(url)) return url || "";
   if (blobUrlCache.has(url)) return blobUrlCache.get(url);
@@ -28,10 +29,7 @@ export async function resolveImageSrc(url) {
   let res;
   try {
     res = await fetch(url, {
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "apikey": window.__SUPABASE_ANON_KEY,
-      },
+      headers: { "Authorization": `Bearer ${token}` },
     });
   } catch {
     return "";

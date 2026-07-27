@@ -1,4 +1,5 @@
 const { createClient } = require("@supabase/supabase-js");
+const r2 = require("./_lib/r2");
 
 function supabase() {
   return createClient(
@@ -73,10 +74,12 @@ function isValidPos(p) {
 // arbitrary external images.
 //
 // Two valid shapes now exist:
-//  - public bucket (official lineups): .../object/public/lineup-images/<file>
-//  - private bucket (personal lineups): .../object/authenticated/lineup-images-private/<userId>/<file>
+//  - public bucket (official lineups): <R2_PUBLIC_BASE_URL>/<file>
+//  - private bucket (personal lineups): /api/private-image?path=<userId>/<file>
+//    (a stable reference our own API resolves to a presigned R2 URL —
+//    see api/private-image.js; never a raw R2 URL, since those expire)
 // The private form is only accepted when we know which user is making this
-// request (userId), and only when the folder segment matches that user's
+// request (userId), and only when the path segment matches that user's
 // own id — this stops one user's lineup payload from referencing another
 // user's private image path. Bulk import (admin restore of official data)
 // always passes userId = null/undefined, so private URLs are rejected
@@ -92,10 +95,10 @@ const HTML_BREAKOUT_CHARS = /["'<>]/;
 function isOwnStorageUrl(url, userId) {
   if (typeof url !== "string" || url.length >= 500) return false;
   if (HTML_BREAKOUT_CHARS.test(url)) return false;
-  const publicBase = `${process.env.SUPABASE_URL}/storage/v1/object/public/lineup-images/`;
+  const publicBase = `${r2.PUBLIC_BASE_URL()}/`;
   if (url.startsWith(publicBase)) return true;
   if (!userId) return false;
-  const privateBase = `${process.env.SUPABASE_URL}/storage/v1/object/authenticated/lineup-images-private/${userId}/`;
+  const privateBase = `/api/private-image?path=${userId}/`;
   return url.startsWith(privateBase);
 }
 

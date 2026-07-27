@@ -8,28 +8,29 @@ export const MAX_SCREENSHOTS = 5;
 
 export const MAX_STANDING = 3;
 
-// Client-side guardrails only — a determined attacker can call the storage
-// API directly with their own token and skip this file entirely, so the
-// real enforcement has to live in the Supabase Storage bucket's own
-// settings (allowed MIME types + a max file size on the storage buckets).
-// This just stops honest users from accidentally uploading huge or
-// non-image files, and gives a clear error instead of a confusing
-// server-side failure.
+// Client-side guardrails only — a determined attacker can call
+// /api/upload-url directly and skip this file entirely, so the real
+// enforcement has to live server-side (api/upload-url.js re-checks both the
+// MIME type and, for official uploads, admin status). This just stops
+// honest users from accidentally uploading huge or non-image files, and
+// gives a clear error instead of a confusing server-side failure.
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_UPLOAD_BYTES = 15 * 1024 * 1024; // 15 MB
 
 // Official lineups are admin-curated and meant to be visible to every
-// visitor, so their images stay in the existing public bucket exactly as
-// before. Personal lineups are private to their owner, so their images go
-// into a separate, non-public bucket instead — under a per-user folder
-// that Storage's own RLS policies restrict to that same signed-in user.
-// A plain public URL can't express "only the uploader can see this", which
-// is the whole point here.
-export async function uploadFileToSupabase(file, isOfficial) {
-  const url = window.__SUPABASE_URL;
-  const anonKey = window.__SUPABASE_ANON_KEY;
-  if (!url || !anonKey) throw new Error("Supabase config not available — check SUPABASE_URL and SUPABASE_ANON_KEY in Vercel");
-
+// visitor, so their images go to the public R2 bucket and get a permanent,
+// unauthenticated URL back. Personal lineups are private to their owner, so
+// their images go to a separate, non-public bucket under a per-user key —
+// resolved later through /api/private-image (see private-images.js), never
+// used directly as an <img src>.
+//
+// R2 has no per-object RLS the way Supabase Storage did, so the upload
+// itself is two steps: ask our own API for a presigned R2 PUT URL (which is
+// where the isOfficial/admin check and the MIME allow-list are actually
+// enforced), then PUT the bytes straight to R2 with it. This also sidesteps
+// Vercel's serverless function body-size limit, which is well under the
+// 15MB this app allows — the image bytes never pass through our API.
+export async function uploadFile(file, isOfficial) {
   if (!ALLOWED_MIME_TYPES.includes(file.type)) {
     throw new Error(`"${file.type || "unknown"}" isn't a supported image type. Use JPEG, PNG, WEBP, or GIF.`);
   }
@@ -37,60 +38,47 @@ export async function uploadFileToSupabase(file, isOfficial) {
     throw new Error(`That file is too large (max ${MAX_UPLOAD_BYTES / (1024 * 1024)}MB).`);
   }
 
-  // Needs the signed-in user's own access token here, not the anon/publishable
-  // key — Storage parses whatever is in Authorization as a JWT to check
-  // auth.uid() against the bucket's policies, and Supabase's newer
-  // "publishable" keys aren't JWTs at all, which is exactly what produced
-  // "Invalid Compact JWS": the anon key was being sent as if it were a
-  // logged-in user's token.
   const token = await getAccessToken();
   if (!token) throw new Error("You need to be signed in to upload images.");
   if (!isOfficial && !authUser) throw new Error("You need to be signed in to upload images.");
 
   const blob = await maybeResize(file);
-  const ext  = blob.type.split("/")[1] || "jpg";
-  const filename = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}.${ext}`;
 
-  const bucket = isOfficial ? "lineup-images" : "lineup-images-private";
-  const path = isOfficial ? filename : `${authUser.id}/${filename}`;
+  const presignRes = await fetch("/api/upload-url", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ isOfficial: !!isOfficial, contentType: blob.type }),
+  });
+  if (!presignRes.ok) {
+    const err = await presignRes.json().catch(() => ({}));
+    throw new Error(`Image upload failed (${presignRes.status}): ${err.error || "could not get an upload URL"}`);
+  }
+  const { uploadUrl, publicUrl, contentType } = await presignRes.json();
 
-  const res = await fetch(
-    `${url}/storage/v1/object/${bucket}/${path}`,
-    {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "apikey": anonKey,
-        "Content-Type": blob.type,
-        "x-upsert": "false",
-      },
-      body: blob,
-    }
-  );
-  if (!res.ok) {
-    const err = await res.text().catch(() => "");
-    throw new Error(`Image upload failed (${res.status}): ${err}`);
+  const putRes = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": contentType },
+    body: blob,
+  });
+  if (!putRes.ok) {
+    const err = await putRes.text().catch(() => "");
+    throw new Error(`Image upload failed (${putRes.status}): ${err}`);
   }
 
-  // Public-bucket objects are fetched via the unauthenticated /public/ path
-  // (works for anyone, no sign-in needed — right for official content).
-  // Private-bucket objects are fetched via the /authenticated/ path, which
-  // requires a valid session token and is subject to the bucket's RLS
-  // policies — the client resolves these through private-images.js instead
-  // of using them directly as an <img src>.
-  return isOfficial
-    ? `${url}/storage/v1/object/public/${bucket}/${path}`
-    : `${url}/storage/v1/object/authenticated/${bucket}/${path}`;
+  return publicUrl;
 }
 
-export async function uploadDataUrlToSupabase(dataUrl, isOfficial) {
+export async function uploadDataUrl(dataUrl, isOfficial) {
   if (!dataUrl || !dataUrl.startsWith("data:")) return dataUrl; // already a URL
   const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
   if (!match) return dataUrl;
   const [, mime, b64] = match;
   const buf = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
   const blob = new Blob([buf], { type: mime });
-  return uploadFileToSupabase(blob, isOfficial);
+  return uploadFile(blob, isOfficial);
 }
 
 export async function maybeResize(file) {

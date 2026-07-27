@@ -2,6 +2,7 @@
 // Lives under api/_lib/ so Vercel does not expose it as its own endpoint.
 const { createClient } = require("@supabase/supabase-js");
 const CONSTANTS = require("./constants");
+const r2 = require("./r2");
 
 const SITE = process.env.SITE_URL || "https://lineupr.org";
 
@@ -47,16 +48,16 @@ function esc(s) {
     .replace(/'/g, "&#39;");
 }
 
-// Only images from our own public storage bucket are ever rendered.
+// Only images from our own public R2 bucket are ever rendered.
 // Same posture as api/lineups.js isOwnStorageUrl, restricted to the public
 // bucket: official lineups never reference the private one, and public
-// pages must never leak a private-bucket path anyway. The breakout-char
+// pages must never leak a private-image reference anyway. The breakout-char
 // check is belt-and-suspenders on top of the attribute escaping.
 const HTML_BREAKOUT_CHARS = /["'<>]/;
 function isPublicStorageUrl(url) {
   if (typeof url !== "string" || url.length >= 500) return false;
   if (HTML_BREAKOUT_CHARS.test(url)) return false;
-  return url.startsWith(`${process.env.SUPABASE_URL}/storage/v1/object/public/lineup-images/`);
+  return url.startsWith(`${r2.PUBLIC_BASE_URL()}/`);
 }
 
 function slugify(name) {

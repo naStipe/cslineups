@@ -1,4 +1,5 @@
 const { createClient } = require("@supabase/supabase-js");
+const r2 = require("./_lib/r2");
 
 function supabase() {
   return createClient(
@@ -33,14 +34,13 @@ const USERNAME_MAX = 32;
 // into innerHTML templates in a few places, so keep quote/angle chars out.
 const HTML_BREAKOUT_CHARS = /["'<>]/;
 
-// Best-effort removal of everything a user owns in the private image bucket
-// (objects live under a folder named by their user id). Never throws.
+// Best-effort removal of everything a user owns in the private R2 bucket
+// (objects live under private/<userId>/). Never throws.
 async function removeUserImages(sb, userId) {
   try {
-    const { data: objects } = await sb.storage.from("lineup-images-private").list(userId, { limit: 1000 });
-    if (objects && objects.length) {
-      await sb.storage.from("lineup-images-private").remove(objects.map(o => `${userId}/${o.name}`));
-    }
+    const prefix = r2.privateKey(userId, "");
+    const keys = await r2.listAllKeys(r2.PRIVATE_BUCKET(), prefix);
+    if (keys.length) await r2.deleteObjects(r2.PRIVATE_BUCKET(), keys);
   } catch (e) {
     console.warn("Failed to clean private images for", userId, e && e.message);
   }

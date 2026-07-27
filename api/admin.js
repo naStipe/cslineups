@@ -1,4 +1,5 @@
 const { createClient } = require("@supabase/supabase-js");
+const r2 = require("./_lib/r2");
 
 function supabase() {
   return createClient(
@@ -32,38 +33,45 @@ async function isAdmin(sb, userId) {
   return !!data.is_admin;
 }
 
-// The two image-bucket URL shapes our upload flow produces (see
-// js/image-upload.js). Given a stored image URL, work out which storage
-// bucket it lives in and its object path within that bucket, so we can both
-// sign it (private images can't be fetched by the admin's browser directly —
-// Storage RLS restricts the private bucket to the uploading user) and delete
-// it. Returns null for anything that isn't one of our own storage URLs.
+// The two image-URL shapes our upload flow produces (see
+// js/image-upload.js and api/upload-url.js). Given a stored image URL, work
+// out which R2 bucket it lives in and its object key within that bucket, so
+// we can both sign it (private images can't be fetched by the admin's
+// browser directly — nothing can read the private bucket without a
+// presigned URL) and delete it. Returns null for anything that isn't one of
+// our own storage URLs.
 function parseStoragePath(url) {
   if (typeof url !== "string") return null;
-  const base = process.env.SUPABASE_URL || "";
-  const publicPrefix  = `${base}/storage/v1/object/public/lineup-images/`;
-  const privatePrefix = `${base}/storage/v1/object/authenticated/lineup-images-private/`;
+  const publicPrefix = `${r2.PUBLIC_BASE_URL()}/`;
+  const privatePrefix = "/api/private-image?path=";
   if (url.startsWith(publicPrefix)) {
-    return { bucket: "lineup-images", path: url.slice(publicPrefix.length), isPrivate: false };
+    return { bucket: r2.PUBLIC_BUCKET(), path: url.slice(publicPrefix.length), isPrivate: false };
   }
   if (url.startsWith(privatePrefix)) {
-    return { bucket: "lineup-images-private", path: url.slice(privatePrefix.length), isPrivate: true };
+    const rawPath = decodeURIComponent(url.slice(privatePrefix.length));
+    const slash = rawPath.indexOf("/");
+    if (slash < 0) return null;
+    const userId = rawPath.slice(0, slash);
+    const filename = rawPath.slice(slash + 1);
+    return { bucket: r2.PRIVATE_BUCKET(), path: r2.privateKey(userId, filename), isPrivate: true };
   }
   return null;
 }
 
 // Turns a stored image URL into something the admin's browser can actually
 // render: public URLs pass through untouched; private ones get a short-lived
-// signed URL minted with the service key. On any failure we hand back the
-// original URL so the panel still shows a (broken) slot rather than crashing.
+// presigned R2 URL (bypassing the ownership check that api/private-image.js
+// applies for regular users — moderation has to be able to view anyone's
+// submission). On any failure we hand back the original URL so the panel
+// still shows a (broken) slot rather than crashing.
 async function toViewUrl(sb, url) {
   const parsed = parseStoragePath(url);
   if (!parsed || !parsed.isPrivate) return url;
-  const { data, error } = await sb.storage
-    .from(parsed.bucket)
-    .createSignedUrl(parsed.path, 60 * 60); // 1 hour
-  if (error || !data || !data.signedUrl) return url;
-  return data.signedUrl;
+  try {
+    return await r2.presignGet(parsed.bucket, parsed.path, 60 * 60); // 1 hour
+  } catch {
+    return url;
+  }
 }
 
 // Best-effort deletion of the underlying storage object when an image is
@@ -73,7 +81,7 @@ async function removeStorageObject(sb, url) {
   const parsed = parseStoragePath(url);
   if (!parsed) return;
   try {
-    await sb.storage.from(parsed.bucket).remove([parsed.path]);
+    await r2.deleteObject(parsed.bucket, parsed.path);
   } catch (e) {
     console.warn("Failed to remove storage object", parsed.path, e && e.message);
   }
@@ -88,20 +96,18 @@ async function copyToPublic(sb, url) {
   const parsed = parseStoragePath(url);
   if (!parsed || !parsed.isPrivate) return url;
 
-  const { data: blob, error: dlErr } = await sb.storage.from(parsed.bucket).download(parsed.path);
-  if (dlErr || !blob) throw new Error(`could not read source image (${parsed.path}): ${dlErr ? dlErr.message : "no data"}`);
-
   // Public-bucket objects live at the bucket root as a bare filename (see
   // js/image-upload.js); mint a fresh collision-proof one rather than reusing
-  // the private path (which is namespaced under the owner's user id).
+  // the private key (which is namespaced under the owner's user id).
   const ext = (parsed.path.split(".").pop() || "jpg").toLowerCase();
   const filename = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-  const buf = Buffer.from(await blob.arrayBuffer());
-  const contentType = blob.type || `image/${ext === "jpg" ? "jpeg" : ext}`;
 
-  const { error: upErr } = await sb.storage.from("lineup-images").upload(filename, buf, { contentType, upsert: false });
-  if (upErr) throw new Error(`could not write public image: ${upErr.message}`);
-  return `${process.env.SUPABASE_URL}/storage/v1/object/public/lineup-images/${filename}`;
+  try {
+    await r2.copyObject(parsed.bucket, parsed.path, r2.PUBLIC_BUCKET(), filename);
+  } catch (e) {
+    throw new Error(`could not publish image (${parsed.path}): ${e && e.message}`);
+  }
+  return `${r2.PUBLIC_BASE_URL()}/${filename}`;
 }
 
 // Pulls every image URL off a throw across all three slots.

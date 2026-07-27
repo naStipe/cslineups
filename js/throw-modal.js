@@ -3,7 +3,7 @@ import { dbGetAll, dbPut } from "./api.js";
 import { authUser, isAdmin } from "./auth.js";
 import { openDetail } from "./detail-panel.js";
 import { cancelThrow, cancelThrowBtn, mapImage, movementSelect, notesInput, repositionOnMapBtn, saveThrow, throwModal, throwModalHint, throwModalTitle, throwRangeSelect, tmPreviewImg, tmPreviewLanding, tmPreviewSvg, tmPreviewThrow } from "./dom.js";
-import { renderPreciseThumb, renderStandingThumbGrid, renderThumbGrid, uploadDataUrlToSupabase } from "./image-upload.js";
+import { renderPreciseThumb, renderStandingThumbGrid, renderThumbGrid, uploadDataUrl } from "./image-upload.js";
 import { refreshLocal, upsertLocalLineup } from "./map-data.js";
 import { getCssVarColor, typeColor } from "./markers.js";
 import { closeModal } from "./modal-utils.js";
@@ -137,11 +137,11 @@ saveThrow.onclick = async () => {
       isOfficial = existingLineup.isOfficial;
     }
 
-    // Upload any local data URLs to Supabase now (parallel)
+    // Upload any local data URLs to R2 now (parallel)
     const [standing, screenshots, precise] = await Promise.all([
-      Promise.all(draft.standing.map(u => uploadDataUrlToSupabase(u, isOfficial))),
-      Promise.all(draft.screenshots.map(u => uploadDataUrlToSupabase(u, isOfficial))),
-      draft.precise ? uploadDataUrlToSupabase(draft.precise, isOfficial) : Promise.resolve(null),
+      Promise.all(draft.standing.map(u => uploadDataUrl(u, isOfficial))),
+      Promise.all(draft.screenshots.map(u => uploadDataUrl(u, isOfficial))),
+      draft.precise ? uploadDataUrl(draft.precise, isOfficial) : Promise.resolve(null),
     ]);
 
     saveThrow.textContent = "Saving…";
