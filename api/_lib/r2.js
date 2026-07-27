@@ -18,7 +18,6 @@
 //    folders here.)
 const {
   S3Client,
-  PutObjectCommand,
   GetObjectCommand,
   CopyObjectCommand,
   DeleteObjectCommand,
@@ -26,6 +25,7 @@ const {
   ListObjectsV2Command,
 } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
+const { createPresignedPost } = require("@aws-sdk/s3-presigned-post");
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -68,9 +68,22 @@ function parsePrivateKey(key) {
   return { userId: key.slice(0, slash), filename: key.slice(slash + 1) };
 }
 
-async function presignPut(bucket, key, contentType, expiresIn = 300) {
-  const cmd = new PutObjectCommand({ Bucket: bucket, Key: key, ContentType: contentType });
-  return getSignedUrl(client(), cmd, { expiresIn });
+// Presigned POST (not PUT) is what lets R2 itself reject an oversized
+// upload by signature — a presigned PUT URL has no way to cap the body
+// size, so a client could ignore our own MAX_UPLOAD_BYTES check entirely
+// and stream up anything. This is the direct replacement for the hard
+// per-bucket file-size limit Supabase Storage used to enforce.
+async function presignPost(bucket, key, contentType, maxBytes, expiresIn = 300) {
+  return createPresignedPost(client(), {
+    Bucket: bucket,
+    Key: key,
+    Conditions: [
+      ["content-length-range", 0, maxBytes],
+      { "Content-Type": contentType },
+    ],
+    Fields: { "Content-Type": contentType },
+    Expires: expiresIn,
+  });
 }
 
 async function presignGet(bucket, key, expiresIn = 3600) {
@@ -123,7 +136,7 @@ module.exports = {
   PUBLIC_BASE_URL,
   privateKey,
   parsePrivateKey,
-  presignPut,
+  presignPost,
   presignGet,
   copyObject,
   deleteObject,
