@@ -64,11 +64,17 @@ function parseStoragePath(url) {
 // applies for regular users — moderation has to be able to view anyone's
 // submission). On any failure we hand back the original URL so the panel
 // still shows a (broken) slot rather than crashing.
+//
+// Unlike private-images.js's fetch-and-blob approach, this URL is set
+// directly as the moderation panel's <img src> (simplest for a grid of many
+// images), so it IS visible/copyable from that page for as long as it's
+// valid — keep this short. 5 minutes is enough to review a queue entry;
+// reloading the queue re-mints fresh URLs for anything still unreviewed.
 async function toViewUrl(sb, url) {
   const parsed = parseStoragePath(url);
   if (!parsed || !parsed.isPrivate) return url;
   try {
-    return await r2.presignGet(parsed.bucket, parsed.path, 60 * 60); // 1 hour
+    return await r2.presignGet(parsed.bucket, parsed.path, 5 * 60); // 5 minutes
   } catch {
     return url;
   }
