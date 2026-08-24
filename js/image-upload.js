@@ -25,18 +25,20 @@ const MAX_UPLOAD_BYTES = 15 * 1024 * 1024; // 15 MB
 // used directly as an <img src>.
 //
 // R2 has no per-object RLS the way Supabase Storage did, so the upload
-// itself is two steps: ask our own API for a presigned R2 POST (which is
-// where the isOfficial/admin check, the MIME allow-list, and the hard size
-// cap are actually enforced), then POST the bytes straight to R2 with it.
+// itself is two steps: ask our own API for a presigned R2 PUT (which is
+// where the isOfficial/admin check, the MIME allow-list, and the size
+// check are actually enforced), then PUT the bytes straight to R2 with it.
 // This also sidesteps Vercel's serverless function body-size limit, which
 // is well under the 15MB this app allows — the image bytes never pass
 // through our API.
 //
-// A presigned POST (not PUT) is what lets R2 itself reject an oversized
-// upload by signature — Supabase's old bucket settings enforced a hard
-// file-size limit independent of the client, and a plain presigned PUT URL
-// has no way to replicate that (only POST's content-length-range
-// condition does).
+// PUT, not POST: R2's S3-compatible API doesn't implement the S3
+// "POST Object" operation at all — every presigned-POST upload gets a flat
+// 501 Not Implemented straight from R2, regardless of config. A presigned
+// PUT has no equivalent of POST's content-length-range condition, so
+// unlike Supabase Storage's old bucket-level file-size limit, R2 itself
+// can't reject an oversized upload by signature anymore — size is now
+// enforced by the checks in this file and in api/upload-url.js instead.
 export async function uploadFile(file, isOfficial) {
   if (!ALLOWED_MIME_TYPES.includes(file.type)) {
     throw new Error(`"${file.type || "unknown"}" isn't a supported image type. Use JPEG, PNG, WEBP, or GIF.`);
@@ -57,19 +59,22 @@ export async function uploadFile(file, isOfficial) {
       "Authorization": `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ isOfficial: !!isOfficial, contentType: blob.type }),
+    body: JSON.stringify({ isOfficial: !!isOfficial, contentType: blob.type, contentLength: blob.size }),
   });
   if (!presignRes.ok) {
     const err = await presignRes.json().catch(() => ({}));
     throw new Error(`Image upload failed (${presignRes.status}): ${err.error || "could not get an upload URL"}`);
   }
-  const { url, fields, publicUrl } = await presignRes.json();
+  const { url, publicUrl } = await presignRes.json();
 
-  const form = new FormData();
-  Object.entries(fields).forEach(([k, v]) => form.append(k, v));
-  form.append("file", blob); // must be appended last — R2/S3 ignores fields after the file part
-
-  const putRes = await fetch(url, { method: "POST", body: form });
+  // Content-Type here must match exactly what api/upload-url.js signed
+  // (blob.type, same value sent as contentType above) — R2 checks it
+  // against the presigned signature and rejects a mismatch.
+  const putRes = await fetch(url, {
+    method: "PUT",
+    headers: { "Content-Type": blob.type },
+    body: blob,
+  });
   if (!putRes.ok) {
     const err = await putRes.text().catch(() => "");
     throw new Error(`Image upload failed (${putRes.status}): ${err}`);
