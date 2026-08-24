@@ -1309,6 +1309,15 @@ body.view-official:not(.is-admin) #addModeBtn{display:none;}
 }
 .cheatsheet-panel.hidden{ display: none; }
 
+/* Wraps one launcher button per cheatsheet entry (e.g. "Window", "Top Mid"),
+   stacked when a map has more than one. */
+.cheatsheet-tabs{
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
 .cheatsheet-tab{
   display: flex;
   align-items: center;
@@ -1349,7 +1358,7 @@ body.view-official:not(.is-admin) #addModeBtn{display:none;}
   animation: slideDown .15s ease;
 }
 .cheatsheet-panel.open .cheatsheet-body{ display: flex; }
-.cheatsheet-panel.open .cheatsheet-tab{ display: none; }
+.cheatsheet-panel.open .cheatsheet-tabs{ display: none; }
 
 @keyframes slideDown{
   from{ opacity:0; transform:translateY(-8px); }
@@ -1372,6 +1381,39 @@ body.view-official:not(.is-admin) #addModeBtn{display:none;}
   letter-spacing: .06em;
   color: var(--signal);
 }
+
+/* Pills for switching between entries (e.g. "Window" / "Top Mid") without
+   closing the panel. Empty + collapses to nothing when there's only one
+   entry, since js/cheatsheet.js leaves it empty in that case. */
+.cheatsheet-subtabs{
+  display: flex;
+  gap: 6px;
+  padding: 10px 16px 0;
+}
+.cheatsheet-subtabs:empty{ display: none; padding: 0; }
+.cheatsheet-subtab{
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 12px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .03em;
+  transition: .15s;
+}
+.cheatsheet-subtab:hover{
+  border-color: var(--signal-dim);
+  color: var(--text);
+}
+.cheatsheet-subtab.active{
+  background: var(--signal);
+  border-color: var(--signal);
+  color: #221305;
+}
+
 .cheatsheet-img-wrap{
   overflow-y: auto;
   max-height: calc(100vh - 160px);

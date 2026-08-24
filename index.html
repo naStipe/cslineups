@@ -182,17 +182,10 @@
       </div>
 
       <!-- Cheatsheet panel -->
-      <div class="cheatsheet-panel" id="cheatsheetPanel">
-        <button class="cheatsheet-tab" id="cheatsheetTab">
-          <svg class="cs-icon" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="7"  cy="13" r="4.5" stroke="currentColor" stroke-width="1.5"/>
-            <circle cx="13" cy="11" r="4"   stroke="currentColor" stroke-width="1.5"/>
-            <circle cx="10" cy="7"  r="3.5" stroke="currentColor" stroke-width="1.5"/>
-            <line x1="10" y1="17" x2="10" y2="20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="7"  y1="20" x2="13" y2="20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-          Instant smokes
-        </button>
+      <div class="cheatsheet-panel hidden" id="cheatsheetPanel">
+        <!-- One launcher button per named cheatsheet entry (e.g. "Window",
+             "Top Mid"), populated by js/cheatsheet.js from MAPS[x].cheatsheet. -->
+        <div class="cheatsheet-tabs" id="cheatsheetTabs"></div>
         <div class="cheatsheet-body" id="cheatsheetBody">
           <div class="cheatsheet-header">
             <div class="cheatsheet-header-left">
@@ -203,10 +196,13 @@
                 <line x1="10" y1="17" x2="10" y2="20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                 <line x1="7"  y1="20" x2="13" y2="20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
               </svg>
-              <span class="cheatsheet-title">Instant smokes</span>
+              <span class="cheatsheet-title" id="cheatsheetTitle">Instant smokes</span>
             </div>
             <button class="icon-btn" id="cheatsheetClose">✕</button>
           </div>
+          <!-- Only populated (and shown) when a map has more than one
+               cheatsheet entry, so you can switch spots without closing. -->
+          <div class="cheatsheet-subtabs" id="cheatsheetSubtabs"></div>
           <div class="cheatsheet-img-wrap">
             <img id="cheatsheetImg" src="" alt="Instant smokes cheatsheet">
           </div>

@@ -38,11 +38,20 @@ export const zoomResetBtn = document.getElementById("zoomReset");
 
 export const cheatsheetPanel = document.getElementById("cheatsheetPanel");
 
-export const cheatsheetTab   = document.getElementById("cheatsheetTab");
+// Container the launcher buttons (one per named cheatsheet entry, e.g.
+// "Window" / "Top Mid") are rendered into — see js/cheatsheet.js.
+export const cheatsheetTabs  = document.getElementById("cheatsheetTabs");
 
 export const cheatsheetBody  = document.getElementById("cheatsheetBody");
 
+// Sub-tab pills inside the open panel's header, for switching between
+// entries without closing the panel — only rendered when a map has more
+// than one cheatsheet entry.
+export const cheatsheetSubtabs = document.getElementById("cheatsheetSubtabs");
+
 export const cheatsheetClose = document.getElementById("cheatsheetClose");
+
+export const cheatsheetTitle = document.getElementById("cheatsheetTitle");
 
 export const cheatsheetImg   = document.getElementById("cheatsheetImg");
 
