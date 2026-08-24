@@ -39,6 +39,12 @@ function client() {
   _client = new S3Client({
     endpoint: requireEnv("R2_ENDPOINT"),
     region: "auto",
+    // R2 doesn't support the AWS SDK's default virtual-hosted-style
+    // addressing (bucket-name.endpoint). Without this, the SDK builds
+    // URLs like `<bucket>.<endpoint>` and R2 answers those with
+    // 501 Not Implemented. Path-style (`<endpoint>/<bucket>`) is what R2
+    // actually supports.
+    forcePathStyle: true,
     credentials: {
       accessKeyId: requireEnv("R2_ACCESS_KEY_ID"),
       secretAccessKey: requireEnv("R2_SECRET_ACCESS_KEY"),
