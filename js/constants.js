@@ -24,12 +24,13 @@ export const MAPS = [
   { id: "anubis",   name: "Anubis",    file: "maps/anubis.png",         logo: "maps/anubis-logo.jpg",   cheatsheet: [
     { label: "Instant smokes", file: "maps/anubis-insta-smokes.webp" },
   ] },
-  { id: "overpass", name: "Overpass",  file: "maps/overpass.webp",      logo: "maps/overpass-logo.jpg", cheatsheet: [] },
-  { id: "cache",    name: "Cache",     file: "maps/cache.webp",         logo: "maps/cache-logo.jpg",    cheatsheet: [] },
-  { id: "vertigo",  name: "Vertigo",   file: "maps/vertigo-radar.png",  logo: "",                       cheatsheet: [], levels: [
+  { id: "vertigo",  name: "Vertigo",   file: "maps/vertigo-radar.png",  logo: "maps/vertigo-logo.jpg",  cheatsheet: [], levels: [
     { id: "top",    label: "Upper", file: "maps/vertigo-radar.png" },
     { id: "bottom", label: "Lower", file: "maps/vertigo-radar-lower.png" },
   ] },
+  { id: "cache",    name: "Cache",     file: "maps/cache.webp",         logo: "maps/cache-logo.jpg",    cheatsheet: [] },
+  // Not in the active map pool right now — kept last so it doesn't crowd the front of the grid.
+  { id: "overpass", name: "Overpass",  file: "maps/overpass.webp",      logo: "maps/overpass-logo.jpg", cheatsheet: [] },
 ];
 
 export const TYPES = [
