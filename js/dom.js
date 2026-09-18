@@ -173,6 +173,8 @@ export const officialViewBtn = document.getElementById("officialViewBtn");
 
 export const personalViewBtn = document.getElementById("personalViewBtn");
 
+export const levelToggle = document.getElementById("levelToggle");
+
 export const authModal = document.getElementById("authModal");
 
 export const authModalTitle = document.getElementById("authModalTitle");

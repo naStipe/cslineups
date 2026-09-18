@@ -2,6 +2,7 @@ import { MAPS, TYPES } from "./constants.js";
 
 export let state = {
   mapId: MAPS[0].id,
+  levelId: "top",        // active radar level id for maps with a `levels` list (e.g. Nuke, Vertigo)
   viewMode: "official",  // "official" (public map) or "personal" (signed-in user's own map)
   lineups: [],          // all lineups for current map + view, loaded from DB
   savedThrowKeys: new Set(), // `${lineupId}::${throwId}` for every individual throw position the user has bookmarked

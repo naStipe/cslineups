@@ -3,6 +3,7 @@ import { buildSavedThrowKeys, dbGetAll, dbGetMine, dbGetSaved } from "./api.js";
 import { authUser } from "./auth.js";
 import { updateCheatsheet } from "./cheatsheet.js";
 import { MAPS } from "./constants.js";
+import { updateLevelSwitch } from "./level-switch.js";
 import { currentMapName, detailPanel, lineupCount, lineupSearchInput, linkSvg, mapImage, markerLayer, officialViewBtn, personalViewBtn } from "./dom.js";
 import { buildLineupList } from "./lineup-list.js";
 import { renderMarkers, resetRenderedThrowSig } from "./markers.js";
@@ -27,6 +28,7 @@ export async function selectMap(id) {
   const m = MAPS.find(x => x.id === id);
   currentMapName.textContent = m.name.toUpperCase();
   mapImage.src = m.file;
+  updateLevelSwitch(id);
   updateCheatsheet(id);
   if (!authUser && state.viewMode === "personal") state.viewMode = "official";
   if (officialViewBtn) officialViewBtn.classList.toggle("active", state.viewMode === "official");
