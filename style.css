@@ -1022,21 +1022,50 @@ html[data-deep-link] #appShell{display:grid;}
   position:relative;aspect-ratio:720/711;
   border:1px solid var(--line);border-radius:12px;overflow:hidden;
   background:var(--hull);line-height:0;
+  animation:heroGlow 7.2s ease-in-out infinite;
 }
 .hero-slide{
   position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
   filter:brightness(.9) saturate(.9);
-  opacity:0;transition:opacity 1s ease;
+  opacity:0;transform:scale(1.05);
+  transition:opacity 1.4s cubic-bezier(.4,0,.2,1);
+  animation:heroDrift 17s ease-in-out infinite;
 }
-.hero-slide.is-active{opacity:1;}
+.hero-slide.is-active{opacity:1;z-index:1;}
+.hero-slide:nth-child(4n+2){animation-duration:20s;animation-direction:alternate-reverse;}
+.hero-slide:nth-child(4n+3){animation-duration:15s;animation-delay:-5s;}
+.hero-slide:nth-child(4n+4){animation-duration:22s;animation-delay:-11s;animation-direction:alternate-reverse;}
+
+.hero-diagram-sweep{
+  position:absolute;inset:-20% 0;z-index:2;pointer-events:none;
+  background:linear-gradient(180deg, transparent 0%, rgba(255,165,62,.09) 48%, transparent 100%);
+  animation:heroSweep 6s linear infinite;
+}
+.hero-diagram-corners{position:absolute;inset:0;z-index:2;pointer-events:none;}
+.hero-diagram-corners::before,.hero-diagram-corners::after{
+  content:"";position:absolute;width:18px;height:18px;
+  border:1.5px solid var(--signal);opacity:.55;
+}
+.hero-diagram-corners::before{top:9px;left:9px;border-right:none;border-bottom:none;}
+.hero-diagram-corners::after{bottom:9px;right:9px;border-left:none;border-top:none;}
+
+@keyframes heroDrift{
+  0%{transform:scale(1.05) translate(0,0);}
+  50%{transform:scale(1.13) translate(-1.4%,1%);}
+  100%{transform:scale(1.05) translate(0,0);}
+}
+@keyframes heroGlow{
+  0%,100%{box-shadow:0 0 0 0 rgba(255,165,62,0);}
+  50%{box-shadow:0 0 36px -10px rgba(255,165,62,.4);}
+}
+@keyframes heroSweep{
+  0%{transform:translateY(-60%);}
+  100%{transform:translateY(60%);}
+}
 @media (prefers-reduced-motion:reduce){
-  .hero-slide{transition:none;}
-}
-.hero-diagram-label{
-  position:absolute;left:8px;bottom:8px;
-  font-family:var(--font-mono);font-size:10.5px;letter-spacing:.04em;color:var(--text-dim);
-  background:rgba(12,10,8,.72);border:1px solid var(--line);border-radius:5px;
-  padding:4px 9px;
+  .hero-slide{transition:none;animation:none;}
+  .hero-diagram{animation:none;}
+  .hero-diagram-sweep{display:none;}
 }
 
 @media (max-width:900px){
@@ -1047,6 +1076,51 @@ html[data-deep-link] #appShell{display:grid;}
   .hero{padding:36px 0 32px;}
   .hero-title{font-size:34px;}
   .hero-sub{font-size:14.5px;}
+}
+
+.home-features{
+  width:100%;max-width:980px;margin:0 auto;
+  padding:8px 0 56px;border-top:1px solid var(--line-soft);
+}
+.home-features .home-section-title{
+  font-size:24px;text-align:left;margin:36px 0 24px;
+}
+.home-steps{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:24px;
+}
+.home-step{
+  padding:20px;border:1px solid var(--line);border-radius:10px;background:var(--hull);
+}
+.home-step-num{
+  display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;
+  color:var(--signal);margin-bottom:10px;
+}
+.home-step h3{
+  font-size:18px;color:var(--text);margin:0 0 8px;
+}
+.home-step p{
+  margin:0;font-size:13.5px;line-height:1.55;color:var(--text-dim);
+}
+.home-map-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:14px;
+}
+.home-map-card{
+  display:block;padding:16px;border:1px solid var(--line);border-radius:10px;
+  background:var(--hull);text-decoration:none;transition:border-color .15s ease,transform .15s ease;
+}
+.home-map-card:hover{border-color:var(--signal-dim);transform:translateY(-2px);}
+.home-map-card h3{
+  font-size:15.5px;color:var(--text);margin:0 0 6px;
+}
+.home-map-card p{
+  margin:0;font-size:12px;line-height:1.5;color:var(--text-faint);
+}
+@media (max-width:900px){
+  .home-map-grid{grid-template-columns:repeat(2,1fr);}
+}
+@media (max-width:768px){
+  .home-features{padding:8px 16px 40px;}
+  .home-steps{grid-template-columns:1fr;}
 }
 
 .home-footer{

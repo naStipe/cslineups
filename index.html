@@ -80,15 +80,51 @@
       </div>
 
       <div class="hero-diagram" id="heroDiagram" aria-label="Real Lineupr maps rotating through Dust II, Mirage, Inferno, Nuke, Ancient, Anubis, Cache and Overpass, each showing live lineup markers.">
-        <img class="hero-slide is-active" src="/maps/hero/dust2.webp" data-name="Dust II" width="720" height="711" loading="eager" fetchpriority="high" decoding="async" alt="Dust II — real lineup markers from Lineupr">
-        <img class="hero-slide" src="/maps/hero/mirage.webp" data-name="Mirage" width="720" height="622" loading="lazy" decoding="async" alt="" aria-hidden="true">
-        <img class="hero-slide" src="/maps/hero/inferno.webp" data-name="Inferno" width="720" height="768" loading="lazy" decoding="async" alt="" aria-hidden="true">
-        <img class="hero-slide" src="/maps/hero/nuke.webp" data-name="Nuke" width="720" height="723" loading="lazy" decoding="async" alt="" aria-hidden="true">
-        <img class="hero-slide" src="/maps/hero/ancient.webp" data-name="Ancient" width="720" height="814" loading="lazy" decoding="async" alt="" aria-hidden="true">
-        <img class="hero-slide" src="/maps/hero/anubis.webp" data-name="Anubis" width="720" height="723" loading="lazy" decoding="async" alt="" aria-hidden="true">
-        <img class="hero-slide" src="/maps/hero/cache.webp" data-name="Cache" width="720" height="564" loading="lazy" decoding="async" alt="" aria-hidden="true">
-        <img class="hero-slide" src="/maps/hero/overpass.webp" data-name="Overpass" width="720" height="724" loading="lazy" decoding="async" alt="" aria-hidden="true">
-        <span class="hero-diagram-label" id="heroDiagramLabel">Dust II</span>
+        <div class="hero-diagram-sweep" aria-hidden="true"></div>
+        <img class="hero-slide is-active" src="/maps/hero/dust2.webp" width="720" height="711" loading="eager" fetchpriority="high" decoding="async" alt="Dust II — real lineup markers from Lineupr">
+        <img class="hero-slide" src="/maps/hero/mirage.webp" width="720" height="622" loading="lazy" decoding="async" alt="" aria-hidden="true">
+        <img class="hero-slide" src="/maps/hero/inferno.webp" width="720" height="768" loading="lazy" decoding="async" alt="" aria-hidden="true">
+        <img class="hero-slide" src="/maps/hero/nuke.webp" width="720" height="723" loading="lazy" decoding="async" alt="" aria-hidden="true">
+        <img class="hero-slide" src="/maps/hero/ancient.webp" width="720" height="814" loading="lazy" decoding="async" alt="" aria-hidden="true">
+        <img class="hero-slide" src="/maps/hero/anubis.webp" width="720" height="723" loading="lazy" decoding="async" alt="" aria-hidden="true">
+        <img class="hero-slide" src="/maps/hero/cache.webp" width="720" height="564" loading="lazy" decoding="async" alt="" aria-hidden="true">
+        <img class="hero-slide" src="/maps/hero/overpass.webp" width="720" height="724" loading="lazy" decoding="async" alt="" aria-hidden="true">
+        <span class="hero-diagram-corners" aria-hidden="true"></span>
+      </div>
+    </section>
+
+    <section class="home-features" aria-labelledby="featuresTitle">
+      <h2 id="featuresTitle" class="home-section-title">How Lineupr works</h2>
+      <div class="home-steps">
+        <div class="home-step">
+          <span class="home-step-num">01</span>
+          <h3>Pick a map</h3>
+          <p>Every active-duty CS2 map is covered — Dust II, Mirage, Inferno, Nuke, Ancient, Anubis, Cache and Overpass.</p>
+        </div>
+        <div class="home-step">
+          <span class="home-step-num">02</span>
+          <h3>Pick a spot</h3>
+          <p>Click a marker on the radar to open a lineup: smoke, flash, molotov, HE or decoy, filtered by type or searched by name.</p>
+        </div>
+        <div class="home-step">
+          <span class="home-step-num">03</span>
+          <h3>Throw it</h3>
+          <p>Each lineup shows where to stand, where to aim, movement and jumpthrow notes, and a screenshot of the throw itself.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="home-features" aria-labelledby="mapsTitle">
+      <h2 id="mapsTitle" class="home-section-title">Every active-duty map, covered</h2>
+      <div class="home-map-grid">
+        <a class="home-map-card" href="/dust2"><h3>Dust II</h3><p>Long A, catwalk, tunnels and mid — smoke and flash lineups for the map everyone learns first.</p></a>
+        <a class="home-map-card" href="/mirage"><h3>Mirage</h3><p>Window, palace, apartments and connector — lineups for the most-picked map in competitive CS2.</p></a>
+        <a class="home-map-card" href="/inferno"><h3>Inferno</h3><p>Banana smokes, apartments and site executes for both bombsites.</p></a>
+        <a class="home-map-card" href="/nuke"><h3>Nuke</h3><p>Outside, ramp and heaven lineups for CS2's tightest vertical two-site map.</p></a>
+        <a class="home-map-card" href="/ancient"><h3>Ancient</h3><p>Jungle, temple and cave utility for one of CS2's newer additions to the active pool.</p></a>
+        <a class="home-map-card" href="/anubis"><h3>Anubis</h3><p>Canal, palm and connector control across the water-split map.</p></a>
+        <a class="home-map-card" href="/cache"><h3>Cache</h3><p>Quad, vents and mid control for the symmetric two-site layout.</p></a>
+        <a class="home-map-card" href="/overpass"><h3>Overpass</h3><p>Bathrooms, monster and toilets utility for tight site executes.</p></a>
       </div>
     </section>
 
@@ -96,7 +132,6 @@
   <script>
   (function () {
     var slides = document.querySelectorAll("#heroDiagram .hero-slide");
-    var label = document.getElementById("heroDiagramLabel");
     if (slides.length < 2) return;
     if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     var i = 0;
@@ -106,7 +141,6 @@
       i = (i + 1) % slides.length;
       slides[i].classList.add("is-active");
       slides[i].removeAttribute("aria-hidden");
-      label.textContent = slides[i].dataset.name;
     }, 3600);
   })();
   </script>
