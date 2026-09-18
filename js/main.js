@@ -2,22 +2,25 @@ import { setAddMode } from "./add-mode.js";
 import { initAuth } from "./auth.js";
 import { MAPS } from "./constants.js";
 import { closeDetailPanel, openDetail } from "./detail-panel.js";
-import { backBtn, detailPanel, lightboxModal, lightboxNext, lightboxPrev } from "./dom.js";
+import { detailPanel, homeBrand, lightboxModal, lightboxNext, lightboxPrev, sidebarBrand } from "./dom.js";
 import "./export-import.js"; // side effect only: wires up the export-backup button
 import "./profile-modal.js"; // side effect only: wires up the profile button + modal
 import { buildHomeScreen, enterMap, goHome } from "./home-screen.js";
 import { renderMarkers } from "./markers.js";
 import { resetZoom } from "./pan-zoom.js";
-import { buildFilters, buildSidebar } from "./sidebar.js";
+import { buildFilters, buildSidebar, closeSidebar } from "./sidebar.js";
 import { state } from "./state.js";
 
-// The map view is its own history entry above the chooser, so "Maps" pops
-// back to the chooser (keeping Back/Forward symmetric). Fall back to a direct
-// render if there's no map entry to pop (shouldn't happen in normal flow).
-backBtn.onclick = () => {
+// The map view is its own history entry above the chooser, so going home from
+// the logo pops back to it (keeping Back/Forward symmetric). Fall back to a
+// direct render if there's no map entry to pop (shouldn't happen in normal flow).
+function goHomeFromLogo() {
+  closeSidebar();
   if (history.state && history.state.view === "map") history.back();
   else goHome();
-};
+}
+homeBrand.onclick = goHomeFromLogo;
+sidebarBrand.onclick = goHomeFromLogo;
 
 // Browser Back/Forward between the chooser and a map view. URL-driven and
 // render-only — never pushes, or Back would get stuck.

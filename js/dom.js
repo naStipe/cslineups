@@ -20,9 +20,11 @@ export const homeGrid = document.getElementById("homeGrid");
 
 export const appShell = document.getElementById("appShell");
 
-export const backBtn = document.getElementById("backBtn");
-
 export const mobileMenuBtn = document.getElementById("mobileMenuBtn");
+
+export const homeBrand = document.getElementById("homeBrand");
+
+export const sidebarBrand = document.getElementById("sidebarBrand");
 
 export const sidebar = document.getElementById("sidebar");
 

@@ -33,7 +33,7 @@
 <!-- HOME SCREEN -->
 <div class="home-screen" id="homeScreen">
   <header class="home-header">
-    <div class="home-brand">
+    <div class="home-brand" id="homeBrand">
       <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
         <circle cx="20" cy="20" r="17" stroke="#ffa53e" stroke-width="2.2"/>
         <circle cx="20" cy="20" r="9"  stroke="#ffa53e" stroke-width="1" opacity="0.3"/>
@@ -75,7 +75,7 @@
   <!-- SIDEBAR -->
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
   <aside class="sidebar" id="sidebar">
-    <div class="brand">
+    <div class="brand" id="sidebarBrand">
       <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="28" height="28">
         <circle cx="20" cy="20" r="17" stroke="#ffa53e" stroke-width="2.2"/>
         <circle cx="20" cy="20" r="9"  stroke="#ffa53e" stroke-width="1" opacity="0.3"/>
@@ -144,11 +144,6 @@
         <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open map list">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><line x1="2" y1="4.5" x2="16" y2="4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="2" y1="9" x2="16" y2="9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="2" y1="13.5" x2="16" y2="13.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         </button>
-        <button class="back-btn" id="backBtn">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Maps
-        </button>
-        <div class="topbar-divider"></div>
         <h2 class="topbar-map-name" id="currentMapName">DUST II</h2>
         <span class="count-pill" id="lineupCount">0 lineups</span>
         <div class="view-toggle" id="viewToggle">
