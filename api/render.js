@@ -58,6 +58,25 @@ h2{font-family:Bahnschrift,Oswald,"Arial Narrow",sans-serif;font-stretch:condens
 ul.plain{list-style:none;padding:0;margin:0}
 ul.plain li{padding:9px 0;border-bottom:1px solid var(--line)}
 ul.plain .sub{color:var(--faint);font-size:13px;margin-left:8px}
+ol.steps{color:var(--dim);font-size:14px;line-height:1.7;margin:0 0 28px;padding-left:22px}
+ol.steps li{padding:2px 0}
+.map-card-grid{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.map-card-item{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
+.map-card-link{display:block;color:inherit}
+.map-card-link:hover{text-decoration:none}
+.map-card-link:hover .map-card-title{color:var(--signal)}
+.map-card-thumb{display:block;aspect-ratio:16/10;background-size:cover;background-position:center;background-color:var(--void)}
+.map-card-info{display:block;padding:12px 14px}
+.map-card-title{display:block;font-family:inherit;font-weight:700;font-size:16px;color:var(--text)}
+.map-card-info .sub{display:block;margin:2px 0 0;color:var(--faint);font-size:12.5px}
+.map-card-breakdown{display:flex;flex-wrap:wrap;gap:2px 10px;margin-top:8px;font-size:12px;color:var(--dim)}
+.map-card-type{display:inline-flex;align-items:center;gap:5px}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.dot-smoke{background:#c7cdd2}
+.dot-flash{background:#f5d142}
+.dot-fire{background:#ff6a45}
+.dot-he{background:#79e07e}
+.dot-decoy{background:#cf9f6e}
 .throw{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:0 0 18px}
 .throw h3{margin:0 0 8px;font-size:17px}
 .facts{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:14px;color:var(--dim);margin:0 0 10px;padding:0;list-style:none}
@@ -106,7 +125,8 @@ window.addEventListener('mouseup',function(){if(d){d=false;t();}});
 
 function layout({ title, description, path, ogImage, ogType, jsonLd, crumbs, body, lightbox }) {
   const canonical = SITE + path;
-  const image = ogImage || `${SITE}/og-image.svg`;
+  const image = ogImage || `${SITE}/og-image.png`;
+  const imageDims = ogImage ? "" : `<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n`;
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -121,7 +141,7 @@ function layout({ title, description, path, ogImage, ogType, jsonLd, crumbs, bod
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:image" content="${esc(image)}">
-<meta property="og:site_name" content="Lineupr">
+${imageDims}<meta property="og:site_name" content="Lineupr">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${esc(title)}">
 <meta name="twitter:description" content="${esc(description)}">
@@ -168,16 +188,27 @@ function firstValidScreenshot(lineup) {
 }
 
 // ---------------------------------------------------------------- /maps ---
+// Deliberately NOT built on layout() — this page reuses the SPA's own
+// home-screen markup/CSS classes (style.css) verbatim, rather than the
+// lightweight inline-CSS template the other SEO pages use, so it looks
+// exactly like the chooser screen that used to live at "/" before the
+// hero landing page replaced it there. Map cards are real <a href> links
+// (work with no JS) to "/?map=<id>", which main.js's deep-link handler
+// already opens directly into the interactive app.
 async function renderMapsIndex(res, C) {
-  const sb = supabase();
-  const { data, error } = await sb.from("lineups").select("map_id").eq("is_official", true);
-  if (error) throw new Error(error.message);
+  const lineups = await fetchOfficialLineups(supabase());
   const counts = {};
-  (data || []).forEach(r => { counts[r.map_id] = (counts[r.map_id] || 0) + 1; });
+  lineups.forEach(l => { counts[l.mapId] = (counts[l.mapId] || 0) + 1; });
 
-  const items = C.MAPS.map(m => {
+  const cards = C.MAPS.map(m => {
     const n = counts[m.id] || 0;
-    return `<li><a href="/${m.id}">${esc(m.name)} grenade lineups</a><span class="sub">${n} lineup${n === 1 ? "" : "s"}</span></li>`;
+    return `<a class="map-card" href="/?map=${esc(m.id)}">
+<div class="map-card-bg" style="background-image:url('/maps/${m.id}-logo.jpg')"></div>
+<div class="map-card-content">
+<div class="map-card-name">${esc(m.name)}</div>
+<div class="map-card-count${n === 0 ? " empty" : ""}">${n === 0 ? "No lineups yet" : `${n} lineup${n === 1 ? "" : "s"}`}</div>
+</div>
+</a>`;
   }).join("\n");
 
   const jsonLd = [{
@@ -193,22 +224,82 @@ async function renderMapsIndex(res, C) {
     },
   }];
 
-  const body = `
-<h1>CS2 Grenade Lineups by Map</h1>
-<p class="lede">Official smoke, flash, molotov and HE grenade lineups for every active-duty CS2 map, with screenshots, movement technique and aim notes for each throw.</p>
-<a class="cta" href="/">Open the interactive map</a>
-<ul class="plain">
-${items}
-</ul>`;
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Choose a Map — CS2 Grenade Lineups | Lineupr</title>
+<meta name="description" content="Pick a CS2 map — Dust II, Mirage, Inferno, Nuke, Ancient, Anubis, Overpass or Cache — and browse its official smoke, flash, molotov and HE grenade lineups.">
+<link rel="canonical" href="${SITE}/maps">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta property="og:type" content="website">
+<meta property="og:url" content="${SITE}/maps">
+<meta property="og:title" content="Choose a Map — CS2 Grenade Lineups | Lineupr">
+<meta property="og:description" content="Pick a CS2 map and browse its official smoke, flash, molotov and HE grenade lineups.">
+<meta property="og:image" content="${SITE}/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Choose a Map — CS2 Grenade Lineups | Lineupr">
+<meta name="twitter:image" content="${SITE}/og-image.png">
+${jsonLd.map(jsonLdScript).join("\n")}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="home-screen">
+  <header class="home-header">
+    <a class="home-brand" href="/" aria-label="Lineupr home">
+      ${BRAND_SVG.replace('width="26" height="26"', 'width="32" height="32"')}
+      <span class="home-wordmark">lineup<span class="home-wordmark-r">r</span></span>
+    </a>
+  </header>
+  <div class="notice-banner" id="noticeBanner">
+    <p><strong>Notice:</strong> this is a personal project, not a commercial product. It was built mainly for personal use — to help the developer learn and save lineups — so there may be bugs and rough edges. Feel free to use it for your own practice. If something's inconvenient or missing a feature, reach out at <a href="mailto:support@nastipe.dev">support@nastipe.dev</a> and I'll try to add it soon.</p>
+    <button type="button" id="noticeBannerClose" aria-label="Dismiss notice">&times;</button>
+  </div>
+  <script>
+  (function () {
+    var KEY = "lineupr_notice_dismissed";
+    var el = document.getElementById("noticeBanner");
+    try { if (localStorage.getItem(KEY) === "1") el.hidden = true; } catch (e) {}
+    document.getElementById("noticeBannerClose").addEventListener("click", function () {
+      el.hidden = true;
+      try { localStorage.setItem(KEY, "1"); } catch (e) {}
+    });
+  })();
+  </script>
+  <div class="home-body">
+    <h2 class="home-section-title">Lineups</h2>
+    <div class="home-grid"><div class="home-grid-inner">
+${cards}
+    </div></div>
+  </div>
+  <footer class="home-footer" aria-label="Map chooser footer">
+    <nav class="home-footer-links" aria-label="Browse lineups by map">
+      <a href="/">Home</a>
+      <a href="/dust2">Dust II lineups</a>
+      <a href="/mirage">Mirage lineups</a>
+      <a href="/inferno">Inferno lineups</a>
+      <a href="/nuke">Nuke lineups</a>
+      <a href="/ancient">Ancient lineups</a>
+      <a href="/anubis">Anubis lineups</a>
+      <a href="/overpass">Overpass lineups</a>
+      <a href="/cache">Cache lineups</a>
+      <a href="/blog">Blog</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/cookies.html">Cookies</a>
+    </nav>
+  </footer>
+</div>
+</body>
+</html>`;
 
-  sendHtml(res, 200, layout({
-    title: "CS2 Grenade Lineups by Map — Smokes, Flashes & Molotovs | Lineupr",
-    description: "Browse official CS2 grenade lineups by map: Dust II, Mirage, Inferno, Nuke, Ancient, Anubis, Overpass and Cache. Screenshots and technique for every throw.",
-    path: "/maps",
-    jsonLd,
-    crumbs: `<a href="/">Home</a> › Maps`,
-    body,
-  }), CACHE_OK);
+  sendHtml(res, 200, html, CACHE_OK);
 }
 
 // --------------------------------------------------------------- /<map> ---
@@ -301,6 +392,9 @@ async function renderLineupPage(res, C, mapId, typeId, slug) {
   const canonicalPath = lineupPath(lineup);
   const ogImage = firstValidScreenshot(lineup);
 
+  // The first screenshot on the page is the LCP candidate — load it eagerly
+  // and at high priority instead of lazily like the rest.
+  let firstImageSeen = false;
   const throwsHtml = lineup.throws.map((t, i) => {
     const movement = esc(C.MOVEMENT_LABELS[t.movement] || t.movement || "—");
     const range = esc(C.RANGE_LABELS[t.range] || t.range || "—");
@@ -308,7 +402,12 @@ async function renderLineupPage(res, C, mapId, typeId, slug) {
     const imgs = throwImages(t).map(([, urls, label]) =>
       urls.map((u, j) => {
         const alt = `${map.name} ${type.label.toLowerCase()} lineup ${displayName} — throw ${i + 1}, ${label}${urls.length > 1 ? ` (${j + 1})` : ""}`;
-        return `<figure><img src="${esc(u)}" alt="${esc(alt)}" loading="lazy" decoding="async"><figcaption>Throw ${i + 1} — ${esc(label)}</figcaption></figure>`;
+        const isFirst = !firstImageSeen;
+        firstImageSeen = true;
+        const loadAttrs = isFirst
+          ? `loading="eager" fetchpriority="high"`
+          : `loading="lazy"`;
+        return `<figure><img src="${esc(u)}" alt="${esc(alt)}" ${loadAttrs} decoding="async"><figcaption>Throw ${i + 1} — ${esc(label)}</figcaption></figure>`;
       }).join("\n")
     ).join("\n");
 

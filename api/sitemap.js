@@ -27,9 +27,9 @@ function isoDate(ms) {
 // Static blog posts (plain HTML files under /blog, not sourced from
 // Supabase). Add the filename here when a new post is added.
 const BLOG_POSTS = [
-  "how-to-learn-cs2-nade-lineups-fast.html",
-  "cs2-jumpthrow-bind-guide.html",
-  "dust2-smokes-that-matter.html",
+  { file: "how-to-learn-cs2-nade-lineups-fast.html", lastmod: "2026-09-18" },
+  { file: "cs2-jumpthrow-bind-guide.html", lastmod: "2026-09-18" },
+  { file: "dust2-smokes-that-matter.html", lastmod: "2026-09-18" },
 ];
 
 module.exports = async function handler(req, res) {
@@ -37,13 +37,20 @@ module.exports = async function handler(req, res) {
     const { MAPS } = CONSTANTS;
     const lineups = await fetchOfficialLineups(supabase());
 
+    // Most recent lineup edit across all maps, used as a lastmod proxy for
+    // the homepage and the /maps index — both aggregate all lineups, so
+    // their "freshest" date is whichever lineup changed last.
+    const lineupDates = lineups.map(l => isoDate(l.createdAt)).filter(Boolean).sort();
+    const latestLineupDate = lineupDates.length ? lineupDates[lineupDates.length - 1] : null;
+    const latestBlogDate = BLOG_POSTS.map(p => p.lastmod).filter(Boolean).sort().pop() || null;
+
     const urls = [
-      urlTag(`${SITE}/`),
-      urlTag(`${SITE}/maps`),
+      urlTag(`${SITE}/`, latestLineupDate),
+      urlTag(`${SITE}/maps`, latestLineupDate),
       ...MAPS.map(m => urlTag(`${SITE}/${m.id}`)),
       ...lineups.map(l => urlTag(SITE + lineupPath(l), isoDate(l.createdAt))),
-      urlTag(`${SITE}/blog`),
-      ...BLOG_POSTS.map(p => urlTag(`${SITE}/blog/${p}`)),
+      urlTag(`${SITE}/blog`, latestBlogDate),
+      ...BLOG_POSTS.map(p => urlTag(`${SITE}/blog/${p.file}`, p.lastmod)),
     ];
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
