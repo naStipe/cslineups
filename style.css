@@ -766,7 +766,7 @@ body.view-official:not(.is-admin) #fabAddBtn{display:none;}
   position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;
   background:var(--void);opacity:0;pointer-events:none;transition:opacity .15s;
 }
-.map-loading.show{opacity:1;pointer-events:auto;}
+.map-loading.show{opacity:1;pointer-events:auto;transition:none;}
 .map-loading-text{
   font-family:var(--font-mono);font-size:12px;letter-spacing:.1em;color:var(--text-faint);
   animation:loading-pulse 1.4s ease-in-out infinite;
@@ -1019,12 +1019,19 @@ html[data-deep-link] #appShell{display:grid;}
 }
 
 .hero-diagram{
-  position:relative;
+  position:relative;aspect-ratio:720/711;
   border:1px solid var(--line);border-radius:12px;overflow:hidden;
   background:var(--hull);line-height:0;
 }
-.hero-diagram img{display:block;width:100%;height:auto;filter:brightness(.9) saturate(.9);}
-.hero-diagram-overlay{position:absolute;inset:0;width:100%;height:100%;}
+.hero-slide{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
+  filter:brightness(.9) saturate(.9);
+  opacity:0;transition:opacity 1s ease;
+}
+.hero-slide.is-active{opacity:1;}
+@media (prefers-reduced-motion:reduce){
+  .hero-slide{transition:none;}
+}
 .hero-diagram-label{
   position:absolute;left:8px;bottom:8px;
   font-family:var(--font-mono);font-size:10.5px;letter-spacing:.04em;color:var(--text-dim);

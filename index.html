@@ -79,26 +79,37 @@
         </div>
       </div>
 
-      <div class="hero-diagram" role="img" aria-label="Mirage radar with a smoke lineup glowing at Window, connected by a throw line from mid.">
-        <img src="/maps/mirage.webp" alt="Mirage radar — smoke lineup landing at Window" width="1389" height="1200" loading="eager" fetchpriority="high" decoding="async">
-        <svg class="hero-diagram-overlay" viewBox="0 0 100 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <filter id="heroGlow" x="-200%" y="-200%" width="500%" height="500%">
-              <feGaussianBlur stdDeviation="1.6" result="blur"/>
-              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-          </defs>
-          <line x1="49" y1="41" x2="39.7" y2="21" stroke="#ffa53e" stroke-width="0.5" stroke-dasharray="0.3 1.8" stroke-linecap="round"/>
-          <circle cx="49" cy="41" r="1.3" fill="none" stroke="#ffa53e" stroke-width="0.6"/>
-          <circle cx="39.7" cy="21" r="2.4" fill="#c7cdd2" opacity="0.9" filter="url(#heroGlow)">
-            <animate attributeName="opacity" values="0.55;1;0.55" dur="2.6s" repeatCount="indefinite"/>
-          </circle>
-        </svg>
-        <span class="hero-diagram-label">Smoke — Window</span>
+      <div class="hero-diagram" id="heroDiagram" aria-label="Real Lineupr maps rotating through Dust II, Mirage, Inferno, Nuke, Ancient, Anubis, Cache and Overpass, each showing live lineup markers.">
+        <img class="hero-slide is-active" src="/maps/hero/dust2.webp" data-name="Dust II" width="720" height="711" loading="eager" fetchpriority="high" decoding="async" alt="Dust II — real lineup markers from Lineupr">
+        <img class="hero-slide" src="/maps/hero/mirage.webp" data-name="Mirage" width="720" height="622" loading="lazy" decoding="async" alt="" aria-hidden="true">
+        <img class="hero-slide" src="/maps/hero/inferno.webp" data-name="Inferno" width="720" height="768" loading="lazy" decoding="async" alt="" aria-hidden="true">
+        <img class="hero-slide" src="/maps/hero/nuke.webp" data-name="Nuke" width="720" height="723" loading="lazy" decoding="async" alt="" aria-hidden="true">
+        <img class="hero-slide" src="/maps/hero/ancient.webp" data-name="Ancient" width="720" height="814" loading="lazy" decoding="async" alt="" aria-hidden="true">
+        <img class="hero-slide" src="/maps/hero/anubis.webp" data-name="Anubis" width="720" height="723" loading="lazy" decoding="async" alt="" aria-hidden="true">
+        <img class="hero-slide" src="/maps/hero/cache.webp" data-name="Cache" width="720" height="564" loading="lazy" decoding="async" alt="" aria-hidden="true">
+        <img class="hero-slide" src="/maps/hero/overpass.webp" data-name="Overpass" width="720" height="724" loading="lazy" decoding="async" alt="" aria-hidden="true">
+        <span class="hero-diagram-label" id="heroDiagramLabel">Dust II</span>
       </div>
     </section>
 
   </div>
+  <script>
+  (function () {
+    var slides = document.querySelectorAll("#heroDiagram .hero-slide");
+    var label = document.getElementById("heroDiagramLabel");
+    if (slides.length < 2) return;
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    var i = 0;
+    setInterval(function () {
+      slides[i].classList.remove("is-active");
+      slides[i].setAttribute("aria-hidden", "true");
+      i = (i + 1) % slides.length;
+      slides[i].classList.add("is-active");
+      slides[i].removeAttribute("aria-hidden");
+      label.textContent = slides[i].dataset.name;
+    }, 3600);
+  })();
+  </script>
   <!-- Crawlable links so search engines can discover the server-rendered
        lineup pages (the map cards above are JS-only). -->
   <footer class="home-footer" aria-label="Map chooser footer">
@@ -222,9 +233,9 @@
     </header>
 
     <div class="map-stage" id="mapStage">
-      <div class="map-loading" id="mapLoading"><span class="map-loading-text">Loading lineups…</span></div>
+      <div class="map-loading show" id="mapLoading"><span class="map-loading-text">Loading lineups…</span></div>
       <div class="map-frame" id="mapFrame">
-        <img id="mapImage" src="" alt="map">
+        <img id="mapImage" src="" alt="">
         <svg id="linkSvg"></svg>
         <div id="markerLayer"></div>
       </div>
