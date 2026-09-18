@@ -34,12 +34,13 @@ function displayName(l) {
 }
 
 // Every image attached to a throw, in the order they're shown in the big
-// detail panel: where to stand, where to aim, then the precise pixel.
+// detail panel: where to stand, where to aim, then the precise pixel, then the result.
 function throwImages(t) {
   return [
     ...(Array.isArray(t.standing) ? t.standing : []),
     ...(Array.isArray(t.screenshots) ? t.screenshots : []),
     ...(t.precise ? [t.precise] : []),
+    ...(t.result ? [t.result] : []),
   ].filter(Boolean);
 }
 

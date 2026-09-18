@@ -278,6 +278,7 @@ function throwImages(t) {
     ["standing", Array.isArray(t.standing) ? t.standing : [], "where to stand"],
     ["aim", Array.isArray(t.screenshots) ? t.screenshots : [], "where to aim"],
     ["precise", t.precise != null ? [t.precise] : [], "precise aim point"],
+    ["result", t.result != null ? [t.result] : [], "result"],
   ];
   return groups
     .map(([kind, urls, label]) => [kind, urls.filter(isPublicStorageUrl), label])

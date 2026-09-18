@@ -142,6 +142,10 @@ export const preciseInput = document.getElementById("preciseInput");
 
 export const preciseThumbWrap = document.getElementById("preciseThumbWrap");
 
+export const resultInput = document.getElementById("resultInput");
+
+export const resultThumbWrap = document.getElementById("resultThumbWrap");
+
 export const throwRangeSelect = document.getElementById("throwRangeSelect");
 
 export const movementSelect = document.getElementById("movementSelect");

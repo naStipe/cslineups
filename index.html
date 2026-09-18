@@ -46,6 +46,21 @@
       <span class="home-wordmark">lineup<span class="home-wordmark-r">r</span></span>
     </div>
   </header>
+  <div class="notice-banner" id="noticeBanner">
+    <p><strong>Notice:</strong> this is a personal project, not a commercial product. It was built mainly for personal use — to help the developer learn and save lineups — so there may be bugs and rough edges. Feel free to use it for your own practice. If something's inconvenient or missing a feature, reach out at <a href="mailto:support@nastipe.dev">support@nastipe.dev</a> and I'll try to add it soon.</p>
+    <button type="button" id="noticeBannerClose" aria-label="Dismiss notice">✕</button>
+  </div>
+  <script>
+  (function () {
+    var KEY = "lineupr_notice_dismissed";
+    var el = document.getElementById("noticeBanner");
+    try { if (localStorage.getItem(KEY) === "1") el.hidden = true; } catch (e) {}
+    document.getElementById("noticeBannerClose").addEventListener("click", function () {
+      el.hidden = true;
+      try { localStorage.setItem(KEY, "1"); } catch (e) {}
+    });
+  })();
+  </script>
   <div class="home-body">
     <h2 class="home-section-title">Lineups</h2>
     <div class="home-grid" id="homeGrid"></div>
@@ -440,6 +455,15 @@
             <input type="file" id="preciseInput" accept="image/*" hidden>
           </div>
           <div class="tm-thumbs" id="preciseThumbWrap"></div>
+        </div>
+
+        <div class="tm-upload-col">
+          <div class="tm-upload-head">
+            <span class="tm-label">🖼️ Result <span class="tm-optional">optional</span></span>
+            <label class="tm-upload-trigger" for="resultInput">+ Add</label>
+            <input type="file" id="resultInput" accept="image/*" hidden>
+          </div>
+          <div class="tm-thumbs" id="resultThumbWrap"></div>
         </div>
       </div>
 

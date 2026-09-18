@@ -128,7 +128,7 @@ async function loadQueue() {
   items.forEach(item => els.adminQueue.appendChild(renderCard(item)));
 }
 
-const SLOT_LABELS = { standing: "Where to stand", screenshots: "Where to aim", precise: "Precise" };
+const SLOT_LABELS = { standing: "Where to stand", screenshots: "Where to aim", precise: "Precise", result: "Result" };
 
 function renderCard(item) {
   const card = document.createElement("div");

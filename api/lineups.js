@@ -116,6 +116,7 @@ function sanitizeThrow(t, i, userId) {
   screenshots.forEach((u, j) => { if (!isOwnStorageUrl(u, userId)) throw new Error(`throws[${i}].screenshots[${j}] is not a valid image URL`); });
   standing.forEach((u, j) => { if (!isOwnStorageUrl(u, userId)) throw new Error(`throws[${i}].standing[${j}] is not a valid image URL`); });
   if (t.precise != null && !isOwnStorageUrl(t.precise, userId)) throw new Error(`throws[${i}].precise is not a valid image URL`);
+  if (t.result != null && !isOwnStorageUrl(t.result, userId)) throw new Error(`throws[${i}].result is not a valid image URL`);
 
   return {
     id: t.id,
@@ -126,6 +127,7 @@ function sanitizeThrow(t, i, userId) {
     screenshots,
     standing,
     precise: t.precise != null ? t.precise : null,
+    result: t.result != null ? t.result : null,
   };
 }
 

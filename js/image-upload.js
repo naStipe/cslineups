@@ -1,5 +1,5 @@
 import { authUser, getAccessToken } from "./auth.js";
-import { preciseInput, preciseThumbWrap, screenshotInput, standingInput, standingThumbGrid, thumbGrid } from "./dom.js";
+import { preciseInput, preciseThumbWrap, resultInput, resultThumbWrap, screenshotInput, standingInput, standingThumbGrid, thumbGrid } from "./dom.js";
 import { escapeHtml } from "./html-utils.js";
 import { hydrateImages } from "./private-images.js";
 import { pendingThrowDraft } from "./throw-modal.js";
@@ -164,6 +164,20 @@ export function renderPreciseThumb() {
   hydrateImages(preciseThumbWrap);
 }
 
+export function renderResultThumb() {
+  resultThumbWrap.innerHTML = "";
+  if (!pendingThrowDraft.result) return;
+  const t = document.createElement("div");
+  t.className = "thumb";
+  t.innerHTML = `<img data-real-src="${escapeHtml(pendingThrowDraft.result)}"><button class="thumb-remove" type="button">✕</button>`;
+  t.querySelector(".thumb-remove").onclick = () => {
+    pendingThrowDraft.result = null;
+    renderResultThumb();
+  };
+  resultThumbWrap.appendChild(t);
+  hydrateImages(resultThumbWrap);
+}
+
 export function renderStandingThumbGrid() {
   standingThumbGrid.innerHTML = "";
   (pendingThrowDraft.standing || []).forEach((src, i) => {
@@ -209,4 +223,12 @@ preciseInput.onchange = async () => {
   if (!file) return;
   pendingThrowDraft.precise = await readAsDataUrl(file);
   renderPreciseThumb();
+};
+
+resultInput.onchange = async () => {
+  const file = resultInput.files[0];
+  resultInput.value = "";
+  if (!file) return;
+  pendingThrowDraft.result = await readAsDataUrl(file);
+  renderResultThumb();
 };

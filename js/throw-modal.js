@@ -3,7 +3,7 @@ import { dbGetAll, dbPut } from "./api.js";
 import { authUser, isAdmin } from "./auth.js";
 import { openDetail } from "./detail-panel.js";
 import { cancelThrow, cancelThrowBtn, mapImage, movementSelect, notesInput, repositionOnMapBtn, saveThrow, throwModal, throwModalHint, throwModalTitle, throwRangeSelect, tmPreviewImg, tmPreviewLanding, tmPreviewSvg, tmPreviewThrow } from "./dom.js";
-import { renderPreciseThumb, renderStandingThumbGrid, renderThumbGrid, uploadDataUrl } from "./image-upload.js";
+import { renderPreciseThumb, renderResultThumb, renderStandingThumbGrid, renderThumbGrid, uploadDataUrl } from "./image-upload.js";
 import { refreshLocal, upsertLocalLineup } from "./map-data.js";
 import { getCssVarColor, typeColor } from "./markers.js";
 import { closeModal } from "./modal-utils.js";
@@ -49,12 +49,14 @@ export function openThrowModal(throwPos, lineupId, isNewLineup, typeId, landingP
     standing: existingThrow ? [...(existingThrow.standing || [])] : [],
     screenshots: existingThrow ? [...existingThrow.screenshots] : [],
     precise: existingThrow ? existingThrow.precise || null : null,
+    result: existingThrow ? existingThrow.result || null : null,
     editingThrowId: existingThrow ? existingThrow.id : null,
   };
 
   renderStandingThumbGrid();
   renderThumbGrid();
   renderPreciseThumb();
+  renderResultThumb();
   throwRangeSelect.value = existingThrow ? existingThrow.range : "throw";
   movementSelect.value = existingThrow ? existingThrow.movement : "none";
   notesInput.value = existingThrow ? existingThrow.notes || "" : "";
@@ -138,10 +140,11 @@ saveThrow.onclick = async () => {
     }
 
     // Upload any local data URLs to R2 now (parallel)
-    const [standing, screenshots, precise] = await Promise.all([
+    const [standing, screenshots, precise, result] = await Promise.all([
       Promise.all(draft.standing.map(u => uploadDataUrl(u, isOfficial))),
       Promise.all(draft.screenshots.map(u => uploadDataUrl(u, isOfficial))),
       draft.precise ? uploadDataUrl(draft.precise, isOfficial) : Promise.resolve(null),
+      draft.result ? uploadDataUrl(draft.result, isOfficial) : Promise.resolve(null),
     ]);
 
     saveThrow.textContent = "Saving…";
@@ -151,6 +154,7 @@ saveThrow.onclick = async () => {
       standing,
       screenshots,
       precise,
+      result,
       range: throwRangeSelect.value,
       movement: movementSelect.value,
       notes: notesInput.value.trim(),

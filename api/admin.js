@@ -116,13 +116,14 @@ async function copyToPublic(sb, url) {
   return `${r2.PUBLIC_BASE_URL()}/${filename}`;
 }
 
-// Pulls every image URL off a throw across all three slots.
-const IMAGE_SLOTS = ["standing", "screenshots", "precise"];
+// Pulls every image URL off a throw across all slots.
+const IMAGE_SLOTS = ["standing", "screenshots", "precise", "result"];
 function throwImageUrls(t) {
   const urls = [];
   (t.standing || []).forEach(u => urls.push(u));
   (t.screenshots || []).forEach(u => urls.push(u));
   if (t.precise) urls.push(t.precise);
+  if (t.result) urls.push(t.result);
   return urls;
 }
 
@@ -183,7 +184,7 @@ module.exports = async function handler(req, res) {
           const imgs = [];
           for (const slot of IMAGE_SLOTS) {
             const val = t[slot];
-            const urls = slot === "precise" ? (val ? [val] : []) : (Array.isArray(val) ? val : []);
+            const urls = (slot === "precise" || slot === "result") ? (val ? [val] : []) : (Array.isArray(val) ? val : []);
             for (const url of urls) {
               imgs.push({ slot, url, viewUrl: await toViewUrl(sb, url) });
             }
@@ -238,6 +239,7 @@ module.exports = async function handler(req, res) {
           nt.standing = [];
           for (const u of (t.standing || [])) { const nu = await copyToPublic(sb, u); nt.standing.push(nu); if (nu !== u) orphans.push(u); }
           if (t.precise) { const nu = await copyToPublic(sb, t.precise); nt.precise = nu; if (nu !== t.precise) orphans.push(t.precise); }
+          if (t.result) { const nu = await copyToPublic(sb, t.result); nt.result = nu; if (nu !== t.result) orphans.push(t.result); }
           newThrows.push(nt);
         }
 
@@ -300,6 +302,7 @@ module.exports = async function handler(req, res) {
         next.screenshots = (t.screenshots || []).filter(u => { if (u === targetUrl) { found = true; return false; } return true; });
         next.standing    = (t.standing    || []).filter(u => { if (u === targetUrl) { found = true; return false; } return true; });
         if (t.precise === targetUrl) { found = true; next.precise = null; }
+        if (t.result === targetUrl) { found = true; next.result = null; }
         return next;
       });
       if (!found) { res.status(404).json({ error: "Image not found on this lineup" }); return; }

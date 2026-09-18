@@ -208,7 +208,7 @@ export function renderDetail(lineup) {
 export function buildHeroHtml(t, idx, lineup) {
   const standingImgs = (t.standing && t.standing.length) ? t.standing : [];
   const aimImgs = (t.screenshots && t.screenshots.length) ? t.screenshots : [];
-  const hasImages = standingImgs.length || aimImgs.length || t.precise;
+  const hasImages = standingImgs.length || aimImgs.length || t.precise || t.result;
 
   const makeCarousel = (imgs, label, cssClass) => {
     if (!imgs.length) return "";
@@ -233,6 +233,14 @@ export function buildHeroHtml(t, idx, lineup) {
       </div>
     </div>` : "";
 
+  const resultHtml = t.result ? `
+    <div class="tc-carousel">
+      <div class="tc-carousel-label">Result</div>
+      <div class="tc-carousel-inner">
+        <img class="tc-carousel-img" data-real-src="${escapeHtml(t.result)}" alt="Result of lineup">
+      </div>
+    </div>` : "";
+
   return `
     <div class="hero-header">
       <span class="variant-tag">VARIANT ${String(idx+1).padStart(2,"0")}</span>
@@ -251,6 +259,7 @@ export function buildHeroHtml(t, idx, lineup) {
       ${makeCarousel(standingImgs, "Stand here", "standing-gallery")}
       ${makeCarousel(aimImgs, "Aim here", "aim-gallery")}
       ${preciseHtml}
+      ${resultHtml}
     </div>` : ""}
     ${t.notes ? `<div class="throw-notes hero-notes">${escapeHtml(t.notes)}</div>` : ""}
   `;
