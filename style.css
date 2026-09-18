@@ -687,7 +687,13 @@ body.view-official:not(.is-admin) #addModeBtn{display:none;}
 .detail-panel.open .detail-panel-inner{transform:translateY(0);}
 
 /* ===================== FILTER CHIPS NO-WRAP ===================== */
-.filters{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:1px;}
+/* scrollbar-width:none hides the scrollbar entirely, so a fade on both
+   edges is the only cue left that the row scrolls past what's visible. */
+.filters{
+  overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:1px;
+  mask-image:linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+  -webkit-mask-image:linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+}
 .filters::-webkit-scrollbar{display:none;}
 
 /* ===================== MARKER BADGE NO-CLIP ===================== */
