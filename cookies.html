@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cookie Policy | Lineupr</title>
+<meta name="description" content="What cookies Lineupr uses, including Google Analytics, and how to opt out.">
+<link rel="canonical" href="https://lineupr.org/cookies.html">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/blog/blog.css">
+<style>.cookie-table{width:100%;border-collapse:collapse;margin:0 0 20px;font-size:14px}
+.cookie-table th,.cookie-table td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+.cookie-table th{color:var(--dim);font-weight:600}
+#resetConsentBtn{font:inherit;font-weight:600;padding:9px 16px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--text);cursor:pointer}
+#resetConsentBtn:hover{border-color:var(--signal)}
+#resetConsentStatus{margin-left:10px;color:var(--dim);font-size:13px}</style>
+</head>
+<body>
+<div class="wrap">
+<header class="site-head">
+  <a class="brand-link" href="/">
+    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="26" height="26" aria-hidden="true"><circle cx="20" cy="20" r="17" stroke="#ffa53e" stroke-width="2.2"/><circle cx="20" cy="20" r="9" stroke="#ffa53e" stroke-width="1" opacity="0.3"/><line x1="20" y1="3" x2="20" y2="11" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><line x1="20" y1="29" x2="20" y2="37" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="20" x2="11" y2="20" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><line x1="29" y1="20" x2="37" y2="20" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><circle cx="20" cy="20" r="3.5" fill="#ffa53e"/><circle cx="20" cy="20" r="1.4" fill="#0f0c09"/></svg>
+    <span>lineupr</span>
+  </a>
+  <nav><a href="/maps">Maps</a><a href="/blog">Blog</a></nav>
+</header>
+<nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> › Cookie Policy</nav>
+<main>
+<h1>Cookie Policy</h1>
+<p class="byline">Last updated: September 18, 2026</p>
+
+<p>Cookies are small files a site stores in your browser. Lineupr uses a small number of them, described below.</p>
+
+<h2>Essential cookies</h2>
+<p>Used to keep you signed in and remember your cookie choice. The site can't function correctly without these, so they're not subject to the consent banner.</p>
+<table class="cookie-table">
+<tr><th>Name</th><th>Purpose</th><th>Duration</th></tr>
+<tr><td>Supabase auth session</td><td>Keeps you signed in to your account</td><td>Until sign-out / expiry</td></tr>
+<tr><td>lineupr_consent</td><td>Remembers your cookie banner choice</td><td>Until cleared</td></tr>
+</table>
+
+<h2>Analytics cookies (optional)</h2>
+<p>If you accept the cookie banner, Google Analytics sets cookies to measure site usage (pages viewed, rough location, device type). These are not loaded until you accept, and are not used for advertising.</p>
+<table class="cookie-table">
+<tr><th>Name</th><th>Purpose</th><th>Duration</th></tr>
+<tr><td>_ga, _ga_*</td><td>Google Analytics — distinguishes visitors</td><td>Up to 2 years</td></tr>
+</table>
+<p>You can also opt out of Google Analytics site-wide with the <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener">Google Analytics opt-out browser add-on</a>.</p>
+
+<h2>Manage your choice</h2>
+<p>You can change your decision at any time:</p>
+<p><button type="button" id="resetConsentBtn">Reset cookie choice</button><span id="resetConsentStatus"></span></p>
+
+<h2>More info</h2>
+<p>See our <a href="/privacy.html">Privacy Policy</a> for how we handle data in general.</p>
+</main>
+<footer class="foot">
+<p><a href="/">Lineupr</a> · <a href="/privacy.html">Privacy Policy</a> · <a href="/terms.html">Terms of Use</a></p>
+</footer>
+</div>
+<script>
+document.getElementById('resetConsentBtn').addEventListener('click', function(){
+  try { localStorage.removeItem('lineupr_consent'); } catch(e){}
+  document.getElementById('resetConsentStatus').textContent = 'Choice reset — reload any page to be asked again.';
+});
+</script>
+</body>
+</html>

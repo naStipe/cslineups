@@ -137,7 +137,7 @@ ${crumbs ? `<nav class="crumbs" aria-label="Breadcrumb">${crumbs}</nav>` : ""}
 ${body}
 </main>
 <footer class="foot">
-<p><a href="/">Lineupr</a> — the interactive CS2 grenade lineup map. <a href="/maps">Browse lineups by map</a>. <a href="/blog">Blog</a>.</p>
+<p><a href="/">Lineupr</a> — the interactive CS2 grenade lineup map. <a href="/maps">Browse lineups by map</a>. <a href="/blog">Blog</a>. · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="/cookies.html">Cookies</a></p>
 </footer>
 </div>
 ${lightbox ? LIGHTBOX_HTML : ""}
