@@ -250,7 +250,7 @@ ${jsonLd.map(jsonLdScript).join("\n")}
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-<div class="home-screen">
+<div class="home-screen home-screen--maps">
   <header class="home-header">
     <a class="home-brand" href="/" aria-label="Lineupr home">
       ${BRAND_SVG.replace('width="26" height="26"', 'width="32" height="32"')}
