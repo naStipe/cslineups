@@ -16,8 +16,6 @@ export const closeMobileSearch = document.getElementById("closeMobileSearch");
 
 export const homeScreen = document.getElementById("homeScreen");
 
-export const homeGrid = document.getElementById("homeGrid");
-
 export const appShell = document.getElementById("appShell");
 
 export const mobileMenuBtn = document.getElementById("mobileMenuBtn");

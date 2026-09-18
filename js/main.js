@@ -5,7 +5,7 @@ import { closeDetailPanel, openDetail } from "./detail-panel.js";
 import { detailPanel, homeBrand, lightboxModal, lightboxNext, lightboxPrev, sidebarBrand } from "./dom.js";
 import "./export-import.js"; // side effect only: wires up the export-backup button
 import "./profile-modal.js"; // side effect only: wires up the profile button + modal
-import { buildHomeScreen, enterMap, goHome } from "./home-screen.js";
+import { enterMap, goHome } from "./home-screen.js";
 import { renderMarkers } from "./markers.js";
 import { resetZoom } from "./pan-zoom.js";
 import { buildFilters, buildSidebar, closeSidebar } from "./sidebar.js";
@@ -105,6 +105,5 @@ async function handleDeepLink() {
 
 loadConfig().then(async () => {
   await initAuth();
-  buildHomeScreen();
   handleDeepLink();
 });
