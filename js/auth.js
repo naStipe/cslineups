@@ -66,7 +66,7 @@ export async function isUsernameAvailable(username) {
   }
 }
 
-export async function signUpWithPassword(email, password, username) {
+export async function signUpWithPassword(email, password, username, captchaToken) {
   const sb = getAuthClient();
   // The username rides along in user metadata; the handle_new_user() trigger
   // (see sql/profiles-email-username.sql) copies it into public.profiles.
@@ -80,6 +80,7 @@ export async function signUpWithPassword(email, password, username) {
       // deployed site each return to themselves — must be covered by the
       // Redirect URLs allowlist in Supabase auth settings).
       emailRedirectTo: `${window.location.origin}/confirmed.html`,
+      captchaToken,
     },
   });
   if (error) throw error;
@@ -92,9 +93,18 @@ export async function signUpWithPassword(email, password, username) {
   }
 }
 
-export async function signInWithPassword(email, password) {
+export async function signInWithPassword(email, password, captchaToken) {
   const sb = getAuthClient();
-  const { error } = await sb.auth.signInWithPassword({ email, password });
+  const { error } = await sb.auth.signInWithPassword({ email, password, options: { captchaToken } });
+  if (error) throw error;
+}
+
+export async function resetPasswordForEmail(email, captchaToken) {
+  const sb = getAuthClient();
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password.html`,
+    captchaToken,
+  });
   if (error) throw error;
 }
 

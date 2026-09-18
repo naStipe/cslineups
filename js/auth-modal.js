@@ -1,6 +1,9 @@
-import { isUsernameAvailable, signInWithGoogle, signInWithPassword, signOut, signUpWithPassword } from "./auth.js";
-import { authEmailInput, authError, authGoogleBtn, authModal, authModalTitle, authPasswordConfirmField, authPasswordConfirmInput, authPasswordInput, authSubmitBtn, authSwitchLink, authSwitchText, authUsernameField, authUsernameInput, cancelAuth, signInBtn, signOutBtn } from "./dom.js";
+import { isUsernameAvailable, resetPasswordForEmail, signInWithGoogle, signInWithPassword, signOut, signUpWithPassword } from "./auth.js";
+import { authEmailInput, authError, authForgotLink, authForgotWrap, authGoogleBtn, authModal, authModalTitle, authPasswordConfirmField, authPasswordConfirmInput, authPasswordField, authPasswordInput, authSubmitBtn, authSwitchLink, authSwitchText, authTurnstile, authUsernameField, authUsernameInput, cancelAuth, signInBtn, signOutBtn } from "./dom.js";
 import { closeModal } from "./modal-utils.js";
+import { mountTurnstile } from "./turnstile.js";
+
+const turnstile = mountTurnstile(authTurnstile);
 
 export let authMode = "signin";
 
@@ -13,27 +16,57 @@ export function openAuthModal(mode) {
   authPasswordInput.value = "";
   authUsernameInput.value = "";
   authPasswordConfirmInput.value = "";
+  turnstile.reset();
   authModal.classList.add("show");
 }
 
 export function updateAuthModalMode() {
   const isSignup = authMode === "signup";
-  authModalTitle.textContent = isSignup ? "Create account" : "Sign in";
-  authSubmitBtn.textContent = isSignup ? "Sign up" : "Sign in";
-  authSwitchText.textContent = isSignup ? "Already have an account?" : "Don't have an account?";
-  authSwitchLink.textContent = isSignup ? "Sign in" : "Sign up";
+  const isReset = authMode === "reset";
+  authModalTitle.textContent = isReset ? "Reset password" : isSignup ? "Create account" : "Sign in";
+  authSubmitBtn.textContent = isReset ? "Send reset link" : isSignup ? "Sign up" : "Sign in";
+  authSwitchText.textContent = isReset ? "Remembered it?" : isSignup ? "Already have an account?" : "Don't have an account?";
+  authSwitchLink.textContent = isReset ? "Sign in" : isSignup ? "Sign in" : "Sign up";
   // Username + password-repeat are only asked for when creating an account.
   authUsernameField.hidden = !isSignup;
+  authPasswordField.hidden = isReset;
   authPasswordConfirmField.hidden = !isSignup;
+  authForgotWrap.hidden = authMode !== "signin";
+  // Password managers should offer a fresh password on sign-up, not the
+  // account's existing one.
+  authPasswordInput.autocomplete = isSignup ? "new-password" : "current-password";
+}
+
+function clearError() {
+  authError.hidden = true;
+  authError.classList.remove("info");
 }
 
 authSwitchLink.onclick = (e) => {
   e.preventDefault();
-  authMode = authMode === "signup" ? "signin" : "signup";
+  authMode = authMode === "signin" ? "signup" : "signin";
   updateAuthModalMode();
+  clearError();
+  turnstile.reset();
+};
+
+authForgotLink.onclick = (e) => {
+  e.preventDefault();
+  authMode = "reset";
+  updateAuthModalMode();
+  clearError();
+  turnstile.reset();
 };
 
 cancelAuth.onclick = () => closeModal(authModal);
+
+// Enter submits the form from any auth field, matching normal browser form
+// behavior even though this modal has no <form> element.
+[authEmailInput, authPasswordInput, authUsernameInput, authPasswordConfirmInput].forEach(el => {
+  el.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !authSubmitBtn.disabled) authSubmitBtn.click();
+  });
+});
 
 function showError(msg) {
   authError.classList.remove("info");
@@ -57,14 +90,37 @@ authSubmitBtn.onclick = async () => {
   const email = authEmailInput.value.trim();
   const password = authPasswordInput.value;
 
+  if (authMode === "reset") {
+    if (!email) { showError("Enter your email."); return; }
+    const captchaToken = turnstile.getToken();
+    if (!captchaToken) { showError("Please complete the verification challenge."); return; }
+    authSubmitBtn.disabled = true;
+    try {
+      await resetPasswordForEmail(email, captchaToken);
+    } catch {
+      // Fall through to the same confirmation either way — surfacing a real
+      // error here would let an attacker probe which emails have accounts.
+    } finally {
+      authSubmitBtn.disabled = false;
+      turnstile.reset();
+    }
+    authModalTitle.textContent = "Check your email";
+    authError.textContent = `If an account exists for ${email}, we sent a link to reset its password.`;
+    authError.classList.add("info");
+    authError.hidden = false;
+    return;
+  }
+
   if (authMode === "signup") {
     const username = authUsernameInput.value.trim();
     const passwordConfirm = authPasswordConfirmInput.value;
     if (!email || !password) { showError("Enter an email and password."); return; }
     if (!username) { showError("Choose a username."); return; }
     if (username.length < 2) { showError("Username must be at least 2 characters."); return; }
-    if (password.length < 6) { showError("Password must be at least 6 characters."); return; }
+    if (password.length < 8) { showError("Password must be at least 8 characters."); return; }
     if (password !== passwordConfirm) { showError("The passwords don't match."); return; }
+    const captchaToken = turnstile.getToken();
+    if (!captchaToken) { showError("Please complete the verification challenge."); return; }
 
     authSubmitBtn.disabled = true;
     try {
@@ -72,7 +128,7 @@ authSubmitBtn.onclick = async () => {
         showError("That username is already taken — please pick another.");
         return;
       }
-      await signUpWithPassword(email, password, username);
+      await signUpWithPassword(email, password, username, captchaToken);
       // Success: the sign-up form's job is done. Flip the modal to the
       // sign-in view (hiding the username/repeat-password fields) with an
       // info banner, so what remains is exactly "confirm your email" + a
@@ -89,19 +145,23 @@ authSubmitBtn.onclick = async () => {
       showError(signupErrorMessage(err));
     } finally {
       authSubmitBtn.disabled = false;
+      turnstile.reset();
     }
     return;
   }
 
   if (!email || !password) { showError("Enter an email and password."); return; }
+  const captchaToken = turnstile.getToken();
+  if (!captchaToken) { showError("Please complete the verification challenge."); return; }
   authSubmitBtn.disabled = true;
   try {
-    await signInWithPassword(email, password);
+    await signInWithPassword(email, password, captchaToken);
     closeModal(authModal);
   } catch (err) {
     showError((err && err.message) || "Something went wrong.");
   } finally {
     authSubmitBtn.disabled = false;
+    turnstile.reset();
   }
 };
 

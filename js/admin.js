@@ -8,6 +8,7 @@
 
 import { MAPS, MOVEMENT_LABELS, RANGE_LABELS, TYPES } from "./constants.js";
 import { escapeHtml } from "./html-utils.js";
+import { mountTurnstile } from "./turnstile.js";
 
 const MAP_NAMES = Object.fromEntries(MAPS.map(m => [m.id, m.name]));
 const TYPE_LABELS = Object.fromEntries(TYPES.map(t => [t.id, t.label]));
@@ -15,7 +16,7 @@ const TYPE_LABELS = Object.fromEntries(TYPES.map(t => [t.id, t.label]));
 const el = (id) => document.getElementById(id);
 const els = {};
 ["statusToggle", "adminEmail", "adminSignOut", "adminSignin", "adminError",
- "adminEmailInput", "adminPasswordInput", "adminSigninBtn", "adminGoogleBtn",
+ "adminEmailInput", "adminPasswordInput", "adminSigninBtn", "adminGoogleBtn", "adminTurnstile",
  "adminDenied", "adminMain", "adminHint", "adminQueue",
  "adminLightbox", "adminLightboxImg", "adminLightboxClose"].forEach(id => { els[id] = el(id); });
 
@@ -312,6 +313,7 @@ async function refreshCounts() {
 // ---- Wiring --------------------------------------------------------------
 
 function wireEvents() {
+  const turnstile = mountTurnstile(els.adminTurnstile);
   els.statusToggle.querySelectorAll("button").forEach(btn => {
     btn.onclick = () => {
       status = btn.dataset.status;
@@ -324,12 +326,20 @@ function wireEvents() {
     els.adminError.hidden = true;
     const email = els.adminEmailInput.value.trim();
     const password = els.adminPasswordInput.value;
+    const captchaToken = turnstile.getToken();
+    if (!captchaToken) {
+      els.adminError.textContent = "Please complete the verification challenge.";
+      els.adminError.hidden = false;
+      return;
+    }
     try {
-      const { error } = await sb.auth.signInWithPassword({ email, password });
+      const { error } = await sb.auth.signInWithPassword({ email, password, options: { captchaToken } });
       if (error) throw error;
     } catch (e) {
       els.adminError.textContent = e.message || "Sign in failed";
       els.adminError.hidden = false;
+    } finally {
+      turnstile.reset();
     }
   };
   els.adminPasswordInput.onkeydown = (e) => { if (e.key === "Enter") els.adminSigninBtn.click(); };

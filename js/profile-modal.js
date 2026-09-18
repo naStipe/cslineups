@@ -83,7 +83,7 @@ saveUsernameBtn.onclick = async () => {
 changePasswordBtn.onclick = async () => {
   const pw = profileNewPassword.value;
   const pw2 = profileNewPassword2.value;
-  if (pw.length < 6) { setMsg(passwordMsg, "Password must be at least 6 characters.", true); return; }
+  if (pw.length < 8) { setMsg(passwordMsg, "Password must be at least 8 characters.", true); return; }
   if (pw !== pw2) { setMsg(passwordMsg, "The passwords don't match.", true); return; }
 
   changePasswordBtn.disabled = true;

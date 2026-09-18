@@ -1811,6 +1811,10 @@ body.is-admin .admin-link{ display:block; }
 .auth-switch{ font-size:12px; color:var(--text-faint); margin:4px 0 0; }
 .auth-switch a{ color:var(--signal); text-decoration:none; }
 .auth-switch a:hover{ text-decoration:underline; }
+.auth-turnstile{ margin:4px 0; }
+.auth-forgot{ font-size:12px; margin:2px 0 0; text-align:right; }
+.auth-forgot a{ color:var(--text-faint); text-decoration:none; }
+.auth-forgot a:hover{ color:var(--signal); text-decoration:underline; }
 
 .detail-head-actions{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
 

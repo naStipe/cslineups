@@ -420,12 +420,16 @@
       <label class="field-label">Username</label>
       <input type="text" id="authUsernameInput" autocomplete="username" placeholder="How teammates will see you" maxlength="32">
     </div>
-    <label class="field-label">Password</label>
-    <input type="password" id="authPasswordInput" autocomplete="current-password" placeholder="At least 6 characters">
+    <div id="authPasswordField">
+      <label class="field-label">Password</label>
+      <input type="password" id="authPasswordInput" autocomplete="current-password" placeholder="At least 8 characters">
+    </div>
     <div class="auth-signup-field" id="authPasswordConfirmField" hidden>
       <label class="field-label">Repeat password</label>
       <input type="password" id="authPasswordConfirmInput" autocomplete="new-password" placeholder="Repeat your password">
     </div>
+    <p class="auth-forgot" id="authForgotWrap"><a href="#" id="authForgotLink">Forgot password?</a></p>
+    <div id="authTurnstile" class="auth-turnstile"></div>
     <button class="primary-btn auth-submit-btn" id="authSubmitBtn">Sign in</button>
     <button class="ghost-btn auth-google-btn" id="authGoogleBtn">Continue with Google</button>
     <p class="auth-switch"><span id="authSwitchText">Don't have an account?</span> <a href="#" id="authSwitchLink">Sign up</a></p>
@@ -457,7 +461,7 @@
     <div class="profile-section">
       <p class="profile-section-title">Change password</p>
       <label class="field-label">New password</label>
-      <input type="password" id="profileNewPassword" autocomplete="new-password" placeholder="At least 6 characters">
+      <input type="password" id="profileNewPassword" autocomplete="new-password" placeholder="At least 8 characters">
       <label class="field-label">Repeat new password</label>
       <input type="password" id="profileNewPassword2" autocomplete="new-password" placeholder="Repeat it">
       <button class="ghost-btn profile-pw-btn" id="changePasswordBtn">Change password</button>

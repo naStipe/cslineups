@@ -208,7 +208,15 @@ export const authError = document.getElementById("authError");
 
 export const authEmailInput = document.getElementById("authEmailInput");
 
+export const authPasswordField = document.getElementById("authPasswordField");
+
 export const authPasswordInput = document.getElementById("authPasswordInput");
+
+export const authForgotWrap = document.getElementById("authForgotWrap");
+
+export const authForgotLink = document.getElementById("authForgotLink");
+
+export const authTurnstile = document.getElementById("authTurnstile");
 
 export const authUsernameField = document.getElementById("authUsernameField");
 
