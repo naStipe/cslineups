@@ -1,4 +1,6 @@
 {
+  "buildCommand": "node scripts/hash-js.js",
+  "outputDirectory": ".",
   "headers": [
     {
       "source": "/(.*)",
@@ -7,9 +9,9 @@
       ]
     },
     {
-      "source": "/js/(.*)",
+      "source": "/js/:hash/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "no-cache" }
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     },
     {
