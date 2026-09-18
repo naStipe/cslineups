@@ -56,8 +56,11 @@ export function clusterKey(cluster) {
 
 export function renderClusterFan(cluster, key, animate = true) {
   const count = cluster.lineups.length;
-  const radius = 46;
-  const lineRadius = 28;
+  // Divide by zoom so the fan's on-screen spread stays constant — the map
+  // frame itself is scaled by `zoom`, which would otherwise blow up these
+  // pixel offsets and scatter the petals when zoomed in.
+  const radius = 46 / zoom;
+  const lineRadius = 28 / zoom;
   const startAngle = -90;
   const step = 360 / count;
 

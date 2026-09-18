@@ -18,7 +18,7 @@ export function updateLevelSwitch(mapId) {
   levelToggle.classList.remove("hidden");
   levels.forEach(level => {
     const btn = document.createElement("button");
-    btn.className = "view-toggle-btn" + (level.id === state.levelId ? " active" : "");
+    btn.className = "level-toggle-btn" + (level.id === state.levelId ? " active" : "");
     btn.textContent = level.label;
     btn.onclick = () => setLevel(mapId, level.id);
     levelToggle.appendChild(btn);
@@ -31,7 +31,7 @@ function setLevel(mapId, levelId) {
   if (!level) return;
   state.levelId = levelId;
   mapImage.src = level.file;
-  levelToggle.querySelectorAll(".view-toggle-btn").forEach((btn, i) => {
+  levelToggle.querySelectorAll(".level-toggle-btn").forEach((btn, i) => {
     btn.classList.toggle("active", m.levels[i].id === levelId);
   });
 }

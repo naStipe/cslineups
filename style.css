@@ -385,6 +385,20 @@ body.view-official:not(.is-admin) #addModeBtn{display:none;}
 .zoom-btn:hover{color:var(--signal);border-color:var(--signal);}
 .zoom-btn#zoomReset{font-size:13px;}
 
+/* Upper/lower level switch, floating on map */
+.level-toggle{
+  position:absolute;top:18px;left:18px;z-index:10;
+  display:flex;flex-direction:column;
+  background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:2px;gap:2px;
+}
+.level-toggle-btn{
+  font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;
+  background:none;border:none;color:var(--text-faint);padding:7px 10px;border-radius:4px;
+  cursor:pointer;transition:.15s;
+}
+.level-toggle-btn:hover{color:var(--text-dim);}
+.level-toggle-btn.active{background:var(--signal);color:#221305;}
+
 /* ===================== MARKERS ===================== */
 .marker{
   position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;
