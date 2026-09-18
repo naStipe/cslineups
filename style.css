@@ -1559,6 +1559,10 @@ body.is-admin .admin-link{ display:block; }
 .admin-card-name{ color:var(--text); margin:0 8px; font-size:14px; }
 .admin-card-sub{ font-family:var(--font-mono); font-size:11px; color:var(--text-faint); }
 .admin-card-owner{ font-family:var(--font-mono); font-size:11px; color:var(--warn); word-break:break-all; }
+.admin-card-warn{
+  font-family:var(--font-mono); font-size:10.5px; color:var(--warn);
+  border:1px solid var(--warn); border-radius:10px; padding:2px 8px; white-space:nowrap;
+}
 
 .admin-throw{ margin-bottom:14px; }
 .admin-throw-meta{ font-family:var(--font-mono); font-size:11px; color:var(--text-dim); margin:0 0 8px; }

@@ -159,6 +159,7 @@ function renderCard(item) {
       <div>
         <span class="type-chip">${escapeHtml(typeLabel)}</span>
         <strong class="admin-card-name">${escapeHtml(item.name || "Unnamed position")}</strong>
+        ${!item.name ? `<span class="admin-card-warn" title="Give this lineup a name before publishing — it shows up in page titles and search results">⚠ needs a name</span>` : ""}
         <span class="admin-card-sub">${escapeHtml(mapName)}${date ? ` · ${escapeHtml(date)}` : ""}</span>
       </div>
       <div class="admin-card-owner">${escapeHtml(item.ownerEmail || item.ownerId || "unknown")}</div>

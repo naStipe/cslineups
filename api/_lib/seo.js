@@ -81,9 +81,15 @@ function lineupPath(l) {
   return `/${l.mapId}/${l.type}/${slug ? `${slug}-${sid}` : sid}`;
 }
 
+// Falls back to a movement-based descriptor (e.g. "Jumpthrow Smoke Lineup")
+// instead of the literal word "Unnamed" — that word was leaking into public
+// <title>/<h1> tags and looking broken in search results, and gave every
+// nameless lineup on a map the same non-unique title.
 function lineupDisplayName(l, typeLabel) {
   const name = String(l.name || "").trim();
-  return name || `Unnamed ${typeLabel.toLowerCase()} lineup`;
+  if (name) return name;
+  const movement = CONSTANTS.MOVEMENT_LABELS[(l.throws && l.throws[0] || {}).movement];
+  return `${movement ? `${movement} ` : ""}${typeLabel} Lineup`;
 }
 
 module.exports = {
