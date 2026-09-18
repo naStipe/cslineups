@@ -1,4 +1,4 @@
-import { addFlowBar, addFlowCancel, addFlowStep, addFlowText, addModeBtn, cancelType, detailPanel, lineupNameInput, mapFrame, mapImage, markerLayer, typeModal } from "./dom.js";
+import { addFlowBar, addFlowCancel, addFlowStep, addFlowText, addModeBtn, cancelType, detailPanel, fabAddBtn, lineupNameInput, mapFrame, mapImage, markerLayer, typeModal } from "./dom.js";
 import { getCssVarColor, renderMarkers, typeColor } from "./markers.js";
 import { closeModal } from "./modal-utils.js";
 import { consumeDragFlags } from "./pan-zoom.js";
@@ -41,11 +41,12 @@ export function setAddMode(on) {
   state.pendingType = null;
   state.pendingLanding = null;
   addModeBtn.classList.toggle("active", on);
+  if (fabAddBtn) fabAddBtn.classList.toggle("active", on);
   mapFrame.classList.toggle("add-mode", on);
   if (!on) { hideAddFlow(); clearAddPreview(); }
 }
 
-addModeBtn.onclick = () => {
+function startAddFlow() {
   if (!requireCanCreate()) return;
   setAddMode(true);
   openTypeModal((typeId) => {
@@ -54,7 +55,9 @@ addModeBtn.onclick = () => {
     closeModal(typeModal);
     showAddFlow(1, 2, "Click on the map where the nade lands.");
   });
-};
+}
+addModeBtn.onclick = startAddFlow;
+if (fabAddBtn) fabAddBtn.onclick = startAddFlow;
 
 mapFrame.addEventListener("click", (e) => {
   if (state.reposition) return; // reposition overlay handles its own drags

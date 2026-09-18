@@ -8,11 +8,12 @@
 // simply re-enables that type's markers if needed.
 import { dbPut } from "./api.js";
 import { MOVEMENT_LABELS, RANGE_LABELS, TYPES } from "./constants.js";
-import { lineupList, lineupSearchInput, markerLayer } from "./dom.js";
+import { closeMobileSearch, lineupList, lineupSearchInput, markerLayer, mobileSearchBtn, mobileSearchInput, mobileSearchModal, mobileSearchResults } from "./dom.js";
 import { escapeHtml } from "./html-utils.js";
 import { openLightbox } from "./lightbox.js";
 import { refreshLocal } from "./map-data.js";
 import { renderMarkers } from "./markers.js";
+import { closeModal } from "./modal-utils.js";
 import { canModifyLineup } from "./permissions.js";
 import { hydrateImages } from "./private-images.js";
 import { startLandingReposition } from "./reposition.js";
@@ -42,12 +43,8 @@ function throwImages(t) {
   ].filter(Boolean);
 }
 
-export function buildLineupList() {
-  if (!lineupList) return;
-  expandedId = null; // a rebuild collapses any open inline detail
-  const term = (lineupSearchInput && lineupSearchInput.value || "").trim().toLowerCase();
-
-  const matches = state.lineups
+function matchLineups(term) {
+  return state.lineups
     .filter(l => {
       if (!term) return true;
       const t = typeInfo(l.type);
@@ -61,6 +58,13 @@ export function buildLineupList() {
       if (ta !== tb) return ta - tb;
       return displayName(a).localeCompare(displayName(b));
     });
+}
+
+export function buildLineupList() {
+  if (!lineupList) return;
+  expandedId = null; // a rebuild collapses any open inline detail
+  const term = (lineupSearchInput && lineupSearchInput.value || "").trim().toLowerCase();
+  const matches = matchLineups(term);
 
   lineupList.innerHTML = "";
 
@@ -244,3 +248,64 @@ export function focusLineup(id) {
 if (lineupSearchInput) {
   lineupSearchInput.addEventListener("input", buildLineupList);
 }
+
+// ── Mobile search popup ──────────────────────────────────────────────────
+// Small standalone find-a-lineup popup for mobile, opened from a button in
+// the drawer (the drawer itself has no room for the full searchable list
+// there — see .lineup-rail's mobile display:none). Picking a result just
+// focuses the marker on the map, same as clicking a row in the desktop list.
+function renderMobileSearchResults() {
+  if (!mobileSearchResults) return;
+  const term = (mobileSearchInput && mobileSearchInput.value || "").trim().toLowerCase();
+  const matches = matchLineups(term);
+
+  mobileSearchResults.innerHTML = "";
+
+  if (matches.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "lineup-list-empty";
+    empty.textContent = state.lineups.length === 0 ? "No lineups on this map." : "No matches.";
+    mobileSearchResults.appendChild(empty);
+    return;
+  }
+
+  matches.forEach(l => {
+    const t = typeInfo(l.type);
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "lineup-item";
+    item.title = `${displayName(l)} — ${t.label}`;
+
+    const dot = document.createElement("span");
+    dot.className = "lineup-item-dot";
+    dot.style.background = t.color;
+
+    const name = document.createElement("span");
+    name.className = "lineup-item-name";
+    name.textContent = displayName(l);
+
+    const meta = document.createElement("span");
+    meta.className = "lineup-item-meta";
+    meta.textContent = `${l.throws.length}×`;
+
+    item.append(dot, name, meta);
+    item.onclick = () => {
+      closeModal(mobileSearchModal);
+      closeSidebar();
+      focusLineup(l.id);
+    };
+    mobileSearchResults.appendChild(item);
+  });
+}
+
+export function openMobileSearch() {
+  if (!mobileSearchModal) return;
+  if (mobileSearchInput) mobileSearchInput.value = "";
+  renderMobileSearchResults();
+  mobileSearchModal.classList.add("show");
+  if (mobileSearchInput) mobileSearchInput.focus();
+}
+
+if (mobileSearchBtn) mobileSearchBtn.onclick = openMobileSearch;
+if (closeMobileSearch) closeMobileSearch.onclick = () => closeModal(mobileSearchModal);
+if (mobileSearchInput) mobileSearchInput.addEventListener("input", renderMobileSearchResults);

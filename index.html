@@ -93,7 +93,10 @@
     <nav class="map-list" id="mapList"></nav>
 
     <!-- Lineups on the current map: searchable list that focuses the
-         matching marker on the map when clicked. -->
+         matching marker on the map when clicked. Desktop only — on mobile
+         this is replaced by #mobileSearchBtn, which opens the same search
+         as a small popup (see #mobileSearchModal below) so the drawer
+         itself stays just the map list. -->
     <div class="lineup-rail">
       <p class="rail-label">Lineups on this map</p>
       <div class="lineup-search">
@@ -105,6 +108,14 @@
       </div>
       <nav class="lineup-list" id="lineupList"></nav>
     </div>
+
+    <button type="button" class="mobile-search-btn" id="mobileSearchBtn">
+      <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+        <circle cx="6" cy="6" r="4.3" stroke="currentColor" stroke-width="1.5"/>
+        <line x1="9.3" y1="9.3" x2="12.5" y2="12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      Search lineups
+    </button>
 
     <div class="sidebar-footer">
       <div class="auth-box">
@@ -148,6 +159,14 @@
 
       <div class="filters" id="typeFilters"></div>
 
+      <!-- Mobile-only: the type chip row doesn't fit/scroll comfortably at
+           phone width, so it's replaced by this button + a popup list of
+           toggles (see #typeFilterModal below). Desktop keeps the row above. -->
+      <button type="button" class="type-filter-btn" id="typeFilterBtn">
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M1.5 2h11L8.5 7.2V12l-3-1.5V7.2L1.5 2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+        <span id="typeFilterBtnLabel">Types</span>
+      </button>
+
       <div class="topbar-right">
         <button id="addModeBtn" class="primary-btn">
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -171,6 +190,14 @@
         <button class="zoom-btn" id="zoomReset" title="Reset zoom">⌂</button>
         <button class="zoom-btn" id="zoomOut">−</button>
       </div>
+
+      <!-- Mobile-only floating action button for "Add lineup" — topbar-right
+           (which holds #addModeBtn) is hidden on mobile, so this is the
+           reachable entry point on phones. Shares add-mode logic with
+           #addModeBtn via js/add-mode.js. -->
+      <button class="fab-add-btn" id="fabAddBtn" aria-label="Add lineup">
+        <svg width="20" height="20" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
 
       <!-- Drag-to-reposition overlay bar (shown only while repositioning a throw) -->
       <div class="reposition-bar" id="repositionBar" hidden>
@@ -238,6 +265,7 @@
   <!-- EXPANDED LINEUP PANEL -->
   <div class="detail-panel" id="detailPanel">
     <div class="detail-panel-inner">
+      <div class="sheet-handle" aria-hidden="true"></div>
       <div class="detail-head">
         <div>
           <p class="dossier-eyebrow">Dossier</p>
@@ -259,6 +287,32 @@
     </div>
   </div>
 
+</div>
+
+<!-- MODAL: mobile type filter (small popup, mobile only — see #typeFilterBtn) -->
+<div class="modal-backdrop" id="typeFilterModal">
+  <div class="modal type-filter-modal">
+    <div class="type-filter-head">
+      <h3>Lineup types</h3>
+      <button type="button" class="icon-btn" id="closeTypeFilter">✕</button>
+    </div>
+    <div class="type-grid" id="mobileTypeFilterGrid"></div>
+  </div>
+</div>
+
+<!-- MODAL: mobile lineup search (small popup, mobile only — see #mobileSearchBtn) -->
+<div class="modal-backdrop" id="mobileSearchModal">
+  <div class="modal mobile-search-modal">
+    <div class="mobile-search-head">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+        <circle cx="6" cy="6" r="4.3" stroke="currentColor" stroke-width="1.5"/>
+        <line x1="9.3" y1="9.3" x2="12.5" y2="12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <input type="search" id="mobileSearchInput" placeholder="Search lineups…" autocomplete="off" aria-label="Search lineups on this map">
+      <button type="button" class="icon-btn" id="closeMobileSearch">✕</button>
+    </div>
+    <nav class="mobile-search-results" id="mobileSearchResults"></nav>
+  </div>
 </div>
 
 <!-- MODAL: sign in / sign up -->

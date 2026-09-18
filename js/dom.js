@@ -4,6 +4,16 @@ export const lineupList = document.getElementById("lineupList");
 
 export const lineupSearchInput = document.getElementById("lineupSearchInput");
 
+export const mobileSearchBtn = document.getElementById("mobileSearchBtn");
+
+export const mobileSearchModal = document.getElementById("mobileSearchModal");
+
+export const mobileSearchInput = document.getElementById("mobileSearchInput");
+
+export const mobileSearchResults = document.getElementById("mobileSearchResults");
+
+export const closeMobileSearch = document.getElementById("closeMobileSearch");
+
 export const homeScreen = document.getElementById("homeScreen");
 
 export const homeGrid = document.getElementById("homeGrid");
@@ -21,6 +31,16 @@ export const sidebarOverlay = document.getElementById("sidebarOverlay");
 export const mapLoading = document.getElementById("mapLoading");
 
 export const typeFilters = document.getElementById("typeFilters");
+
+export const typeFilterBtn = document.getElementById("typeFilterBtn");
+
+export const typeFilterBtnLabel = document.getElementById("typeFilterBtnLabel");
+
+export const typeFilterModal = document.getElementById("typeFilterModal");
+
+export const mobileTypeFilterGrid = document.getElementById("mobileTypeFilterGrid");
+
+export const closeTypeFilter = document.getElementById("closeTypeFilter");
 
 export const mapImage = document.getElementById("mapImage");
 
@@ -62,6 +82,7 @@ export const currentMapName = document.getElementById("currentMapName");
 export const lineupCount = document.getElementById("lineupCount");
 
 export const addModeBtn = document.getElementById("addModeBtn");
+export const fabAddBtn = document.getElementById("fabAddBtn");
 
 export const addHint = document.getElementById("addHint");
 
