@@ -861,6 +861,15 @@ body.view-official:not(.is-admin) #addModeBtn{display:none;}
   grid-template-columns:repeat(4, 260px);
   gap:20px;
 }
+/* Between the mobile breakpoint and where 4 fixed 260px columns actually
+   fit (~1150px), the grid overflowed .home-grid on both sides with no way
+   to reach the clipped cards. Step down to fewer columns first. */
+@media (max-width: 1150px) and (min-width: 769px){
+  .home-grid-inner{ grid-template-columns:repeat(3, 260px); }
+}
+@media (max-width: 900px) and (min-width: 769px){
+  .home-grid-inner{ grid-template-columns:repeat(2, 260px); }
+}
 @media (max-width: 768px){
   .home-grid-inner{
     display:flex !important;
