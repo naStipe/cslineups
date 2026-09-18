@@ -251,21 +251,12 @@ ${jsonLd.map(jsonLdScript).join("\n")}
 </head>
 <body>
 <div class="home-screen">
-  <div class="notice-banner" id="noticeBanner">
-    <p><strong>Notice:</strong> this is a personal project, not a commercial product. It was built mainly for personal use — to help the developer learn and save lineups — so there may be bugs and rough edges. Feel free to use it for your own practice. If something's inconvenient or missing a feature, reach out at <a href="mailto:support@nastipe.dev">support@nastipe.dev</a> and I'll try to add it soon.</p>
-    <button type="button" id="noticeBannerClose" aria-label="Dismiss notice">&times;</button>
-  </div>
-  <script>
-  (function () {
-    var KEY = "lineupr_notice_dismissed";
-    var el = document.getElementById("noticeBanner");
-    try { if (localStorage.getItem(KEY) === "1") el.hidden = true; } catch (e) {}
-    document.getElementById("noticeBannerClose").addEventListener("click", function () {
-      el.hidden = true;
-      try { localStorage.setItem(KEY, "1"); } catch (e) {}
-    });
-  })();
-  </script>
+  <header class="home-header">
+    <a class="home-brand" href="/" aria-label="Lineupr home">
+      ${BRAND_SVG.replace('width="26" height="26"', 'width="32" height="32"')}
+      <span class="home-wordmark">lineup<span class="home-wordmark-r">r</span></span>
+    </a>
+  </header>
   <div class="home-body">
     <h2 class="home-section-title">Lineups</h2>
     <div class="home-grid"><div class="home-grid-inner">

@@ -944,8 +944,6 @@ body.view-official:not(.is-admin) #fabAddBtn{display:none;}
   padding:18px 48px;display:flex;align-items:center;
   border-bottom:1px solid var(--line);background:var(--hull);
 }
-.home-header--compact{padding:10px 48px;}
-.home-header--compact .home-wordmark{font-size:16px;}
 .home-brand{display:flex;align-items:center;gap:10px;cursor:pointer;text-decoration:none;}
 html[data-deep-link] #homeScreen{display:none;}
 html[data-deep-link] #appShell{display:grid;}
@@ -965,6 +963,8 @@ html[data-deep-link] #appShell{display:grid;}
 }
 .notice-banner strong{color:var(--signal);}
 .notice-banner a{color:var(--signal);}
+.notice-banner--compact{padding:8px 48px;}
+.notice-banner--compact p{font-size:11.5px;line-height:1.4;}
 .notice-banner button{
   flex-shrink:0;background:none;border:none;color:var(--text-faint);
   font-size:14px;line-height:1;cursor:pointer;padding:4px;
