@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5N65WW6VB8"></script>
+<script src="/ga.js"></script>
+
+<title>CS2 Jumpthrow Bind: Setup and When to Use It | Lineupr</title>
+<meta name="description" content="The console commands for a CS2 jumpthrow bind, why lineups use it, and when a jumpthrow is actually necessary versus a run-throw or standing throw.">
+<link rel="canonical" href="https://lineupr.org/blog/cs2-jumpthrow-bind-guide.html">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://lineupr.org/blog/cs2-jumpthrow-bind-guide.html">
+<meta property="og:title" content="CS2 Jumpthrow Bind: Setup and When to Use It">
+<meta property="og:description" content="The console commands for a CS2 jumpthrow bind, why lineups use it, and when a jumpthrow is actually necessary.">
+<meta property="og:image" content="https://lineupr.org/og-image.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="CS2 Jumpthrow Bind: Setup and When to Use It">
+<meta name="twitter:description" content="The console commands for a CS2 jumpthrow bind, why lineups use it, and when it's actually necessary.">
+<meta name="twitter:image" content="https://lineupr.org/og-image.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/blog/blog.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"CS2 Jumpthrow Bind: Setup and When to Use It","datePublished":"2026-09-18","author":{"@type":"Organization","name":"Lineupr"},"publisher":{"@type":"Organization","name":"Lineupr"},"mainEntityOfPage":"https://lineupr.org/blog/cs2-jumpthrow-bind-guide.html"}</script>
+</head>
+<body>
+<div class="wrap">
+<header class="site-head">
+  <a class="brand-link" href="/">
+    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="26" height="26" aria-hidden="true"><circle cx="20" cy="20" r="17" stroke="#ffa53e" stroke-width="2.2"/><circle cx="20" cy="20" r="9" stroke="#ffa53e" stroke-width="1" opacity="0.3"/><line x1="20" y1="3" x2="20" y2="11" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><line x1="20" y1="29" x2="20" y2="37" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="20" x2="11" y2="20" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><line x1="29" y1="20" x2="37" y2="20" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><circle cx="20" cy="20" r="3.5" fill="#ffa53e"/><circle cx="20" cy="20" r="1.4" fill="#0f0c09"/></svg>
+    <span>lineupr</span>
+  </a>
+  <nav><a href="/maps">Maps</a><a href="/blog">Blog</a></nav>
+</header>
+<nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> › <a href="/blog">Blog</a> › Jumpthrow Bind</nav>
+<main>
+<h1>CS2 Jumpthrow Bind: Setup and When to Use It</h1>
+<p class="byline">September 2026 · Lineupr</p>
+
+<p class="lede">A jumpthrow bind releases a grenade at the exact peak of a jump, on the same tick, every time. It's how a lineup that works for a pro on stream also works for you — without it, the same throw is timing-dependent and will land differently round to round.</p>
+
+<h2>Why jump timing matters for a lineup</h2>
+<p>A grenade's trajectory depends on your position, your view angle, and your velocity the instant you release it. Jumping changes your vertical velocity throughout the jump arc, so throwing a half-second early or late in the jump changes the whole trajectory. A jumpthrow bind removes that variable by triggering the throw automatically at the top of the jump, so the only thing left to get right is your standing position and crosshair placement — which is exactly what a saved lineup gives you.</p>
+
+<h2>The bind</h2>
+<p>Open the developer console (<kbd>~</kbd>) and enter:</p>
+<pre><code>alias "+jumpthrow" "+jump;-attack"
+alias "-jumpthrow" "-jump"
+bind "key" "+jumpthrow"</code></pre>
+<p>Replace <code>key</code> with the key you want to bind it to — a lot of players use a spare mouse button or <kbd>Alt</kbd> so it doesn't collide with their normal jump key. To make it permanent, save those three lines into <code>autoexec.cfg</code> in your CS2 <code>cfg</code> folder (or paste them into the in-game console every session).</p>
+<p>To use it: hold left click as if you're going to throw, then press your jumpthrow key instead of your normal jump key. The alias handles the jump and the release for you.</p>
+
+<h2>Jumpthrow vs. run-throw vs. standing</h2>
+<p>Not every lineup needs a jumpthrow — it's one of several standard movement types, and using the wrong one is a common reason a "correct" lineup still misses:</p>
+<ul>
+<li><b>Standing</b> — no movement at all. Most consistent when it's available, since there's no velocity to control for.</li>
+<li><b>Run-throw</b> — thrown while sprinting, no jump. Used when a lineup needs extra distance a standing throw can't reach.</li>
+<li><b>Jumpthrow</b> — used when a throw needs to clear a ledge, window, or box that a grounded throw would hit, or when the arc needs the extra height a jump adds.</li>
+<li><b>Crouch / crouch-jumpthrow</b> — used for precision throws where crouching narrows the hitbox and stabilizes the angle before the jump.</li>
+</ul>
+<p>Every lineup on Lineupr records which of these it needs, along with the throw range (full, mid, or close), so you're not guessing which movement a spot was recorded with.</p>
+
+<a class="cta" href="/maps">Browse lineups by map</a>
+
+<h2>Related</h2>
+<p><a href="/blog/how-to-learn-cs2-nade-lineups-fast.html">How to Learn CS2 Grenade Lineups Fast</a> · <a href="/blog/dust2-smokes-that-matter.html">Dust II Smokes That Actually Matter</a></p>
+</main>
+<footer class="foot">
+<p><a href="/">Lineupr</a> — the interactive CS2 grenade lineup map. <a href="/maps">Browse lineups by map</a>.</p>
+</footer>
+</div>
+</body>
+</html>

@@ -24,6 +24,14 @@ function isoDate(ms) {
   return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
 }
 
+// Static blog posts (plain HTML files under /blog, not sourced from
+// Supabase). Add the filename here when a new post is added.
+const BLOG_POSTS = [
+  "how-to-learn-cs2-nade-lineups-fast.html",
+  "cs2-jumpthrow-bind-guide.html",
+  "dust2-smokes-that-matter.html",
+];
+
 module.exports = async function handler(req, res) {
   try {
     const { MAPS } = CONSTANTS;
@@ -34,6 +42,8 @@ module.exports = async function handler(req, res) {
       urlTag(`${SITE}/maps`),
       ...MAPS.map(m => urlTag(`${SITE}/${m.id}`)),
       ...lineups.map(l => urlTag(SITE + lineupPath(l), isoDate(l.createdAt))),
+      urlTag(`${SITE}/blog`),
+      ...BLOG_POSTS.map(p => urlTag(`${SITE}/blog/${p}`)),
     ];
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
