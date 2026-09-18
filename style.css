@@ -944,6 +944,8 @@ body.view-official:not(.is-admin) #fabAddBtn{display:none;}
   padding:18px 48px;display:flex;align-items:center;
   border-bottom:1px solid var(--line);background:var(--hull);
 }
+.home-header--compact{padding:10px 48px;}
+.home-header--compact .home-wordmark{font-size:16px;}
 .home-brand{display:flex;align-items:center;gap:10px;cursor:pointer;text-decoration:none;}
 html[data-deep-link] #homeScreen{display:none;}
 html[data-deep-link] #appShell{display:grid;}
@@ -1328,8 +1330,8 @@ html[data-deep-link] #appShell{display:grid;}
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  min-height: 58px; /* keeps an empty category a real drop target instead of collapsing to 0px */
 }
-.tm-thumbs:empty{ display: none; }
 .tm-thumbs .thumb{
   position: relative;
   width: 56px;
@@ -1339,6 +1341,8 @@ html[data-deep-link] #appShell{display:grid;}
   border: 1px solid var(--line);
   flex-shrink: 0;
 }
+.tm-thumbs .thumb.dragging{ opacity: .35; }
+.tm-thumbs.drag-over{ outline: 1.5px dashed var(--signal); outline-offset: 2px; border-radius: 6px; }
 .tm-thumbs .thumb img{
   width: 100%;
   height: 100%;
@@ -1801,7 +1805,7 @@ body.is-admin .admin-link{ display:block; }
   border-radius:4px; padding:9px 10px; font-size:14px; width:100%;
 }
 .auth-modal input:focus{ outline:1px solid var(--signal); border-color:var(--signal); }
-.auth-submit-btn{ margin-top:6px; }
+.auth-submit-btn{ margin-top:6px; width:100%; justify-content:center; }
 .auth-google-btn{ text-align:center; }
 .auth-error{
   font-size:12px; color:var(--fire); background:rgba(255,106,69,.1);

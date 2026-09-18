@@ -135,62 +135,148 @@ export function readAsDataUrl(file) {
 // editing an existing throw's images), which may be a private one that
 // needs an authenticated fetch. data-real-src + hydrateImages handles
 // both cases the same way; passthrough is instant for data: URIs.
+//
+// Each category's thumbs are also draggable, so a picture can be moved
+// between categories (or reordered within one) by dropping it on another
+// thumb or on empty grid space. CATS below is the single source of truth
+// for how each category stores its image(s) and how to re-render it after
+// a move; setupDropZone (bottom of file) wires the actual drag events.
+const CATS = {
+  standing:    { kind: "array",  max: MAX_STANDING,    label: "Standing spot", render: () => renderStandingThumbGrid(), el: () => standingThumbGrid },
+  screenshots: { kind: "array",  max: MAX_SCREENSHOTS, label: "Throw screenshots", render: () => renderThumbGrid(), el: () => thumbGrid },
+  precise:     { kind: "single", label: "Precise aim", render: () => renderPreciseThumb(), el: () => preciseThumbWrap },
+  result:      { kind: "single", label: "Result", render: () => renderResultThumb(), el: () => resultThumbWrap },
+};
+
+function extractImage(cat, idx) {
+  const meta = CATS[cat];
+  if (meta.kind === "array") return pendingThrowDraft[cat].splice(idx, 1)[0];
+  const v = pendingThrowDraft[cat];
+  pendingThrowDraft[cat] = null;
+  return v;
+}
+
+function insertImage(cat, value, idx) {
+  const meta = CATS[cat];
+  if (meta.kind === "array") {
+    const arr = pendingThrowDraft[cat];
+    arr.splice(idx == null ? arr.length : Math.min(idx, arr.length), 0, value);
+  } else {
+    pendingThrowDraft[cat] = value;
+  }
+}
+
+function moveImage(fromCat, fromIdx, toCat, toIdx) {
+  if (fromCat === toCat && fromIdx === toIdx) return;
+  const moving = extractImage(fromCat, fromIdx);
+  if (moving == null) return;
+
+  const toMeta = CATS[toCat];
+  if (toMeta.kind === "array" && fromCat !== toCat && pendingThrowDraft[toCat].length >= toMeta.max) {
+    insertImage(fromCat, moving, fromIdx); // no room at destination — put it back
+    alert(`${toMeta.label} already has the max of ${toMeta.max} images.`);
+  } else if (toMeta.kind === "single") {
+    const bumped = pendingThrowDraft[toCat];
+    pendingThrowDraft[toCat] = moving;
+    if (bumped != null) insertImage(fromCat, bumped, fromIdx); // swap the displaced image back
+  } else {
+    insertImage(toCat, moving, fromCat === toCat && fromIdx < toIdx ? toIdx - 1 : toIdx);
+  }
+
+  CATS[fromCat].render();
+  if (toCat !== fromCat) CATS[toCat].render();
+}
+
+function makeThumb(src, cat, idx, onRemove) {
+  const t = document.createElement("div");
+  t.className = "thumb";
+  t.draggable = true;
+  t.dataset.cat = cat;
+  t.dataset.idx = idx;
+  t.innerHTML = `<img data-real-src="${escapeHtml(src)}"><button class="thumb-remove" type="button">✕</button>`;
+  t.querySelector(".thumb-remove").onclick = onRemove;
+  t.addEventListener("dragstart", (e) => {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", `${cat}:${idx}`);
+    t.classList.add("dragging");
+  });
+  t.addEventListener("dragend", () => t.classList.remove("dragging"));
+  return t;
+}
+
+let dropZonesReady = false;
+function setupDropZones() {
+  if (dropZonesReady) return;
+  dropZonesReady = true;
+  Object.keys(CATS).forEach(cat => {
+    const el = CATS[cat].el();
+    if (!el) return;
+    el.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      el.classList.add("drag-over");
+    });
+    el.addEventListener("dragleave", (e) => {
+      if (!el.contains(e.relatedTarget)) el.classList.remove("drag-over");
+    });
+    el.addEventListener("drop", (e) => {
+      e.preventDefault();
+      el.classList.remove("drag-over");
+      const data = e.dataTransfer.getData("text/plain");
+      if (!data) return;
+      const [fromCat, fromIdxStr] = data.split(":");
+      if (!CATS[fromCat]) return;
+      const targetThumb = e.target.closest(".thumb");
+      const toIdx = targetThumb ? Number(targetThumb.dataset.idx) : null;
+      moveImage(fromCat, Number(fromIdxStr), cat, toIdx);
+    });
+  });
+}
+
 export function renderThumbGrid() {
   thumbGrid.innerHTML = "";
   (pendingThrowDraft.screenshots || []).forEach((src, i) => {
-    const t = document.createElement("div");
-    t.className = "thumb";
-    t.innerHTML = `<img data-real-src="${escapeHtml(src)}"><button class="thumb-remove" type="button">✕</button>`;
-    t.querySelector(".thumb-remove").onclick = () => {
+    thumbGrid.appendChild(makeThumb(src, "screenshots", i, () => {
       pendingThrowDraft.screenshots.splice(i, 1);
       renderThumbGrid();
-    };
-    thumbGrid.appendChild(t);
+    }));
   });
   hydrateImages(thumbGrid);
+  setupDropZones();
 }
 
 export function renderPreciseThumb() {
   preciseThumbWrap.innerHTML = "";
   if (!pendingThrowDraft.precise) return;
-  const t = document.createElement("div");
-  t.className = "thumb";
-  t.innerHTML = `<img data-real-src="${escapeHtml(pendingThrowDraft.precise)}"><button class="thumb-remove" type="button">✕</button>`;
-  t.querySelector(".thumb-remove").onclick = () => {
+  preciseThumbWrap.appendChild(makeThumb(pendingThrowDraft.precise, "precise", 0, () => {
     pendingThrowDraft.precise = null;
     renderPreciseThumb();
-  };
-  preciseThumbWrap.appendChild(t);
+  }));
   hydrateImages(preciseThumbWrap);
+  setupDropZones();
 }
 
 export function renderResultThumb() {
   resultThumbWrap.innerHTML = "";
   if (!pendingThrowDraft.result) return;
-  const t = document.createElement("div");
-  t.className = "thumb";
-  t.innerHTML = `<img data-real-src="${escapeHtml(pendingThrowDraft.result)}"><button class="thumb-remove" type="button">✕</button>`;
-  t.querySelector(".thumb-remove").onclick = () => {
+  resultThumbWrap.appendChild(makeThumb(pendingThrowDraft.result, "result", 0, () => {
     pendingThrowDraft.result = null;
     renderResultThumb();
-  };
-  resultThumbWrap.appendChild(t);
+  }));
   hydrateImages(resultThumbWrap);
+  setupDropZones();
 }
 
 export function renderStandingThumbGrid() {
   standingThumbGrid.innerHTML = "";
   (pendingThrowDraft.standing || []).forEach((src, i) => {
-    const t = document.createElement("div");
-    t.className = "thumb";
-    t.innerHTML = `<img data-real-src="${escapeHtml(src)}"><button class="thumb-remove" type="button">✕</button>`;
-    t.querySelector(".thumb-remove").onclick = () => {
+    standingThumbGrid.appendChild(makeThumb(src, "standing", i, () => {
       pendingThrowDraft.standing.splice(i, 1);
       renderStandingThumbGrid();
-    };
-    standingThumbGrid.appendChild(t);
+    }));
   });
   hydrateImages(standingThumbGrid);
+  setupDropZones();
 }
 
 standingInput.onchange = async () => {

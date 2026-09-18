@@ -28,6 +28,7 @@ export async function selectMap(id) {
   const m = MAPS.find(x => x.id === id);
   currentMapName.textContent = m.name.toUpperCase();
   mapImage.src = m.file;
+  pendingImageReady = waitForMapImage(mapImage);
   updateLevelSwitch(id);
   updateCheatsheet(id);
   if (!authUser && state.viewMode === "personal") state.viewMode = "official";
@@ -38,6 +39,20 @@ export async function selectMap(id) {
 }
 
 export let loadToken = 0;
+let pendingImageReady = Promise.resolve();
+
+// Resolves once the map <img> has actually painted the new source (or failed/
+// timed out), so callers can avoid revealing new lineup markers over the
+// still-visible previous map bitmap while it downloads.
+function waitForMapImage(img) {
+  return new Promise(resolve => {
+    if (img.complete) return resolve();
+    const done = () => { img.removeEventListener("load", done); img.removeEventListener("error", done); resolve(); };
+    img.addEventListener("load", done, { once: true });
+    img.addEventListener("error", done, { once: true });
+    setTimeout(done, 4000); // safety net so a stalled image never wedges the loading overlay
+  });
+}
 
 export async function loadLineups() {
   const myToken = ++loadToken;
@@ -74,7 +89,10 @@ export async function loadLineups() {
     lineupCount.textContent = "load failed";
     console.error(err);
   } finally {
-    if (myToken === loadToken) showMapLoading(false);
+    if (myToken === loadToken) {
+      await pendingImageReady;
+      if (myToken === loadToken) showMapLoading(false);
+    }
   }
 }
 

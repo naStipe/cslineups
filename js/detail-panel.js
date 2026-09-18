@@ -2,7 +2,7 @@ import { setAddMode, showAddFlow } from "./add-mode.js";
 import { dbDelete, dbPut, dbSaveLineup, dbUnsaveLineup, throwKey } from "./api.js";
 import { authUser } from "./auth.js";
 import { MOVEMENT_LABELS, RANGE_LABELS, TYPES } from "./constants.js";
-import { addThrowBtn, closeDetail, deleteLineupBtn, detailNameInput, detailOwnerBadge, detailPanel, detailTitle, detailType, saveLineupBtn, throwList, typeModal } from "./dom.js";
+import { addThrowBtn, closeDetail, deleteLineupBtn, detailNameInput, detailOwnerBadge, detailPanel, detailTitle, detailType, saveLineupBtn, shareLineupBtn, throwList, typeModal } from "./dom.js";
 import { openLightbox } from "./lightbox.js";
 import { loadLineups, refreshLocal, upsertLocalLineup } from "./map-data.js";
 import { getCssVarColor, renderMarkers } from "./markers.js";
@@ -49,6 +49,19 @@ export function renderDetail(lineup) {
   deleteLineupBtn.textContent = "Delete this lineup";
 
   if (saveLineupBtn) saveLineupBtn.classList.add("hidden"); // superseded by the per-throw button in the hero card
+
+  if (shareLineupBtn) {
+    shareLineupBtn.onclick = async () => {
+      const url = `${location.origin}/?map=${state.mapId}&lineup=${lineup.id}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        shareLineupBtn.textContent = "✓";
+        setTimeout(() => { shareLineupBtn.textContent = "🔗"; }, 1200);
+      } catch {
+        prompt("Copy this link:", url);
+      }
+    };
+  }
 
   // Name field
   detailNameInput.value = lineup.name || "";

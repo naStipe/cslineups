@@ -186,7 +186,7 @@ export const deleteLineupBtn = document.getElementById("deleteLineupBtn");
 
 export const saveLineupBtn = document.getElementById("saveLineupBtn");
 
-export const exportBtn = document.getElementById("exportBtn");
+export const shareLineupBtn = document.getElementById("shareLineupBtn");
 
 export const signInBtn = document.getElementById("signInBtn");
 

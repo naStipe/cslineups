@@ -3,7 +3,6 @@ import { initAuth } from "./auth.js";
 import { MAPS } from "./constants.js";
 import { closeDetailPanel, openDetail } from "./detail-panel.js";
 import { detailPanel, homeBrand, lightboxModal, lightboxNext, lightboxPrev, sidebarBrand } from "./dom.js";
-import "./export-import.js"; // side effect only: wires up the export-backup button
 import "./profile-modal.js"; // side effect only: wires up the profile button + modal
 import { enterMap, goHome } from "./home-screen.js";
 import { renderMarkers } from "./markers.js";
