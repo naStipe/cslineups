@@ -1,10 +1,11 @@
 import { setAddMode } from "./add-mode.js";
 import { initAuth } from "./auth.js";
 import { MAPS } from "./constants.js";
-import { closeDetailPanel, openDetail } from "./detail-panel.js";
+import { closeDetailPanel } from "./detail-panel.js";
 import { detailPanel, homeBrand, lightboxModal, lightboxNext, lightboxPrev, sidebarBrand } from "./dom.js";
 import "./profile-modal.js"; // side effect only: wires up the profile button + modal
 import { enterMap, goHome } from "./home-screen.js";
+import { focusLineup } from "./lineup-list.js";
 import { renderMarkers } from "./markers.js";
 import { resetZoom } from "./pan-zoom.js";
 import { buildFilters, buildSidebar, closeSidebar } from "./sidebar.js";
@@ -77,8 +78,8 @@ buildSidebar();
 buildFilters();
 
 // Deep links from the server-rendered SEO pages ("Open in interactive
-// map"): /?map=dust2 opens that map, /?map=dust2&lineup=<id> also opens the
-// lineup's detail panel once its lineups have loaded.
+// map"): /?map=dust2 opens that map, /?map=dust2&lineup=<id> also picks that
+// lineup (outlines it on the map, hides the rest) once its lineups have loaded.
 async function handleDeepLink() {
   const params = new URLSearchParams(window.location.search);
   const mapId = params.get("map");
@@ -95,7 +96,7 @@ async function handleDeepLink() {
   // awaited — so poll briefly for the lineup instead of checking once.
   for (let i = 0; i < 50; i++) {
     if (state.lineups.some(l => l.id === lineupId)) {
-      openDetail(lineupId, 0);
+      focusLineup(lineupId);
       return;
     }
     await new Promise(r => setTimeout(r, 100));
