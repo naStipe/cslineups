@@ -1,5 +1,7 @@
 const { createClient } = require("@supabase/supabase-js");
 const r2 = require("./_lib/r2");
+const { setCorsHeaders } = require("./_lib/cors");
+const { checkRateLimit } = require("./_lib/rate-limit");
 
 function supabase() {
   return createClient(
@@ -51,10 +53,16 @@ function mapRow(row) {
 // unrecognized value falls through as raw, attacker-controlled text).
 const VALID_TYPES = ["smoke", "flash", "fire", "he", "decoy"];
 const VALID_RANGES = ["throw", "mid-throw", "close-throw"];
+// Kept in sync with js/constants.js's MOVEMENT_LABELS keys — including the
+// legacy ones no longer offered in the dropdown, since existing saved
+// throws still carry those values and re-saving an unrelated throw on the
+// same lineup must not reject them.
 const VALID_MOVEMENTS = [
-  "none", "jumpthrow", "w-throw", "w-jumpthrow", "run", "run-throw",
-  "run-jumpthrow", "shift-w-throw", "shift-w-jumpthrow", "crouch",
-  "crouchjump", "crouchaim-jump", "crouchaim-crouchjump",
+  "none", "jumpthrow", "w-throw", "w-jumpthrow", "walk-throw", "walk-jumpthrow",
+  "run-throw", "run-jumpthrow", "crouch-throw", "crouchjump",
+  "crouch-walk-throw", "crouch-walk-jumpthrow",
+  "run", "shift-w-throw", "shift-w-jumpthrow", "crouch",
+  "crouchaim-jump", "crouchaim-crouchjump",
 ];
 const MAX_THROWS = 20;
 const MAX_SCREENSHOTS = 5;
@@ -149,14 +157,8 @@ function sanitizeLineup(body, userId) {
   };
 }
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin":  "*",
-  "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-};
-
 module.exports = async function handler(req, res) {
-  Object.entries(corsHeaders).forEach(([k, v]) => res.setHeader(k, v));
+  setCorsHeaders(req, res, "GET, POST, DELETE, OPTIONS");
   if (req.method === "OPTIONS") {
     res.status(204).end();
     return;
@@ -239,6 +241,13 @@ module.exports = async function handler(req, res) {
 
       if (!body.id) {
         res.status(400).json({ error: "Missing id" });
+        return;
+      }
+
+      // Admins are trusted (already gated by the is_admin check) and can do
+      // heavy moderation/editing work, so only rate-limit ordinary users.
+      if (!admin && !(await checkRateLimit(sb, user.id, "lineup_write"))) {
+        res.status(429).json({ error: "Too many changes. Try again in a bit." });
         return;
       }
 

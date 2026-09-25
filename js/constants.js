@@ -52,13 +52,20 @@ export const MOVEMENT_LABELS = {
   "jumpthrow":             "Jumpthrow",
   "w-throw":               "W + Throw",
   "w-jumpthrow":           "W + Jumpthrow",
-  "run":                   "Run",
+  "walk-throw":            "Walk + Throw",
+  "walk-jumpthrow":        "Walk + Jumpthrow",
   "run-throw":             "Run + Throw",
   "run-jumpthrow":         "Run + Jumpthrow",
+  "crouch-throw":          "Crouch + Throw",
+  "crouchjump":            "Crouch + Jumpthrow",
+  "crouch-walk-throw":     "Crouch Walk + Throw",
+  "crouch-walk-jumpthrow": "Crouch Walk + Jumpthrow",
+  // Legacy values kept so previously saved throws still show a label —
+  // no longer offered in the dropdown.
+  "run":                   "Run",
   "shift-w-throw":         "Shift + W + Throw",
   "shift-w-jumpthrow":     "Shift + W + Jumpthrow",
   "crouch":                "Crouch",
-  "crouchjump":            "Crouch + Jumpthrow",
   "crouchaim-jump":        "Crouch-aim + Jumpthrow",
   "crouchaim-crouchjump":  "Crouch-aim + Crouch-Jumpthrow",
 };
