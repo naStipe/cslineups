@@ -65,7 +65,7 @@ export async function uploadFile(file, isOfficial) {
     const err = await presignRes.json().catch(() => ({}));
     throw new Error(`Image upload failed (${presignRes.status}): ${err.error || "could not get an upload URL"}`);
   }
-  const { url, publicUrl } = await presignRes.json();
+  const { url, publicUrl, filename } = await presignRes.json();
 
   // Content-Type here must match exactly what api/upload-url.js signed
   // (blob.type, same value sent as contentType above) — R2 checks it
@@ -78,6 +78,23 @@ export async function uploadFile(file, isOfficial) {
   if (!putRes.ok) {
     const err = await putRes.text().catch(() => "");
     throw new Error(`Image upload failed (${putRes.status}): ${err}`);
+  }
+
+  // A presigned PUT can't enforce the size cap by signature (R2 limitation
+  // — see api/upload-url.js), so this second call checks the object's real
+  // stored size server-side and deletes it if the client lied about
+  // contentLength in the presign step.
+  const confirmRes = await fetch("/api/upload-url", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ action: "confirm", isOfficial: !!isOfficial, filename }),
+  });
+  if (!confirmRes.ok) {
+    const err = await confirmRes.json().catch(() => ({}));
+    throw new Error(err.error || `Image upload failed (${confirmRes.status})`);
   }
 
   return publicUrl;

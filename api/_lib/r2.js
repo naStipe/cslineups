@@ -20,6 +20,7 @@ const {
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   CopyObjectCommand,
   DeleteObjectCommand,
   DeleteObjectsCommand,
@@ -98,6 +99,20 @@ async function presignPut(bucket, key, contentType, contentLength, expiresIn = 3
   return getSignedUrl(client(), cmd, { expiresIn });
 }
 
+// Actual stored size of an object, straight from R2 — used right after an
+// upload to enforce the size cap a presigned PUT can't enforce by
+// signature (see the comment on presignPut above). Returns null if the
+// object doesn't exist (e.g. the client never actually PUT the file).
+async function headObject(bucket, key) {
+  try {
+    const res = await client().send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
+    return { contentLength: res.ContentLength };
+  } catch (err) {
+    if (err && (err.name === "NotFound" || err.$metadata?.httpStatusCode === 404)) return null;
+    throw err;
+  }
+}
+
 async function presignGet(bucket, key, expiresIn = 3600) {
   const cmd = new GetObjectCommand({ Bucket: bucket, Key: key });
   return getSignedUrl(client(), cmd, { expiresIn });
@@ -150,6 +165,7 @@ module.exports = {
   parsePrivateKey,
   presignPut,
   presignGet,
+  headObject,
   copyObject,
   deleteObject,
   deleteObjects,

@@ -1,4 +1,6 @@
 const { createClient } = require("@supabase/supabase-js");
+const { setCorsHeaders } = require("./_lib/cors");
+const { checkRateLimit } = require("./_lib/rate-limit");
 
 function supabase() {
   return createClient(
@@ -32,16 +34,10 @@ function mapRow(row) {
   };
 }
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin":  "*",
-  "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-};
-
 // Bookmarks: which official lineups a signed-in user has saved to their
 // personal map. Every method here requires a signed-in user.
 module.exports = async function handler(req, res) {
-  Object.entries(corsHeaders).forEach(([k, v]) => res.setHeader(k, v));
+  setCorsHeaders(req, res, "GET, POST, DELETE, OPTIONS");
   if (req.method === "OPTIONS") {
     res.status(204).end();
     return;
@@ -93,6 +89,11 @@ module.exports = async function handler(req, res) {
       const lineupId = req.body && req.body.lineupId;
       const throwId = req.body && req.body.throwId;
       if (!lineupId || !throwId) { res.status(400).json({ error: "Missing lineupId or throwId" }); return; }
+
+      if (!(await checkRateLimit(sb, user.id, "saved_lineup"))) {
+        res.status(429).json({ error: "Too many changes. Try again in a bit." });
+        return;
+      }
 
       // Can only bookmark lineups/throws that actually exist and are
       // official — saving someone's personal lineup wouldn't make sense

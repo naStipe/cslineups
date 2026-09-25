@@ -13,6 +13,7 @@
 // own images.
 const { createClient } = require("@supabase/supabase-js");
 const r2 = require("./_lib/r2");
+const { setCorsHeaders } = require("./_lib/cors");
 
 function supabase() {
   return createClient(
@@ -32,14 +33,8 @@ async function getAuthUser(req, sb) {
   return data.user;
 }
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-};
-
 module.exports = async function handler(req, res) {
-  Object.entries(corsHeaders).forEach(([k, v]) => res.setHeader(k, v));
+  setCorsHeaders(req, res, "GET, OPTIONS");
   if (req.method === "OPTIONS") { res.status(204).end(); return; }
   if (req.method !== "GET") { res.status(405).json({ error: "Method not allowed" }); return; }
 

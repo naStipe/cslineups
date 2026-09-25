@@ -1,5 +1,6 @@
 const { createClient } = require("@supabase/supabase-js");
 const r2 = require("./_lib/r2");
+const { setCorsHeaders } = require("./_lib/cors");
 
 function supabase() {
   return createClient(
@@ -143,14 +144,8 @@ async function fetchOwnerEmails(sb, ownerIds) {
   return emails;
 }
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin":  "*",
-  "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-};
-
 module.exports = async function handler(req, res) {
-  Object.entries(corsHeaders).forEach(([k, v]) => res.setHeader(k, v));
+  setCorsHeaders(req, res, "GET, POST, DELETE, OPTIONS");
   if (req.method === "OPTIONS") { res.status(204).end(); return; }
 
   try {
