@@ -2312,20 +2312,21 @@ a{transition:color .3s;}
 }
 @keyframes markersIn{from{opacity:0;transform:scale(.985);}to{opacity:1;transform:none;}}
 .map-sweep{
-  position:absolute;top:0;bottom:0;left:-120px;width:120px;z-index:6;pointer-events:none;opacity:0;
-  background:linear-gradient(90deg,transparent,rgba(255,165,62,.12) 55%,rgba(255,165,62,.5) 96%,#ffcf8a 100%);
-  box-shadow:6px 0 30px rgba(255,165,62,.45);
+  position:absolute;inset:0;z-index:6;pointer-events:none;overflow:hidden;border-radius:10px;opacity:0;
 }
-.map-sweep.run{animation:mapSweep 1s var(--ease-out) both;}
-@keyframes mapSweep{
-  0%{left:-120px;opacity:1;}
-  80%{opacity:1;}
-  100%{left:100%;opacity:0;}
+.map-sweep::before{
+  content:"";position:absolute;top:0;bottom:0;left:-140px;width:140px;
+  background:linear-gradient(90deg,transparent,rgba(255,165,62,.12) 55%,rgba(255,165,62,.45) 96%,#ffcf8a 100%);
+  box-shadow:6px 0 24px rgba(255,165,62,.4);
 }
+.map-sweep.run{animation:mapSweepFade 1s linear both;}
+.map-sweep.run::before{animation:mapSweep 1s var(--ease-out) both;}
+@keyframes mapSweep{from{left:-140px;}to{left:100%;}}
+@keyframes mapSweepFade{0%{opacity:1;}85%{opacity:1;}100%{opacity:0;}}
 .topbar-map-name.name-in{animation:nameIn .7s var(--ease-out) both;}
 @keyframes nameIn{from{opacity:0;transform:translateY(10px);letter-spacing:.3em;filter:blur(4px);}to{opacity:1;transform:none;letter-spacing:.06em;filter:none;}}
 @media (prefers-reduced-motion:reduce){
-  .map-frame.map-in #mapImage,.map-frame.map-in #markerLayer,.map-frame.map-in #linkSvg,.map-sweep.run,.topbar-map-name.name-in{animation:none;}
+  .map-frame.map-in #mapImage,.map-frame.map-in #markerLayer,.map-frame.map-in #linkSvg,.map-sweep.run,.map-sweep.run::before,.topbar-map-name.name-in{animation:none;}
 }
 
 /* =========================================================================
