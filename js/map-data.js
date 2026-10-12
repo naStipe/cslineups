@@ -32,7 +32,9 @@ export async function selectMap(id) {
   if (state.mapId !== id) return; // a newer switch took over while the old map faded out
   mapImage.src = m.file;
   pendingImageReady = waitForMapImage(mapImage);
-  pendingImageReady.then(() => { if (state.mapId === id) playMapIn(); });
+  pendingImageReady
+    .then(() => (mapImage.decode ? Promise.race([mapImage.decode().catch(() => {}), new Promise(r => setTimeout(r, 300))]) : null))
+    .then(() => { if (state.mapId === id) playMapIn(); });
   updateLevelSwitch(id);
   updateCheatsheet(id);
   if (!authUser && state.viewMode === "personal") state.viewMode = "official";
@@ -54,10 +56,12 @@ function retrigger(el, cls) {
   el.classList.add(cls);
 }
 
+// The frame is always hidden (map-out) before the new source is assigned, so the
+// radar can never flash fully visible before its wipe-in starts.
 async function playMapOut() {
-  if (reducedMotion || !mapShown) return;
+  if (reducedMotion) return;
   mapFrame.classList.add("map-out");
-  await new Promise(r => setTimeout(r, 230));
+  if (mapShown) await new Promise(r => setTimeout(r, 230));
 }
 
 function playMapIn() {
