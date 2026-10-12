@@ -763,15 +763,23 @@ body.view-official:not(.is-admin) #fabAddBtn{display:none;}
 
 /* ===================== MAP LOADING ===================== */
 .map-loading{
-  position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;
-  background:var(--void);opacity:0;pointer-events:none;transition:opacity .15s;
+  position:absolute;left:50%;bottom:22px;z-index:5;transform:translate(-50%,10px);
+  display:flex;align-items:center;gap:10px;padding:8px 16px;border-radius:999px;
+  background:rgba(22,18,16,.8);border:1px solid var(--line);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  opacity:0;pointer-events:none;transition:opacity .25s ease,transform .4s var(--ease-out);
 }
-.map-loading.show{opacity:1;pointer-events:auto;transition:none;}
+/* Delayed fade-in: loads that finish quickly never show the pill at all, and
+   the map itself is never covered, so the radar animation plays unobstructed. */
+.map-loading.show{opacity:1;transform:translate(-50%,0);transition:opacity .3s ease .4s,transform .5s var(--ease-out) .4s;}
+.map-loading::before{
+  content:"";width:12px;height:12px;border-radius:50%;
+  border:2px solid var(--line);border-top-color:var(--signal);animation:map-spin .8s linear infinite;
+}
 .map-loading-text{
-  font-family:var(--font-mono);font-size:12px;letter-spacing:.1em;color:var(--text-faint);
-  animation:loading-pulse 1.4s ease-in-out infinite;
+  font-family:var(--font-mono);font-size:11.5px;letter-spacing:.1em;color:var(--text-dim);
 }
-@keyframes loading-pulse{0%,100%{opacity:.3}50%{opacity:1}}
+@keyframes map-spin{to{transform:rotate(360deg);}}
 
 /* ===================== SIDEBAR OVERLAY ===================== */
 .sidebar-overlay{
