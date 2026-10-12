@@ -33,6 +33,7 @@
 
 <!-- HOME SCREEN -->
 <div class="home-screen" id="homeScreen">
+  <div class="hero-bg" aria-hidden="true"><span class="hero-orb hero-orb--a"></span><span class="hero-orb hero-orb--b"></span><span class="hero-grid"></span></div>
   <header class="home-header">
     <div class="home-brand" id="homeBrand">
       <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
@@ -54,7 +55,8 @@
     </nav>
   </header>
   <div class="notice-banner notice-banner--compact" id="noticeBanner">
-    <p><strong>Notice:</strong> this is a personal project, not a commercial product. It was built mainly for personal use — to help the developer learn and save lineups — so there may be bugs and rough edges. Feel free to use it for your own practice. If something's inconvenient or missing a feature, reach out at <a href="mailto:support@nastipe.dev">support@nastipe.dev</a> and I'll try to add it soon.</p>
+    <span class="notice-dot" aria-hidden="true"></span>
+    <p><strong>Personal project</strong> — expect a few rough edges. Feedback: <a href="mailto:support@nastipe.dev">support@nastipe.dev</a></p>
     <button type="button" id="noticeBannerClose" aria-label="Dismiss notice">✕</button>
   </div>
   <script>
@@ -69,7 +71,6 @@
   })();
   </script>
   <div class="home-body">
-    <div class="hero-bg" aria-hidden="true"><span class="hero-orb hero-orb--a"></span><span class="hero-orb hero-orb--b"></span><span class="hero-grid"></span></div>
     <section class="hero" aria-labelledby="heroTitle">
       <div class="hero-text">
         <p class="hero-eyebrow"><span class="hero-eyebrow-dot"></span>CS2 lineup database</p>
