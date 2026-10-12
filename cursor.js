@@ -36,7 +36,7 @@
     ".c-ring.is-cross::after{content:'';position:absolute;width:60px;height:60px;margin:-30px 0 0 -30px;background:linear-gradient(#ffa53e,#ffa53e) center/1.5px 100% no-repeat,linear-gradient(#ffa53e,#ffa53e) center/100% 1.5px no-repeat;opacity:.8}" +
     ".c-ring.is-grab::before{border-radius:12px}" +
     /* subtle magnifier: a scaled copy of the hovered control shown inside the ring */
-    ".c-lens{position:absolute;left:-29px;top:-29px;width:58px;height:58px;overflow:hidden;opacity:0;clip-path:circle(17px at 50% 50%);background:rgba(14,11,9,.94);transition:opacity .3s,clip-path .45s cubic-bezier(.22,1,.36,1)}" +
+    ".c-lens{position:absolute;left:-29px;top:-29px;width:58px;height:58px;overflow:hidden;opacity:0;clip-path:circle(17px at 50% 50%);background:rgba(14,11,9,.4);transition:opacity .3s,clip-path .45s cubic-bezier(.22,1,.36,1)}" +
     /* the lens is clipped (never scaled), so the magnification factor is exactly MAG */
     ".c-ring.has-lens .c-lens{opacity:1}" +
     ".c-ring.is-link.has-lens .c-lens{clip-path:circle(28px at 50% 50%)}" +
@@ -113,6 +113,18 @@
       for (var k = 0; k < PROPS.length; k++) d.style.setProperty(PROPS[k], cs.getPropertyValue(PROPS[k]));
       var pos = cs.position;
       if (pos === "fixed" || pos === "sticky") d.style.position = "absolute";
+      // ::before / ::after are not part of the DOM clone, so rebuild them as real nodes
+      // (rising button fills, spotlights, glows would otherwise be missing from the lens).
+      var pseudos = ["::before", "::after"];
+      for (var q = 0; q < pseudos.length; q++) {
+        var ps = getComputedStyle(src[i], pseudos[q]);
+        var content = ps.content;
+        if (!content || content === "none" || content === "normal" || ps.display === "none") continue;
+        var node = document.createElement("span");
+        for (var m = 0; m < PROPS.length; m++) node.style.setProperty(PROPS[m], ps.getPropertyValue(PROPS[m]));
+        if (/^["']/.test(content)) node.textContent = content.slice(1, -1);
+        if (q === 0) d.insertBefore(node, d.firstChild); else d.appendChild(node);
+      }
       d.removeAttribute("id");
       d.removeAttribute("href");
       d.removeAttribute("loading");
