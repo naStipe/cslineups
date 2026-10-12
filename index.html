@@ -47,6 +47,11 @@
       </svg>
       <span class="home-wordmark">lineup<span class="home-wordmark-r">r</span></span>
     </div>
+    <nav class="home-nav" aria-label="Primary">
+      <a href="/maps" class="home-nav-link">Maps</a>
+      <a href="/blog" class="home-nav-link">Blog</a>
+      <a href="/maps" class="home-nav-cta" data-magnetic>Open the map</a>
+    </nav>
   </header>
   <div class="notice-banner notice-banner--compact" id="noticeBanner">
     <p><strong>Notice:</strong> this is a personal project, not a commercial product. It was built mainly for personal use — to help the developer learn and save lineups — so there may be bugs and rough edges. Feel free to use it for your own practice. If something's inconvenient or missing a feature, reach out at <a href="mailto:support@nastipe.dev">support@nastipe.dev</a> and I'll try to add it soon.</p>
@@ -64,12 +69,14 @@
   })();
   </script>
   <div class="home-body">
+    <div class="hero-bg" aria-hidden="true"><span class="hero-orb hero-orb--a"></span><span class="hero-orb hero-orb--b"></span><span class="hero-grid"></span></div>
     <section class="hero" aria-labelledby="heroTitle">
       <div class="hero-text">
+        <p class="hero-eyebrow"><span class="hero-eyebrow-dot"></span>CS2 lineup database</p>
         <h1 class="hero-title" id="heroTitle">Find lineups. Learn. Save forever</h1>
         <p class="hero-sub">Lineupr is your all-in-one tool for practicing and sharing game-winning lineups. Learn new smokes, add your own, share with friends. Keep <span class="hero-highlight">YOUR</span> lineups in one place, one click away.</p>
         <div class="hero-actions">
-          <a class="hero-cta" href="/maps">Choose your map</a>
+          <a class="hero-cta" href="/maps" data-magnetic><span>Choose your map</span><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
           <div class="hero-legend" aria-hidden="true">
             <span class="hero-legend-dot" style="--dot:var(--smoke)"></span>Smoke
             <span class="hero-legend-dot" style="--dot:var(--flash)"></span>Flash
@@ -79,7 +86,7 @@
         </div>
       </div>
 
-      <div class="hero-diagram" id="heroDiagram" aria-label="Real Lineupr maps rotating through Dust II, Mirage, Inferno, Nuke, Ancient, Anubis, Cache and Overpass, each showing live lineup markers.">
+      <div class="hero-diagram-wrap" data-parallax="28"><div class="hero-diagram" id="heroDiagram" data-spot data-tilt aria-label="Real Lineupr maps rotating through Dust II, Mirage, Inferno, Nuke, Ancient, Anubis, Cache and Overpass, each showing live lineup markers.">
         <div class="hero-diagram-sweep" aria-hidden="true"></div>
         <img class="hero-slide is-active" src="/maps/hero/dust2.webp" width="720" height="711" loading="eager" fetchpriority="high" decoding="async" alt="Dust II — real lineup markers from Lineupr">
         <img class="hero-slide" src="/maps/hero/mirage.webp" width="720" height="622" loading="lazy" decoding="async" alt="" aria-hidden="true">
@@ -90,28 +97,42 @@
         <img class="hero-slide" src="/maps/hero/cache.webp" width="720" height="564" loading="lazy" decoding="async" alt="" aria-hidden="true">
         <img class="hero-slide" src="/maps/hero/overpass.webp" width="720" height="724" loading="lazy" decoding="async" alt="" aria-hidden="true">
         <span class="hero-diagram-corners" aria-hidden="true"></span>
+      </div></div>
+    </section>
+
+    <div class="marquee" aria-hidden="true" data-reveal>
+      <div class="marquee-track">
+        <span>Dust II</span><i></i><span>Mirage</span><i></i><span>Inferno</span><i></i><span>Nuke</span><i></i><span>Ancient</span><i></i><span>Anubis</span><i></i><span>Cache</span><i></i><span>Overpass</span><i></i>
+        <span>Dust II</span><i></i><span>Mirage</span><i></i><span>Inferno</span><i></i><span>Nuke</span><i></i><span>Ancient</span><i></i><span>Anubis</span><i></i><span>Cache</span><i></i><span>Overpass</span><i></i>
       </div>
+    </div>
+
+    <section class="home-stats" aria-label="Lineupr at a glance">
+      <div class="home-stat" data-reveal><span class="home-stat-num" data-count="8">8</span><span class="home-stat-label">Maps</span></div>
+      <div class="home-stat" data-reveal><span class="home-stat-num" data-count="4">4</span><span class="home-stat-label">Nade types</span></div>
+      <div class="home-stat" data-reveal><span class="home-stat-num">1</span><span class="home-stat-label">Click to a lineup</span></div>
+      <div class="home-stat" data-reveal><span class="home-stat-num">0</span><span class="home-stat-label">Dollars, ever</span></div>
     </section>
 
     <section class="home-features" aria-labelledby="featuresTitle">
-      <h2 id="featuresTitle" class="home-section-title">How Lineupr works</h2>
+      <h2 id="featuresTitle" class="home-section-title" data-reveal>How Lineupr works</h2>
       <div class="home-steps">
-        <div class="home-step">
+        <div class="home-step" data-reveal data-spot>
           <span class="home-step-num">01</span>
           <h3>Sign in</h3>
           <p>Create an account to unlock your own collection.</p>
         </div>
-        <div class="home-step">
+        <div class="home-step" data-reveal data-spot>
           <span class="home-step-num">02</span>
           <h3>Save</h3>
           <p>Save lineups to your collection so they're one click away.</p>
         </div>
-        <div class="home-step">
+        <div class="home-step" data-reveal data-spot>
           <span class="home-step-num">03</span>
           <h3>Add your own</h3>
           <p>Found a new smoke? Add it with screenshots and notes.</p>
         </div>
-        <div class="home-step">
+        <div class="home-step" data-reveal data-spot>
           <span class="home-step-num">04</span>
           <h3>Share</h3>
           <p>Send a lineup link to friends or your team, no sign-in needed.</p>
@@ -120,16 +141,16 @@
     </section>
 
     <section class="home-features" aria-labelledby="mapsTitle">
-      <h2 id="mapsTitle" class="home-section-title">Guides for every map</h2>
+      <h2 id="mapsTitle" class="home-section-title" data-reveal>Guides for every map</h2>
       <div class="home-map-grid">
-        <a class="home-map-card" href="/dust2"><h3>Dust II</h3><p>Guide coming soon.</p></a>
-        <a class="home-map-card" href="/mirage"><h3>Mirage</h3><p>Guide coming soon.</p></a>
-        <a class="home-map-card" href="/inferno"><h3>Inferno</h3><p>Guide coming soon.</p></a>
-        <a class="home-map-card" href="/nuke"><h3>Nuke</h3><p>Guide coming soon.</p></a>
-        <a class="home-map-card" href="/ancient"><h3>Ancient</h3><p>Guide coming soon.</p></a>
-        <a class="home-map-card" href="/anubis"><h3>Anubis</h3><p>Guide coming soon.</p></a>
-        <a class="home-map-card" href="/cache"><h3>Cache</h3><p>Guide coming soon.</p></a>
-        <a class="home-map-card" href="/overpass"><h3>Overpass</h3><p>Guide coming soon.</p></a>
+        <a class="home-map-card" href="/dust2" data-reveal data-spot style="--bg:url(/maps/hero/dust2.webp)"><span class="home-map-card-art" aria-hidden="true"></span><h3>Dust II</h3><p>Guide coming soon.</p></a>
+        <a class="home-map-card" href="/mirage" data-reveal data-spot style="--bg:url(/maps/hero/mirage.webp)"><span class="home-map-card-art" aria-hidden="true"></span><h3>Mirage</h3><p>Guide coming soon.</p></a>
+        <a class="home-map-card" href="/inferno" data-reveal data-spot style="--bg:url(/maps/hero/inferno.webp)"><span class="home-map-card-art" aria-hidden="true"></span><h3>Inferno</h3><p>Guide coming soon.</p></a>
+        <a class="home-map-card" href="/nuke" data-reveal data-spot style="--bg:url(/maps/hero/nuke.webp)"><span class="home-map-card-art" aria-hidden="true"></span><h3>Nuke</h3><p>Guide coming soon.</p></a>
+        <a class="home-map-card" href="/ancient" data-reveal data-spot style="--bg:url(/maps/hero/ancient.webp)"><span class="home-map-card-art" aria-hidden="true"></span><h3>Ancient</h3><p>Guide coming soon.</p></a>
+        <a class="home-map-card" href="/anubis" data-reveal data-spot style="--bg:url(/maps/hero/anubis.webp)"><span class="home-map-card-art" aria-hidden="true"></span><h3>Anubis</h3><p>Guide coming soon.</p></a>
+        <a class="home-map-card" href="/cache" data-reveal data-spot style="--bg:url(/maps/hero/cache.webp)"><span class="home-map-card-art" aria-hidden="true"></span><h3>Cache</h3><p>Guide coming soon.</p></a>
+        <a class="home-map-card" href="/overpass" data-reveal data-spot style="--bg:url(/maps/hero/overpass.webp)"><span class="home-map-card-art" aria-hidden="true"></span><h3>Overpass</h3><p>Guide coming soon.</p></a>
       </div>
     </section>
 

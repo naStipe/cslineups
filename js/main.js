@@ -3,6 +3,7 @@ import { initAuth } from "./auth.js";
 import { MAPS } from "./constants.js";
 import { closeDetailPanel } from "./detail-panel.js";
 import { detailPanel, homeBrand, lightboxModal, lightboxNext, lightboxPrev, sidebarBrand } from "./dom.js";
+import "./fx.js"; // side effect only: home-screen visual effects
 import "./profile-modal.js"; // side effect only: wires up the profile button + modal
 import { enterMap, goHome } from "./home-screen.js";
 import { focusLineup } from "./lineup-list.js";
