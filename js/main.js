@@ -7,6 +7,7 @@ import "./fx.js"; // side effect only: home-screen visual effects
 import "./profile-modal.js"; // side effect only: wires up the profile button + modal
 import { enterMap, goHome } from "./home-screen.js";
 import { focusLineup } from "./lineup-list.js";
+import { preloadMapImages } from "./map-preload.js";
 import { renderMarkers } from "./markers.js";
 import { resetZoom } from "./pan-zoom.js";
 import { buildFilters, buildSidebar, closeSidebar } from "./sidebar.js";
@@ -108,3 +109,7 @@ loadConfig().then(async () => {
   await initAuth();
   handleDeepLink();
 });
+
+// After first paint, warm every radar image so map switches show instantly.
+if (document.readyState === "complete") preloadMapImages();
+else window.addEventListener("load", preloadMapImages, { once: true });
