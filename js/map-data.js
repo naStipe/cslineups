@@ -4,7 +4,7 @@ import { authUser } from "./auth.js";
 import { updateCheatsheet } from "./cheatsheet.js";
 import { MAPS } from "./constants.js";
 import { updateLevelSwitch } from "./level-switch.js";
-import { currentMapName, detailPanel, lineupCount, lineupSearchInput, linkSvg, mapImage, markerLayer, officialViewBtn, personalViewBtn } from "./dom.js";
+import { currentMapName, detailPanel, mapFrame, lineupCount, lineupSearchInput, linkSvg, mapImage, markerLayer, officialViewBtn, personalViewBtn } from "./dom.js";
 import { buildLineupList } from "./lineup-list.js";
 import { renderMarkers, resetRenderedThrowSig } from "./markers.js";
 import { resetZoom } from "./pan-zoom.js";
@@ -27,8 +27,12 @@ export async function selectMap(id) {
   buildSidebar();
   const m = MAPS.find(x => x.id === id);
   currentMapName.textContent = m.name.toUpperCase();
+  retrigger(currentMapName, "name-in");
+  await playMapOut();
+  if (state.mapId !== id) return; // a newer switch took over while the old map faded out
   mapImage.src = m.file;
   pendingImageReady = waitForMapImage(mapImage);
+  pendingImageReady.then(() => { if (state.mapId === id) playMapIn(); });
   updateLevelSwitch(id);
   updateCheatsheet(id);
   if (!authUser && state.viewMode === "personal") state.viewMode = "official";
@@ -36,6 +40,40 @@ export async function selectMap(id) {
   if (personalViewBtn) personalViewBtn.classList.toggle("active", state.viewMode === "personal");
   applyViewModeClass();
   await loadLineups();
+}
+
+// ---- Map switch animation: old map blurs out, new one wipes in under a radar sweep ----
+const reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+let mapShown = false;
+let sweepEl = null;
+
+function retrigger(el, cls) {
+  if (reducedMotion) return;
+  el.classList.remove(cls);
+  void el.offsetWidth; // restart the CSS animation
+  el.classList.add(cls);
+}
+
+async function playMapOut() {
+  if (reducedMotion || !mapShown) return;
+  mapFrame.classList.add("map-out");
+  await new Promise(r => setTimeout(r, 230));
+}
+
+function playMapIn() {
+  mapShown = true;
+  if (reducedMotion) return;
+  if (!sweepEl) {
+    sweepEl = document.createElement("div");
+    sweepEl.className = "map-sweep";
+    sweepEl.setAttribute("aria-hidden", "true");
+    mapFrame.appendChild(sweepEl);
+  }
+  mapFrame.classList.remove("map-out");
+  mapFrame.classList.remove("map-in");
+  void mapFrame.offsetWidth;
+  mapFrame.classList.add("map-in");
+  retrigger(sweepEl, "run");
 }
 
 export let loadToken = 0;

@@ -190,6 +190,7 @@ ${imageDims}<meta property="og:site_name" content="Lineupr">
 <style>${PAGE_CSS}</style>
 ${(jsonLd || []).map(jsonLdScript).join("\n")}
 <script defer src="/site-fx.js"></script>
+<script defer src="/cursor.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -242,13 +243,16 @@ async function renderMapsIndex(res, C) {
   const counts = {};
   lineups.forEach(l => { counts[l.mapId] = (counts[l.mapId] || 0) + 1; });
 
-  const cards = C.MAPS.map(m => {
+  const total = lineups.length;
+  const cards = C.MAPS.map((m, i) => {
     const n = counts[m.id] || 0;
-    return `<a class="map-card" href="/?map=${esc(m.id)}">
+    return `<a class="map-card" href="/?map=${esc(m.id)}" data-reveal data-spot data-tilt data-cursor="Open">
 <div class="map-card-bg" style="background-image:url('/maps/${m.id}-logo.jpg')"></div>
+<span class="map-card-index" aria-hidden="true">${String(i + 1).padStart(2, "0")}</span>
+<span class="map-card-badge${n === 0 ? " empty" : ""}"><b>${n}</b> lineup${n === 1 ? "" : "s"}</span>
 <div class="map-card-content">
 <div class="map-card-name">${esc(m.name)}</div>
-<div class="map-card-count${n === 0 ? " empty" : ""}">${n === 0 ? "No lineups yet" : `${n} lineup${n === 1 ? "" : "s"}`}</div>
+<div class="map-card-count${n === 0 ? " empty" : ""}">${n === 0 ? "No lineups yet" : `Open ${n} lineup${n === 1 ? "" : "s"}`}<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
 </div>
 </a>`;
   }).join("\n");
@@ -291,9 +295,11 @@ ${jsonLd.map(jsonLdScript).join("\n")}
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/style.css">
 <script defer src="/site-fx.js"></script>
+<script defer src="/cursor.js"></script>
 </head>
 <body>
-<div class="home-screen home-screen--maps">
+<div class="home-screen home-screen--maps" id="homeScreen">
+  <div class="hero-bg" aria-hidden="true"><span class="hero-orb hero-orb--a"></span><span class="hero-orb hero-orb--b"></span><span class="hero-grid"></span></div>
   <header class="home-header">
     <a class="home-brand" href="/" aria-label="Lineupr home">
       ${BRAND_SVG.replace('width="26" height="26"', 'width="32" height="32"')}
@@ -301,7 +307,11 @@ ${jsonLd.map(jsonLdScript).join("\n")}
     </a>
   </header>
   <div class="home-body">
-    <h2 class="home-section-title">Lineups</h2>
+    <div class="maps-head">
+      <p class="hero-eyebrow"><span class="hero-eyebrow-dot"></span>${C.MAPS.length} maps · ${total} lineups</p>
+      <h1 class="maps-title">Pick your <span>battlefield</span></h1>
+      <p class="maps-sub">Every active-duty CS2 map, with smokes, flashes, molotovs and HEs ready to learn.</p>
+    </div>
     <div class="home-grid"><div class="home-grid-inner">
 ${cards}
     </div></div>

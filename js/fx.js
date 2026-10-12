@@ -129,36 +129,6 @@ function init() {
     const b = e.target.closest?.(MAG);
     if (b && !b.contains(e.relatedTarget)) b.style.transform = "";
   });
-
-  // ---- Trailing cursor: dot follows, ring lags; native cursor stays ----
-  const dot = document.createElement("div");
-  const ring = document.createElement("div");
-  dot.className = "fx-dot";
-  ring.className = "fx-ring";
-  dot.setAttribute("aria-hidden", "true");
-  ring.setAttribute("aria-hidden", "true");
-  document.body.append(ring, dot);
-  let tx = -100, ty = -100, rx = -100, ry = -100;
-  const homeVisible = () => home.style.display !== "none";
-  window.addEventListener("pointermove", (e) => {
-    if (!homeVisible()) { dot.classList.remove("is-on"); ring.classList.remove("is-on"); return; }
-    tx = e.clientX; ty = e.clientY;
-    dot.style.transform = `translate3d(${tx}px,${ty}px,0)`;
-    dot.classList.add("is-on"); ring.classList.add("is-on");
-    ring.classList.toggle("is-link", !!e.target.closest?.("a, button, [role='button'], label[for], .map-card"));
-  }, { passive: true });
-  document.addEventListener("mouseleave", () => {
-    dot.classList.remove("is-on"); ring.classList.remove("is-on");
-  });
-  window.addEventListener("pointerdown", () => ring.classList.add("is-down"));
-  window.addEventListener("pointerup", () => ring.classList.remove("is-down"));
-  const loop = () => {
-    rx += (tx - rx) * 0.16;
-    ry += (ty - ry) * 0.16;
-    ring.style.transform = `translate3d(${rx}px,${ry}px,0)`;
-    requestAnimationFrame(loop);
-  };
-  loop();
 }
 
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
