@@ -36,10 +36,11 @@
     ".c-ring.is-cross::after{content:'';position:absolute;width:60px;height:60px;margin:-30px 0 0 -30px;background:linear-gradient(#ffa53e,#ffa53e) center/1.5px 100% no-repeat,linear-gradient(#ffa53e,#ffa53e) center/100% 1.5px no-repeat;opacity:.8}" +
     ".c-ring.is-grab::before{border-radius:12px}" +
     /* subtle magnifier: a scaled copy of the hovered control shown inside the ring */
-    ".c-lens{position:absolute;left:-29px;top:-29px;width:58px;height:58px;border-radius:50%;overflow:hidden;opacity:0;transform:scale(.6);background:rgba(14,11,9,.94);transition:opacity .3s,transform .45s cubic-bezier(.22,1,.36,1)}" +
-    ".c-ring.has-lens .c-lens{opacity:1;transform:scale(.62)}" +
-    ".c-ring.is-link.has-lens .c-lens{transform:scale(1)}" +
-    ".c-ring.is-down.has-lens .c-lens{transform:scale(.42)}" +
+    ".c-lens{position:absolute;left:-29px;top:-29px;width:58px;height:58px;overflow:hidden;opacity:0;clip-path:circle(17px at 50% 50%);background:rgba(14,11,9,.94);transition:opacity .3s,clip-path .45s cubic-bezier(.22,1,.36,1)}" +
+    /* the lens is clipped (never scaled), so the magnification factor is exactly MAG */
+    ".c-ring.has-lens .c-lens{opacity:1}" +
+    ".c-ring.is-link.has-lens .c-lens{clip-path:circle(28px at 50% 50%)}" +
+    ".c-ring.is-down.has-lens .c-lens{clip-path:circle(12px at 50% 50%)}" +
     ".c-ring.is-big .c-lens{opacity:0}" +
     ".c-lens-inner{position:absolute;left:29px;top:29px;width:0;height:0;transform-origin:0 0}" +
     ".c-lens-inner *{pointer-events:none!important;transition:none!important;animation:none!important}";
