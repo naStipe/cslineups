@@ -2407,3 +2407,30 @@ html.fx .maps-head > :nth-child(3){animation-delay:.26s;}
   .home-screen--maps .map-card-name{font-size:16px;}
   .home-screen--maps .map-card-count{display:none;}
 }
+
+/* =========================================================================
+   SCROLLBARS — slim, dark, rounded (replaces the default white system bars)
+   ========================================================================= */
+*{scrollbar-width:thin;scrollbar-color:var(--line) transparent;}
+*:hover{scrollbar-color:var(--signal-dim) transparent;}
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:999px;border:2px solid transparent;background-clip:content-box;transition:background .3s;}
+::-webkit-scrollbar-thumb:hover{background:var(--signal-dim);background-clip:content-box;}
+html::-webkit-scrollbar-track,body::-webkit-scrollbar-track{background:var(--void);}
+.lineup-list,.mobile-search-results,.sidebar{overflow-x:hidden;}
+.lineup-list{padding-right:2px;}
+
+/* =========================================================================
+   TOPBAR — fixed-width zones so switching maps never shifts the layout
+   ========================================================================= */
+@media (min-width:769px){
+  .topbar-left{width:350px;flex:none;}
+  .topbar-map-name{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .count-pill{flex:none;min-width:78px;text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .view-toggle{flex:none;}
+  .topbar-right{width:150px;justify-content:flex-end;}
+  .filters{justify-content:center;}
+  .filter-chip{flex:none;}
+  .filter-chip .chip-count{min-width:22px;text-align:center;font-variant-numeric:tabular-nums;}
+}

@@ -34,7 +34,12 @@
     /* crosshair while placing a marker; rounded box while the map is zoomed */
     ".c-ring.is-cross::before{transform:scale(1.2)}" +
     ".c-ring.is-cross::after{content:'';position:absolute;width:60px;height:60px;margin:-30px 0 0 -30px;background:linear-gradient(#ffa53e,#ffa53e) center/1.5px 100% no-repeat,linear-gradient(#ffa53e,#ffa53e) center/100% 1.5px no-repeat;opacity:.8}" +
-    ".c-ring.is-grab::before{border-radius:12px}";
+    ".c-ring.is-grab::before{border-radius:12px}" +
+    /* subtle magnifier: a scaled copy of the hovered control shown inside the ring */
+    ".c-lens{position:absolute;left:-29px;top:-29px;width:58px;height:58px;border-radius:50%;overflow:hidden;opacity:0;transform:scale(.6);background:rgba(14,11,9,.9);transition:opacity .3s,transform .45s cubic-bezier(.22,1,.36,1)}" +
+    ".c-ring.has-lens .c-lens{opacity:1;transform:scale(1)}" +
+    ".c-lens-inner{position:absolute;left:29px;top:29px;width:0;height:0;transform-origin:0 0}" +
+    ".c-lens-inner *{pointer-events:none!important;transition:none!important;animation:none!important}";
   document.head.appendChild(css);
   root.classList.add("has-cursor");
 
@@ -47,12 +52,59 @@
   dot.setAttribute("aria-hidden", "true");
   ring.setAttribute("aria-hidden", "true");
   ring.appendChild(label);
+  var lens = document.createElement("div");
+  var lensInner = document.createElement("div");
+  lens.className = "c-lens";
+  lensInner.className = "c-lens-inner";
+  lens.appendChild(lensInner);
+  ring.insertBefore(lens, label);
   document.body.append(ring, dot);
 
   var tx = -100, ty = -100, rx = -100, ry = -100, raf = 0, seen = false, lastTarget = null;
 
   // Hit-testing and class toggling only run when the element under the pointer
   // changes (pointerover), not on every mouse move.
+  var MAG = 1.14;
+  var lensSource = null, lensRect = null, aliveUntil = 0;
+
+  function setLens(el) {
+    if (el === lensSource) return;
+    lensSource = el;
+    lensInner.textContent = "";
+    ring.classList.remove("has-lens");
+    if (!el) return;
+    var r = el.getBoundingClientRect();
+    if (r.width > 320 || r.height > 90 || r.width < 8) { lensSource = null; return; }
+    var clone = el.cloneNode(true);
+    // Computed styles are copied node by node so the copy looks identical outside its original ancestors.
+    var src = [el].concat([].slice.call(el.querySelectorAll("*")));
+    var dst = [clone].concat([].slice.call(clone.querySelectorAll("*")));
+    for (var i = 0; i < src.length && i < dst.length; i++) {
+      var cs = getComputedStyle(src[i]);
+      for (var k = 0; k < cs.length; k++) {
+        var p = cs[k];
+        if (p === "transition" || p === "animation" || p.indexOf("transition") === 0 || p.indexOf("animation") === 0) continue;
+        dst[i].style.setProperty(p, cs.getPropertyValue(p));
+      }
+      dst[i].removeAttribute("id");
+    }
+    clone.setAttribute("aria-hidden", "true");
+    clone.removeAttribute("href");
+    var s = clone.style;
+    s.position = "absolute"; s.left = "0"; s.top = "0"; s.margin = "0";
+    s.width = r.width + "px"; s.height = r.height + "px";
+    s.transform = "none"; s.translate = "none"; s.opacity = "1"; s.boxSizing = "border-box";
+    lensInner.appendChild(clone);
+    lensRect = r;
+    ring.classList.add("has-lens");
+  }
+
+  function placeLens() {
+    if (!lensSource) return;
+    var r = lensSource.getBoundingClientRect();
+    lensInner.style.transform = "scale(" + MAG + ") translate(" + (r.left - rx).toFixed(1) + "px," + (r.top - ry).toFixed(1) + "px)";
+  }
+
   function state(t) {
     if (!t || !t.closest) return;
     var isText = !!t.closest(TEXT);
@@ -63,6 +115,8 @@
     ring.classList.toggle("is-link", link);
     dot.classList.toggle("is-link", link);
     ring.classList.toggle("is-big", !!cur);
+    setLens(!cur && link ? t.closest(LINK) : null);
+    aliveUntil = performance.now() + 700; // keep the lens tracking through hover animations
     dot.classList.toggle("is-big", !!cur);
     if (cur) label.textContent = cur.getAttribute("data-cursor");
     ring.classList.toggle("is-cross", !!t.closest(".map-frame.add-mode"));
@@ -74,6 +128,7 @@
     if (e.pointerType && e.pointerType !== "mouse") return;
     lastTarget = e.target;
     state(lastTarget);
+    if (!raf) raf = requestAnimationFrame(loop);
   }, { passive: true });
 
   // Position writes happen once per frame, inside rAF, never inside the event.
@@ -113,6 +168,7 @@
     if (settled) { rx = tx; ry = ty; }
     dot.style.transform = "translate3d(" + tx + "px," + ty + "px,0)";
     ring.style.transform = "translate3d(" + rx.toFixed(1) + "px," + ry.toFixed(1) + "px,0)";
-    raf = settled ? 0 : requestAnimationFrame(loop);
+    placeLens();
+    raf = (settled && performance.now() > aliveUntil) ? 0 : requestAnimationFrame(loop);
   }
 })();
