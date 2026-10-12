@@ -36,8 +36,11 @@
     ".c-ring.is-cross::after{content:'';position:absolute;width:60px;height:60px;margin:-30px 0 0 -30px;background:linear-gradient(#ffa53e,#ffa53e) center/1.5px 100% no-repeat,linear-gradient(#ffa53e,#ffa53e) center/100% 1.5px no-repeat;opacity:.8}" +
     ".c-ring.is-grab::before{border-radius:12px}" +
     /* subtle magnifier: a scaled copy of the hovered control shown inside the ring */
-    ".c-lens{position:absolute;left:-29px;top:-29px;width:58px;height:58px;border-radius:50%;overflow:hidden;opacity:0;transform:scale(.6);background:rgba(14,11,9,.9);transition:opacity .3s,transform .45s cubic-bezier(.22,1,.36,1)}" +
-    ".c-ring.has-lens .c-lens{opacity:1;transform:scale(1)}" +
+    ".c-lens{position:absolute;left:-29px;top:-29px;width:58px;height:58px;border-radius:50%;overflow:hidden;opacity:0;transform:scale(.6);background:rgba(14,11,9,.94);transition:opacity .3s,transform .45s cubic-bezier(.22,1,.36,1)}" +
+    ".c-ring.has-lens .c-lens{opacity:1;transform:scale(.62)}" +
+    ".c-ring.is-link.has-lens .c-lens{transform:scale(1)}" +
+    ".c-ring.is-down.has-lens .c-lens{transform:scale(.42)}" +
+    ".c-ring.is-big .c-lens{opacity:0}" +
     ".c-lens-inner{position:absolute;left:29px;top:29px;width:0;height:0;transform-origin:0 0}" +
     ".c-lens-inner *{pointer-events:none!important;transition:none!important;animation:none!important}";
   document.head.appendChild(css);
@@ -64,45 +67,77 @@
 
   // Hit-testing and class toggling only run when the element under the pointer
   // changes (pointerover), not on every mouse move.
-  var MAG = 1.14;
-  var lensSource = null, lensRect = null, aliveUntil = 0;
+  var MAG = 1.2;
+  var lensSource = null, lensScale = 1, aliveUntil = 0, refreshTimer = 0;
+  // Only layout/paint-relevant properties are copied (not the full ~350), so building a copy stays cheap.
+  var PROPS = ["display","position","box-sizing","width","height","min-width","min-height","max-width","max-height",
+    "top","left","right","bottom","margin","padding","border","border-radius","outline","background","background-color",
+    "background-image","background-size","background-position","background-repeat","background-clip","color","opacity",
+    "font-family","font-size","font-weight","font-style","font-stretch","line-height","letter-spacing","text-transform",
+    "text-align","text-decoration","text-shadow","-webkit-text-stroke","-webkit-text-fill-color","white-space","overflow",
+    "text-overflow","flex","flex-direction","flex-wrap","align-items","justify-content","gap","grid-template-columns",
+    "grid-template-rows","z-index","transform","transform-origin","translate","scale","rotate","box-shadow","filter","clip-path",
+    "object-fit","object-position","fill","stroke","stroke-width","stroke-dasharray","stroke-linecap","vertical-align",
+    "list-style","visibility","aspect-ratio","mix-blend-mode","-webkit-background-clip"];
+
+  // Picks what to magnify: the whole map frame (radar + markers), otherwise the largest
+  // modest-sized ancestor of the hovered element so the lens shows real surrounding context.
+  function pickSource(t) {
+    var frame = t.closest(".map-frame");
+    if (frame) return frame;
+    var best = t, el = t;
+    for (var i = 0; i < 5; i++) {
+      var p = el.parentElement;
+      if (!p || p === document.body || p === document.documentElement) break;
+      var r = p.getBoundingClientRect();
+      if (r.width > 520 || r.height > 300 || p.getElementsByTagName("*").length > 220) break;
+      best = p; el = p;
+    }
+    return best;
+  }
+
+  function buildLens(el) {
+    lensInner.textContent = "";
+    var w = el.offsetWidth, h = el.offsetHeight, r = el.getBoundingClientRect();
+    if (!w || !h) { w = r.width; h = r.height; }
+    if (!w || !h || el.getElementsByTagName("*").length > 700) { lensSource = null; ring.classList.remove("has-lens"); return; }
+    lensScale = r.width / w || 1;
+    var clone = el.cloneNode(true);
+    var src = [el].concat([].slice.call(el.querySelectorAll("*")));
+    var dst = [clone].concat([].slice.call(clone.querySelectorAll("*")));
+    for (var i = 0; i < src.length && i < dst.length; i++) {
+      var d = dst[i];
+      if (d.tagName === "IFRAME" || d.tagName === "SCRIPT" || d.tagName === "VIDEO" || d.tagName === "CANVAS") { d.remove(); continue; }
+      var cs = getComputedStyle(src[i]);
+      for (var k = 0; k < PROPS.length; k++) d.style.setProperty(PROPS[k], cs.getPropertyValue(PROPS[k]));
+      var pos = cs.position;
+      if (pos === "fixed" || pos === "sticky") d.style.position = "absolute";
+      d.removeAttribute("id");
+      d.removeAttribute("href");
+      d.removeAttribute("loading");
+    }
+    clone.setAttribute("aria-hidden", "true");
+    var s = clone.style;
+    s.position = "absolute"; s.left = "0"; s.top = "0"; s.margin = "0"; s.transform = "none"; s.translate = "none";
+    s.width = w + "px"; s.height = h + "px"; s.opacity = "1"; s.transformOrigin = "0 0";
+    lensInner.appendChild(clone);
+    ring.classList.add("has-lens");
+  }
 
   function setLens(el) {
     if (el === lensSource) return;
     lensSource = el;
-    lensInner.textContent = "";
-    ring.classList.remove("has-lens");
-    if (!el) return;
-    var r = el.getBoundingClientRect();
-    if (r.width > 320 || r.height > 90 || r.width < 8) { lensSource = null; return; }
-    var clone = el.cloneNode(true);
-    // Computed styles are copied node by node so the copy looks identical outside its original ancestors.
-    var src = [el].concat([].slice.call(el.querySelectorAll("*")));
-    var dst = [clone].concat([].slice.call(clone.querySelectorAll("*")));
-    for (var i = 0; i < src.length && i < dst.length; i++) {
-      var cs = getComputedStyle(src[i]);
-      for (var k = 0; k < cs.length; k++) {
-        var p = cs[k];
-        if (p === "transition" || p === "animation" || p.indexOf("transition") === 0 || p.indexOf("animation") === 0) continue;
-        dst[i].style.setProperty(p, cs.getPropertyValue(p));
-      }
-      dst[i].removeAttribute("id");
-    }
-    clone.setAttribute("aria-hidden", "true");
-    clone.removeAttribute("href");
-    var s = clone.style;
-    s.position = "absolute"; s.left = "0"; s.top = "0"; s.margin = "0";
-    s.width = r.width + "px"; s.height = r.height + "px";
-    s.transform = "none"; s.translate = "none"; s.opacity = "1"; s.boxSizing = "border-box";
-    lensInner.appendChild(clone);
-    lensRect = r;
-    ring.classList.add("has-lens");
+    clearInterval(refreshTimer);
+    if (!el) { lensInner.textContent = ""; ring.classList.remove("has-lens"); return; }
+    buildLens(el);
+    // Rebuild periodically so hover states, markers and animations in the copy stay current.
+    refreshTimer = setInterval(function () { if (lensSource && seen) buildLens(lensSource); }, 700);
   }
 
   function placeLens() {
     if (!lensSource) return;
     var r = lensSource.getBoundingClientRect();
-    lensInner.style.transform = "scale(" + MAG + ") translate(" + (r.left - rx).toFixed(1) + "px," + (r.top - ry).toFixed(1) + "px)";
+    lensInner.style.transform = "scale(" + MAG + ") translate(" + (r.left - rx).toFixed(1) + "px," + (r.top - ry).toFixed(1) + "px) scale(" + lensScale + ")";
   }
 
   function state(t) {
@@ -115,7 +150,7 @@
     ring.classList.toggle("is-link", link);
     dot.classList.toggle("is-link", link);
     ring.classList.toggle("is-big", !!cur);
-    setLens(!cur && link ? t.closest(LINK) : null);
+    setLens(cur || isText ? null : pickSource(t));
     aliveUntil = performance.now() + 700; // keep the lens tracking through hover animations
     dot.classList.toggle("is-big", !!cur);
     if (cur) label.textContent = cur.getAttribute("data-cursor");
