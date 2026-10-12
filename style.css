@@ -2204,3 +2204,12 @@ html.fx [data-reveal].is-in{opacity:1;translate:0 0;}
 .notice-banner--compact a:hover{color:var(--signal);text-decoration-color:var(--signal);}
 .notice-banner--compact button{padding:3px 6px;font-size:11px;border-radius:50%;}
 @media (max-width:560px){ .notice-banner--compact{border-radius:14px;padding:7px 10px 7px 12px;} }
+
+/* ---- Marquee items are links ---- */
+.marquee-group{display:contents;}
+.marquee-track a{
+  font-family:var(--font-display);font-stretch:condensed;font-weight:700;
+  font-size:clamp(28px,4vw,46px);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;text-decoration:none;
+  color:transparent;-webkit-text-stroke:1px var(--text-faint);transition:color .3s,-webkit-text-stroke-color .3s;
+}
+.marquee-track a:hover,.marquee-track a:focus-visible{color:var(--signal);-webkit-text-stroke-color:var(--signal);outline:none;}
