@@ -112,6 +112,23 @@ button,input,select,textarea{font-family:var(--font-body);}
   display:flex;flex-direction:column;flex:1;min-height:0;margin-top:12px;
 }
 
+/* Desktop: the map picker is a compact two-column grid so the lineup list
+   below gets most of the sidebar height. The rail keeps a usable minimum;
+   on very short screens the whole sidebar scrolls instead. Mobile (the
+   drawer) keeps the single-column list from the mobile block below. */
+@media (min-width: 769px){
+  .map-list{display:grid;grid-template-columns:1fr 1fr;gap:2px 4px;}
+  .map-list .map-item{padding:7px 8px 7px 10px;font-size:13.5px;gap:8px;}
+  .map-list .map-item:hover{transform:none;}
+  .rail-label{margin-top:10px;}
+  .lineup-rail{min-height:260px;}
+}
+/* On short desktop screens the SEO footer links cost the map app too much
+   height; the same links are on the home screen footer. */
+@media (min-width: 769px) and (max-height: 900px){
+  .app-footer{display:none;}
+}
+
 /* Mobile-only stand-in for .lineup-rail — the drawer stays just the map
    list on phones; searching opens #mobileSearchModal instead. */
 .mobile-search-btn{
@@ -2050,9 +2067,7 @@ body.is-admin .admin-link{ display:block; }
   font-size:clamp(40px,6vw,72px);line-height:1.02;
   color:var(--text);
 }
-.hero-title .fx-line:nth-last-of-type(-n+2) .fx-word{
-  background:linear-gradient(100deg,var(--signal),#ff6a45 70%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
-}
+.hero-accent{display:block;color:var(--signal);}
 .hero-sub{font-size:17px;}
 .hero-highlight{background:linear-gradient(100deg,rgba(255,165,62,.22),rgba(255,106,69,.14));}
 
@@ -2161,15 +2176,16 @@ body.is-admin .admin-link{ display:block; }
 /* ---- Motion-only ---- */
 .fx-progress{position:fixed;inset:0 0 auto 0;height:3px;z-index:700;transform:scaleX(0);transform-origin:left;
   background:linear-gradient(90deg,var(--signal),#ff6a45);pointer-events:none;will-change:transform;}
-.fx-line{display:inline-block;overflow:hidden;vertical-align:top;padding-bottom:.12em;margin-bottom:-.12em;}
-.fx-word{display:inline-block;animation:fxWordUp .9s var(--ease-out) both;animation-delay:calc(var(--i,0) * 70ms + 120ms);}
-@keyframes fxWordUp{from{transform:translateY(105%);}to{transform:translateY(0);}}
-
-html.fx .hero-eyebrow,html.fx .hero-sub,html.fx .hero-actions{animation:fxFade .9s var(--ease-out) both;}
-html.fx .hero-eyebrow{animation-delay:.05s;}
-html.fx .hero-sub{animation-delay:.45s;}
-html.fx .hero-actions{animation-delay:.6s;}
-html.fx .hero-diagram-wrap{animation:fxFade 1.2s var(--ease-out) .35s both;}
+/* Hero entrance: gated on html.fx-hero, which an inline <head> script sets
+   before first paint, so it plays immediately and is over within ~0.6s
+   instead of waiting for the JS modules to load. */
+html.fx-hero .hero-eyebrow,html.fx-hero .hero-title,html.fx-hero .hero-sub,html.fx-hero .hero-actions,html.fx-hero .hero-diagram-wrap{animation:fxRise .45s var(--ease-out) both;}
+html.fx-hero .hero-title{animation-delay:.04s;}
+html.fx-hero .hero-sub{animation-delay:.08s;}
+html.fx-hero .hero-actions{animation-delay:.12s;}
+html.fx-hero .hero-diagram-wrap{animation-name:fxFadeIn;}
+@keyframes fxRise{from{opacity:0;translate:0 10px;}to{opacity:1;translate:0 0;}}
+@keyframes fxFadeIn{from{opacity:0;}to{opacity:1;}}
 @keyframes fxFade{from{opacity:0;translate:0 24px;}to{opacity:1;translate:0 0;}}
 
 html.fx [data-reveal]{opacity:0;translate:0 32px;transition:opacity .9s var(--ease-out) var(--d,0ms), translate .9s var(--ease-out) var(--d,0ms), transform .5s var(--ease-out), border-color .3s, box-shadow .5s;}
@@ -2348,9 +2364,9 @@ a{transition:color .3s;}
 }
 .maps-title span{background:linear-gradient(100deg,var(--signal),#ff6a45 75%);-webkit-background-clip:text;background-clip:text;color:transparent;}
 .maps-sub{margin:0;max-width:52ch;font-size:17px;line-height:1.6;color:var(--text-dim);}
-html.fx .maps-head > *{animation:fxFade .9s var(--ease-out) both;}
-html.fx .maps-head > :nth-child(2){animation-delay:.12s;}
-html.fx .maps-head > :nth-child(3){animation-delay:.26s;}
+html.fx-hero .maps-head > *{animation:fxRise .45s var(--ease-out) both;}
+html.fx-hero .maps-head > :nth-child(2){animation-delay:.04s;}
+html.fx-hero .maps-head > :nth-child(3){animation-delay:.08s;}
 
 .home-screen--maps .home-grid{width:100%;max-width:1080px;margin:0 auto;display:block;overflow:visible;}
 .home-screen--maps .home-grid-inner{grid-template-columns:repeat(auto-fill,minmax(250px,1fr));width:100%;gap:18px;}

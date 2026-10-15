@@ -4,7 +4,7 @@ const { createClient } = require("@supabase/supabase-js");
 const CONSTANTS = require("./constants");
 const r2 = require("./r2");
 
-const SITE = process.env.SITE_URL || "https://lineupr.org";
+const SITE = process.env.SITE_URL || "https://www.lineupr.org";
 
 function supabase() {
   return createClient(

@@ -3,4 +3,4 @@ Allow: /
 Disallow: /api/
 Disallow: /admin.html
 
-Sitemap: https://lineupr.org/sitemap.xml
+Sitemap: https://www.lineupr.org/sitemap.xml

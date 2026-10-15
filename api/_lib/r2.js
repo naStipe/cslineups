@@ -106,7 +106,7 @@ async function presignPut(bucket, key, contentType, contentLength, expiresIn = 3
 async function headObject(bucket, key) {
   try {
     const res = await client().send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
-    return { contentLength: res.ContentLength };
+    return { contentLength: res.ContentLength, contentType: res.ContentType };
   } catch (err) {
     if (err && (err.name === "NotFound" || err.$metadata?.httpStatusCode === 404)) return null;
     throw err;
@@ -123,6 +123,21 @@ async function copyObject(fromBucket, fromKey, toBucket, toKey) {
     Bucket: toBucket,
     Key: toKey,
     CopySource: `${fromBucket}/${encodeURIComponent(fromKey)}`,
+  }));
+}
+
+// Rewrites an object's metadata in place (copy onto itself with
+// MetadataDirective REPLACE) so it is served with a long Cache-Control.
+// Done server-side after upload rather than in the presigned PUT, so the
+// browser never has to send an extra signed header through R2's CORS.
+async function setCacheControl(bucket, key, contentType, cacheControl) {
+  await client().send(new CopyObjectCommand({
+    Bucket: bucket,
+    Key: key,
+    CopySource: `${bucket}/${encodeURIComponent(key)}`,
+    MetadataDirective: "REPLACE",
+    ContentType: contentType,
+    CacheControl: cacheControl,
   }));
 }
 
@@ -167,6 +182,7 @@ module.exports = {
   presignGet,
   headObject,
   copyObject,
+  setCacheControl,
   deleteObject,
   deleteObjects,
   listAllKeys,

@@ -4,9 +4,17 @@
 (function () {
   if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   var root = document.documentElement;
-  root.classList.add("fx");
   // /maps reuses the SPA home-screen, which is its own scroll container
   var scroller = document.querySelector(".home-screen");
+  // Reveal targets already on screen are shown at once, before html.fx
+  // exists, so they never blink out and fade back in.
+  var REVEAL = "main > h1, main > h2, main > h3, main > p, main > ul, main > ol, main > .cta, main > .lede, " +
+    ".map-card-item, .throw, ul.plain > li, .shots figure, .crumbs, [data-reveal]";
+  var viewH = window.innerHeight;
+  Array.prototype.forEach.call(document.querySelectorAll(REVEAL), function (el) {
+    if (el.getBoundingClientRect().top < viewH) el.classList.add("is-in");
+  });
+  root.classList.add("fx");
 
   var bar = document.createElement("div");
   bar.className = "fx-progress";
@@ -27,10 +35,7 @@
   update();
 
   if (!("IntersectionObserver" in window)) return;
-  var targets = document.querySelectorAll(
-    "main > h1, main > h2, main > h3, main > p, main > ul, main > ol, main > .cta, main > .lede, " +
-    ".map-card-item, .throw, ul.plain > li, .shots figure, .crumbs, [data-reveal]"
-  );
+  var targets = document.querySelectorAll(REVEAL);
   var io = new IntersectionObserver(function (entries) {
     entries.forEach(function (e) {
       if (e.isIntersecting) { e.target.classList.add("is-in"); io.unobserve(e.target); }

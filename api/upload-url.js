@@ -146,6 +146,15 @@ async function confirmUpload(req, res, sb, user) {
     res.status(413).json({ error: `That file is too large (max ${MAX_UPLOAD_BYTES / (1024 * 1024)}MB).` });
     return;
   }
+  // Public screenshots get a random, never-reused filename, so they can be
+  // cached forever. Best effort: a failure here must not fail the upload.
+  if (isOfficial) {
+    try {
+      await r2.setCacheControl(bucket, key, meta.contentType || "application/octet-stream", "public, max-age=31536000, immutable");
+    } catch (err) {
+      console.error("setCacheControl failed", key, err);
+    }
+  }
   res.status(200).json({ ok: true });
 }
 

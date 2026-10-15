@@ -3,31 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script>if(location.search.indexOf("map=")!==-1)document.documentElement.dataset.deepLink="";</script>
+<script>if(location.search.indexOf("map=")!==-1)document.documentElement.dataset.deepLink="";
+// Set before first paint so the hero entrance runs from CSS right away instead of waiting for the JS modules.
+if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))document.documentElement.classList.add("fx-hero");</script>
 <script defer src="/consent.js"></script>
 
 <title>Lineupr — CS2 Grenade Lineup Database</title>
 <meta name="description" content="Personal CS2 grenade lineup database. Map your smokes, flashes, molotovs and HEs with screenshots and technique notes.">
-<link rel="canonical" href="https://lineupr.org/">
+<link rel="canonical" href="https://www.lineupr.org/">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Lineupr","url":"https://lineupr.org","applicationCategory":"Game","description":"Interactive CS2 grenade lineup map with smoke, flash, molotov and HE throws, screenshots and technique notes for every active-duty map.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Lineupr","url":"https://www.lineupr.org","applicationCategory":"Game","description":"Interactive CS2 grenade lineup map with smoke, flash, molotov and HE throws, screenshots and technique notes for every active-duty map.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
 <meta property="og:type"         content="website">
-<meta property="og:url"          content="https://lineupr.org/">
+<meta property="og:url"          content="https://www.lineupr.org/">
 <meta property="og:title"        content="Lineupr — CS2 Grenade Lineup Database">
 <meta property="og:description"  content="Personal CS2 grenade lineup database. Smokes, flashes, molotovs and HEs across all CS2 maps.">
-<meta property="og:image"        content="https://lineupr.org/og-image.png">
+<meta property="og:image"        content="https://www.lineupr.org/og-image.png">
 <meta property="og:image:type"   content="image/png">
 <meta property="og:image:width"  content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card"        content="summary_large_image">
 <meta name="twitter:title"       content="Lineupr — CS2 Grenade Lineup Database">
 <meta name="twitter:description" content="Personal CS2 grenade lineup database. Smokes, flashes, molotovs across all maps.">
-<meta name="twitter:image"       content="https://lineupr.org/og-image.png">
+<meta name="twitter:image"       content="https://www.lineupr.org/og-image.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.js"></script>
 <script defer src="/cursor.js"></script>
 </head>
 <body>
@@ -75,7 +77,7 @@
     <section class="hero" aria-labelledby="heroTitle">
       <div class="hero-text">
         <p class="hero-eyebrow"><span class="hero-eyebrow-dot"></span>CS2 lineup database</p>
-        <h1 class="hero-title" id="heroTitle">Find lineups. Learn. Save forever</h1>
+        <h1 class="hero-title" id="heroTitle">Find lineups. Learn. <span class="hero-accent">Save forever</span></h1>
         <p class="hero-sub">Lineupr is your all-in-one tool for practicing and sharing game-winning lineups. Learn new smokes, add your own, share with friends. Keep <span class="hero-highlight">YOUR</span> lineups in one place, one click away.</p>
         <div class="hero-actions">
           <a class="hero-cta" href="/maps" data-magnetic><span>Choose your map</span><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>

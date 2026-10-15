@@ -9,12 +9,15 @@
 // deployment (*.vercel.app) are always allowed.
 const EXTRA_ORIGINS = (process.env.ALLOWED_ORIGINS || "")
   .split(",").map(s => s.trim()).filter(Boolean);
-const SITE_ORIGIN = (process.env.SITE_URL || "https://lineupr.org").replace(/\/+$/, "");
+const SITE_ORIGIN = (process.env.SITE_URL || "https://www.lineupr.org").replace(/\/+$/, "");
 const VERCEL_PREVIEW = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i;
 
 function isAllowedOrigin(origin) {
   if (!origin) return false;
   if (origin === SITE_ORIGIN) return true;
+  // The apex domain 308-redirects to www, but allow it in case a stale tab
+  // or bookmark still runs on it.
+  if (origin === "https://lineupr.org") return true;
   if (EXTRA_ORIGINS.includes(origin)) return true;
   if (VERCEL_PREVIEW.test(origin)) return true;
   return false;

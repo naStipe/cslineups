@@ -275,6 +275,7 @@ async function renderMapsIndex(res, C) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))document.documentElement.classList.add("fx-hero");</script>
 <title>Choose a Map — CS2 Grenade Lineups | Lineupr</title>
 <meta name="description" content="Pick a CS2 map — Dust II, Mirage, Inferno, Nuke, Ancient, Anubis, Overpass or Cache — and browse its official smoke, flash, molotov and HE grenade lineups.">
 <link rel="canonical" href="${SITE}/maps">

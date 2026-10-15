@@ -51,7 +51,7 @@ export async function uploadFile(file, isOfficial) {
   if (!token) throw new Error("You need to be signed in to upload images.");
   if (!isOfficial && !authUser) throw new Error("You need to be signed in to upload images.");
 
-  const blob = await maybeResize(file);
+  const blob = await compressImage(file);
 
   const presignRes = await fetch("/api/upload-url", {
     method: "POST",
@@ -110,32 +110,48 @@ export async function uploadDataUrl(dataUrl, isOfficial) {
   return uploadFile(blob, isOfficial);
 }
 
-export async function maybeResize(file) {
-  if (file.size < 5 * 1024 * 1024) return file;
+// Every upload is re-encoded before it leaves the browser: game screenshots
+// arrive as 2-3 MB PNGs, which made opening one lineup cost ~12 MB. WebP at
+// q0.82 and max 1920px keeps them sharp at ~150-300 KB. Browsers that can't
+// encode WebP from a canvas (older Safari hands back a PNG instead) fall
+// back to JPEG. GIFs pass through untouched so animation survives, and the
+// original is kept whenever re-encoding wouldn't make it smaller.
+const MAX_DIM = 1920;
+const WEBP_QUALITY = 0.82;
+const JPEG_QUALITY = 0.85;
+
+function canvasToBlob(canvas, type, quality) {
+  return new Promise(resolve => canvas.toBlob(resolve, type, quality));
+}
+
+function loadImage(file) {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        const MAX_DIM = 1920;
-        let { width, height } = img;
-        if (width > MAX_DIM || height > MAX_DIM) {
-          const scale = MAX_DIM / Math.max(width, height);
-          width = Math.round(width * scale);
-          height = Math.round(height * scale);
-        }
-        const canvas = document.createElement("canvas");
-        canvas.width = width; canvas.height = height;
-        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
-        const isPng = file.type === "image/png";
-        canvas.toBlob(resolve, isPng ? "image/png" : "image/jpeg", 0.98);
-      };
-      img.onerror = reject;
-      img.src = reader.result;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Could not read that image.")); };
+    img.src = url;
   });
+}
+
+export async function compressImage(file) {
+  if (file.type === "image/gif") return file;
+  const img = await loadImage(file);
+  let width = img.naturalWidth, height = img.naturalHeight;
+  if (width > MAX_DIM || height > MAX_DIM) {
+    const scale = MAX_DIM / Math.max(width, height);
+    width = Math.round(width * scale);
+    height = Math.round(height * scale);
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = width; canvas.height = height;
+  canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+
+  let blob = await canvasToBlob(canvas, "image/webp", WEBP_QUALITY);
+  if (!blob || blob.type !== "image/webp") blob = await canvasToBlob(canvas, "image/jpeg", JPEG_QUALITY);
+  if (!blob) return file;
+  const resized = width !== img.naturalWidth;
+  return blob.size < file.size || resized ? blob : file;
 }
 
 export function readAsDataUrl(file) {

@@ -10,6 +10,12 @@ function init() {
   const home = document.getElementById("homeScreen");
   if (!home || reduced) return;
   const root = document.documentElement;
+  // Reveal targets already on screen are marked shown before html.fx exists,
+  // so they never blink out and fade back in once the fx styles apply.
+  const vh0 = home.clientHeight;
+  home.querySelectorAll("[data-reveal]").forEach((el) => {
+    if (el.getBoundingClientRect().top < vh0) el.classList.add("is-in");
+  });
   root.classList.add("fx");
 
   // ---- Scroll progress + parallax (home screen is the scroll container) ----
@@ -40,29 +46,11 @@ function init() {
   window.addEventListener("resize", update);
   update();
 
-  // ---- Hero headline: each word slides up out of a mask ----
-  const title = home.querySelector(".hero-title");
-  if (title && !title.dataset.split) {
-    title.dataset.split = "1";
-    const words = title.textContent.trim().split(/\s+/);
-    title.setAttribute("aria-label", words.join(" "));
-    title.textContent = "";
-    words.forEach((w, i) => {
-      const line = document.createElement("span");
-      line.className = "fx-line";
-      line.setAttribute("aria-hidden", "true");
-      const word = document.createElement("span");
-      word.className = "fx-word";
-      word.style.setProperty("--i", i);
-      word.textContent = w;
-      line.appendChild(word);
-      title.appendChild(line);
-      title.appendChild(document.createTextNode(" "));
-    });
-  }
+  // The hero entrance is pure CSS (html.fx-hero, set in <head>), so it starts
+  // at first paint instead of waiting for this module.
 
   // ---- Scroll reveals ----
-  const targets = home.querySelectorAll("[data-reveal]");
+  const targets = [...home.querySelectorAll("[data-reveal]:not(.is-in)")];
   targets.forEach((el) => {
     const group = el.parentElement;
     const idx = [...group.children].filter((c) => c.hasAttribute("data-reveal")).indexOf(el);
