@@ -23,10 +23,12 @@ export async function selectMap(id) {
   setAddMode(false);
   resetZoom();
   if (lineupSearchInput) lineupSearchInput.value = ""; // fresh search per map
+  state.lineupsLoading = true;
   buildLineupList();                                   // clear the previous map's list right away
   buildSidebar();
   const m = MAPS.find(x => x.id === id);
   currentMapName.textContent = m.name.toUpperCase();
+  document.title = `${m.name} — Lineupr`;
   retrigger(currentMapName, "name-in");
   await playMapOut();
   if (state.mapId !== id) return; // a newer switch took over while the old map faded out
@@ -105,6 +107,7 @@ export async function loadLineups() {
   }
 
   lineupCount.textContent = "loading…";
+  state.lineupsLoading = true;
   showMapLoading(true);
   try {
     let lineups;
@@ -122,6 +125,7 @@ export async function loadLineups() {
     }
     if (myToken !== loadToken) return;
     state.lineups = lineups;
+    state.lineupsLoading = false;
     lineupCount.textContent = `${lineups.length} lineup${lineups.length === 1 ? "" : "s"}`;
     buildFilters();
     buildLineupList();
@@ -129,6 +133,8 @@ export async function loadLineups() {
   } catch (err) {
     if (myToken !== loadToken) return;
     lineupCount.textContent = "load failed";
+    state.lineupsLoading = false;
+    buildLineupList();
     console.error(err);
   } finally {
     if (myToken === loadToken) {

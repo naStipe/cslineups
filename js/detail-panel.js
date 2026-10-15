@@ -6,7 +6,7 @@ import { addThrowBtn, closeDetail, deleteLineupBtn, detailNameInput, detailOwner
 import { openLightbox } from "./lightbox.js";
 import { loadLineups, refreshLocal, upsertLocalLineup } from "./map-data.js";
 import { getCssVarColor, renderMarkers } from "./markers.js";
-import { closeModal } from "./modal-utils.js";
+import { closeModal, watchDialog } from "./modal-utils.js";
 import { canModifyLineup, requireLineupEditable } from "./permissions.js";
 import { startReposition } from "./reposition.js";
 import { buildTypeGrid } from "./sidebar.js";
@@ -25,6 +25,27 @@ export function openDetail(lineupId, throwIdx) {
   renderDetail(lineup);
   detailPanel.classList.add("open");
   renderMarkers();
+  syncLineupUrl(lineupId);
+}
+
+// The open lineup lives in the URL (/?map=x&lineup=id) as its own history
+// entry on top of the map view, so browser Back closes the dossier instead of
+// leaving the map. Switching lineups while one is open replaces that entry.
+let lineupEntryPushed = false;
+function syncLineupUrl(lineupId) {
+  if (history.state && history.state.lineup === lineupId) return;
+  const st = { view: "map", map: state.mapId, lineup: lineupId };
+  const url = `/?map=${state.mapId}&lineup=${encodeURIComponent(lineupId)}`;
+  if (history.state && history.state.lineup) history.replaceState(st, "", url);
+  else { history.pushState(st, "", url); lineupEntryPushed = true; }
+}
+
+// Hide without touching history — for popstate and full-page navigations.
+export function hideDetailPanel() {
+  state.selectedLineupId = null;
+  detailPanel.classList.remove("open");
+  renderMarkers();
+  lineupEntryPushed = false;
 }
 
 export function renderDetail(lineup) {
@@ -33,6 +54,8 @@ export function renderDetail(lineup) {
   const isBookmarkedRef = state.viewMode === "personal" && lineup.isOfficial;
 
   renderDetailType(lineup, editable);
+  const typeLabel = TYPES.find(t => t.id === lineup.type)?.label || "Lineup";
+  document.getElementById("detailDialogTitle").textContent = lineup.name ? `${lineup.name} — ${typeLabel}` : `${typeLabel} lineup`;
   detailTitle.textContent = `${lineup.throws.length} variant${lineup.throws.length === 1 ? "" : "s"}`;
 
   if (detailOwnerBadge) {
@@ -282,6 +305,10 @@ export function wireCarousels(container, t) {
   container.querySelectorAll(".tc-carousel").forEach(carousel => {
     const img = carousel.querySelector(".tc-carousel-img");
     if (!img) return;
+    // Keyboard access to the lightbox (and a focus target to return to).
+    img.tabIndex = 0;
+    img.setAttribute("role", "button");
+    img.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); img.click(); } };
     const inner = carousel.querySelector(".tc-carousel-inner");
     const raw = img.dataset.imgs;
     if (!raw) {
@@ -345,12 +372,15 @@ export function openTypeModalForEdit(lineup) {
 }
 
 export function closeDetailPanel() {
-  state.selectedLineupId = null;
-  detailPanel.classList.remove("open");
-  renderMarkers();
+  const pushed = lineupEntryPushed;
+  hideDetailPanel();
+  if (!(history.state && history.state.lineup)) return;
+  if (pushed) history.back();
+  else history.replaceState({ view: "map", map: state.mapId }, "", `/?map=${state.mapId}`);
 }
 
 closeDetail.onclick = closeDetailPanel;
+watchDialog(detailPanel, "open", () => closeDetail);
 
 detailPanel.addEventListener("click", (e) => {
   if (e.target === detailPanel) closeDetailPanel();

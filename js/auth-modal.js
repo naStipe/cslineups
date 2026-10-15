@@ -1,6 +1,6 @@
 import { isUsernameAvailable, resetPasswordForEmail, signInWithGoogle, signInWithPassword, signOut, signUpWithPassword } from "./auth.js";
 import { authEmailInput, authError, authForgotLink, authForgotWrap, authGoogleBtn, authModal, authModalTitle, authPasswordConfirmField, authPasswordConfirmInput, authPasswordField, authPasswordInput, authSubmitBtn, authSwitchLink, authSwitchText, authTurnstile, authUsernameField, authUsernameInput, cancelAuth, signInBtn, signOutBtn } from "./dom.js";
-import { closeModal } from "./modal-utils.js";
+import { closeModal, watchDialog } from "./modal-utils.js";
 import { mountTurnstile } from "./turnstile.js";
 
 const turnstile = mountTurnstile(authTurnstile);
@@ -60,13 +60,14 @@ authForgotLink.onclick = (e) => {
 
 cancelAuth.onclick = () => closeModal(authModal);
 
-// Enter submits the form from any auth field, matching normal browser form
-// behavior even though this modal has no <form> element.
-[authEmailInput, authPasswordInput, authUsernameInput, authPasswordConfirmInput].forEach(el => {
-  el.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !authSubmitBtn.disabled) authSubmitBtn.click();
-  });
+// The fields sit in a real <form> (Enter-to-submit, password managers); the
+// submit itself is handled in JS, never as a page navigation.
+document.getElementById("authForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  if (!authSubmitBtn.disabled) submitAuth();
 });
+
+watchDialog(authModal, "show", () => authEmailInput);
 
 function showError(msg) {
   authError.classList.remove("info");
@@ -86,7 +87,7 @@ function signupErrorMessage(err) {
   return msg;
 }
 
-authSubmitBtn.onclick = async () => {
+async function submitAuth() {
   const email = authEmailInput.value.trim();
   const password = authPasswordInput.value;
 
@@ -163,7 +164,7 @@ authSubmitBtn.onclick = async () => {
     authSubmitBtn.disabled = false;
     turnstile.reset();
   }
-};
+}
 
 authGoogleBtn.onclick = async () => {
   try { await signInWithGoogle(); } catch (err) { alert((err && err.message) || "Google sign-in failed."); }

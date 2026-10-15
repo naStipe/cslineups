@@ -389,7 +389,8 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
 
   <!-- EXPANDED LINEUP PANEL -->
   <div class="detail-panel" id="detailPanel">
-    <div class="detail-panel-inner">
+    <div class="detail-panel-inner" role="dialog" aria-modal="true" aria-labelledby="detailDialogTitle">
+      <h2 class="sr-only" id="detailDialogTitle">Lineup</h2>
       <div class="sheet-handle" aria-hidden="true"></div>
       <div class="detail-head">
         <div>
@@ -398,12 +399,12 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
           <span class="owner-badge" id="detailOwnerBadge"></span>
         </div>
         <div class="detail-name-wrap">
-          <input class="detail-name-input" id="detailNameInput" type="text" placeholder="Unnamed position" maxlength="40">
+          <input class="detail-name-input" id="detailNameInput" type="text" placeholder="Unnamed position" maxlength="40" aria-label="Lineup name">
         </div>
         <div class="detail-head-actions">
           <button class="ghost-btn hidden" id="saveLineupBtn">☆ Save to my map</button>
-          <button class="icon-btn" id="shareLineupBtn" title="Copy shareable link">🔗</button>
-          <button class="icon-btn" id="closeDetail">✕</button>
+          <button class="icon-btn" id="shareLineupBtn" title="Copy shareable link" aria-label="Copy shareable link">🔗</button>
+          <button class="icon-btn" id="closeDetail" aria-label="Close lineup">✕</button>
         </div>
       </div>
       <h3 id="detailTitle">Lineup</h3>
@@ -443,29 +444,31 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
 
 <!-- MODAL: sign in / sign up -->
 <div class="modal-backdrop" id="authModal">
-  <div class="modal auth-modal">
+  <div class="modal auth-modal" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
     <h3 id="authModalTitle">Sign in</h3>
-    <p class="auth-error info" id="authError" hidden></p>
-    <label class="field-label">Email</label>
-    <input type="email" id="authEmailInput" autocomplete="email" placeholder="you@example.com">
+    <p class="auth-error info" id="authError" hidden role="alert"></p>
+    <form class="auth-form" id="authForm" novalidate>
+    <label class="field-label" for="authEmailInput">Email</label>
+    <input type="email" id="authEmailInput" name="email" autocomplete="email" placeholder="you@example.com">
     <div class="auth-signup-field" id="authUsernameField" hidden>
-      <label class="field-label">Username</label>
-      <input type="text" id="authUsernameInput" autocomplete="username" placeholder="How teammates will see you" maxlength="32">
+      <label class="field-label" for="authUsernameInput">Username</label>
+      <input type="text" id="authUsernameInput" name="username" autocomplete="username" placeholder="How teammates will see you" maxlength="32">
     </div>
     <div id="authPasswordField">
-      <label class="field-label">Password</label>
-      <input type="password" id="authPasswordInput" autocomplete="current-password" placeholder="At least 8 characters">
+      <label class="field-label" for="authPasswordInput">Password</label>
+      <input type="password" id="authPasswordInput" name="password" autocomplete="current-password" placeholder="At least 8 characters">
     </div>
     <div class="auth-signup-field" id="authPasswordConfirmField" hidden>
-      <label class="field-label">Repeat password</label>
-      <input type="password" id="authPasswordConfirmInput" autocomplete="new-password" placeholder="Repeat your password">
+      <label class="field-label" for="authPasswordConfirmInput">Repeat password</label>
+      <input type="password" id="authPasswordConfirmInput" name="password-confirm" autocomplete="new-password" placeholder="Repeat your password">
     </div>
     <p class="auth-forgot" id="authForgotWrap"><a href="#" id="authForgotLink">Forgot password?</a></p>
     <div id="authTurnstile" class="auth-turnstile"></div>
-    <button class="primary-btn auth-submit-btn" id="authSubmitBtn">Sign in</button>
-    <button class="ghost-btn auth-google-btn" id="authGoogleBtn">Continue with Google</button>
+    <button type="submit" class="primary-btn auth-submit-btn" id="authSubmitBtn">Sign in</button>
+    </form>
+    <button type="button" class="ghost-btn auth-google-btn" id="authGoogleBtn">Continue with Google</button>
     <p class="auth-switch"><span id="authSwitchText">Don't have an account?</span> <a href="#" id="authSwitchLink">Sign up</a></p>
-    <button class="ghost-btn" id="cancelAuth">Cancel</button>
+    <button type="button" class="ghost-btn" id="cancelAuth">Cancel</button>
   </div>
 </div>
 
@@ -634,11 +637,12 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
 </div>
 
 <!-- MODAL: fullscreen image lightbox -->
-<div class="modal-backdrop lightbox-backdrop" id="lightboxModal">
-  <button class="icon-btn lightbox-close" id="lightboxClose">✕</button>
-  <button class="lightbox-nav lightbox-prev" id="lightboxPrev">‹</button>
+<div class="modal-backdrop lightbox-backdrop" id="lightboxModal" role="dialog" aria-modal="true" aria-labelledby="lightboxTitle">
+  <h2 class="sr-only" id="lightboxTitle">Screenshot viewer</h2>
+  <button type="button" class="icon-btn lightbox-close" id="lightboxClose" aria-label="Close screenshot viewer">✕</button>
+  <button type="button" class="lightbox-nav lightbox-prev" id="lightboxPrev" aria-label="Previous screenshot">‹</button>
   <img id="lightboxImage" class="lightbox-image" alt="screenshot">
-  <button class="lightbox-nav lightbox-next" id="lightboxNext">›</button>
+  <button type="button" class="lightbox-nav lightbox-next" id="lightboxNext" aria-label="Next screenshot">›</button>
   <div class="lightbox-caption" id="lightboxCaption"></div>
 </div>
 

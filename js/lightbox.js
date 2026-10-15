@@ -1,6 +1,9 @@
 import { lightboxCaption, lightboxClose, lightboxImage, lightboxModal, lightboxNext, lightboxPrev } from "./dom.js";
 import { zoom } from "./pan-zoom.js";
 import { resolveImageSrc } from "./private-images.js";
+import { watchDialog } from "./modal-utils.js";
+
+watchDialog(lightboxModal, "show", () => lightboxClose);
 
 export let lightboxState = { images: [], index: 0, caption: "" };
 
@@ -52,6 +55,16 @@ export function openLightbox(images, index, caption) {
 
 let renderToken = 0;
 
+// Small crops (e.g. a 222x161 "precise" shot) would otherwise show at their
+// tiny natural size; scale them up to a readable minimum, within the viewport.
+const LB_MIN_WIDTH = 640;
+function fitSmallImage() {
+  const nw = lightboxImage.naturalWidth, nh = lightboxImage.naturalHeight;
+  if (!nw || !nh || nw >= LB_MIN_WIDTH) { lightboxImage.style.width = ""; return; }
+  const scale = Math.min(LB_MIN_WIDTH / nw, (window.innerWidth * 0.88) / nw, (window.innerHeight * 0.8) / nh);
+  lightboxImage.style.width = scale > 1 ? `${Math.round(nw * scale)}px` : "";
+}
+
 export async function renderLightbox() {
   lbResetZoom();
   const myToken = ++renderToken;
@@ -59,6 +72,8 @@ export async function renderLightbox() {
   lightboxImage.src = "";
   const src = await resolveImageSrc(raw);
   if (myToken !== renderToken) return; // a newer render superseded this one
+  lightboxImage.style.width = "";
+  lightboxImage.onload = fitSmallImage;
   lightboxImage.src = src;
   const multi = lightboxState.images.length > 1;
   lightboxPrev.style.display = multi ? "" : "none";

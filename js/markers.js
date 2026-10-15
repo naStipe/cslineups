@@ -1,6 +1,6 @@
 import { TYPES } from "./constants.js";
 import { openDetail } from "./detail-panel.js";
-import { linkSvg, markerLayer } from "./dom.js";
+import { linkSvg, mapStage, markerLayer } from "./dom.js";
 import { syncLineupListSelection } from "./lineup-list.js";
 import { zoom } from "./pan-zoom.js";
 import { state } from "./state.js";
@@ -29,6 +29,46 @@ export function getCssVarColor(v) {
   }
   return v;
 }
+
+// Picking a single lineup on the map: with one throw position there's nothing
+// to choose between, so go straight to its dossier; with several, show the
+// throw spots (and, the first time, a hint that they're clickable).
+export function pickLineup(lineup) {
+  if (lineup.throws.length === 1) { openDetail(lineup.id, 0); return; }
+  state.selectedLineupId = lineup.id;
+  renderMarkers();
+  maybeShowThrowHint();
+}
+
+const THROW_HINT_KEY = "lineupr_throw_hint_seen";
+function maybeShowThrowHint() {
+  try {
+    if (localStorage.getItem(THROW_HINT_KEY)) return;
+    localStorage.setItem(THROW_HINT_KEY, "1");
+  } catch { return; }
+  const el = document.createElement("div");
+  el.className = "throw-hint";
+  el.setAttribute("role", "status");
+  el.textContent = "Click a throw spot to open its lineup";
+  mapStage.appendChild(el);
+  setTimeout(() => el.classList.add("out"), 4000);
+  setTimeout(() => el.remove(), 4400);
+}
+
+// Markers are plain divs; make them reachable and operable from the keyboard
+// (Enter/Space trigger the same click handler) so dialogs opened from them
+// can hand focus back on close.
+function makeKeyboardButton(el) {
+  el.tabIndex = 0;
+  el.setAttribute("role", "button");
+}
+markerLayer.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  const el = e.target.closest(".marker, .fan-petal");
+  if (!el) return;
+  e.preventDefault();
+  el.click();
+});
 
 export function clusterLineups(list) {
   const THRESHOLD = 3.5 / zoom;
@@ -77,6 +117,8 @@ export function renderClusterFan(cluster, key, animate = true) {
   // not rebuilt — see the reconciliation below) is already glowing too,
   // so nothing visibly flickers or lights up mid-transition.
   hub.className = "marker landing fan-hub pinned";
+  makeKeyboardButton(hub);
+  hub.setAttribute("aria-label", `Close ${cluster.lineups.length} lineups`);
   const sameType = cluster.lineups.every(l => l.type === cluster.lineups[0].type);
   if (sameType) {
     hub.classList.add(cluster.lineups[0].type);
@@ -125,6 +167,8 @@ export function renderClusterFan(cluster, key, animate = true) {
     labelEl.textContent = label;
     petal.appendChild(dot);
     petal.appendChild(labelEl);
+    makeKeyboardButton(petal);
+    petal.setAttribute("aria-label", label);
     petal.onclick = (e) => {
       e.stopPropagation();
       state.openClusterKey = null;
@@ -147,7 +191,7 @@ export function renderClusterFan(cluster, key, animate = true) {
         if (count > 1) { state.openClusterKey = key; renderMarkers(); return; }
         const only = cluster.lineups[0];
         if (state.selectedLineupId === only.id) openDetail(only.id);
-        else { state.selectedLineupId = only.id; renderMarkers(); }
+        else pickLineup(only);
       };
       markerLayer.appendChild(hub);
 
@@ -155,6 +199,8 @@ export function renderClusterFan(cluster, key, animate = true) {
       renderMarkers();               // throw positions for the pick appear immediately
       markerLayer.appendChild(wrap); // put the (now hub-less) fan back on top to collapse
       collapseFan(wrap, lineEls, petalEls, () => wrap.remove());
+      if (lineup.throws.length === 1) openDetail(lineup.id, 0);
+      else maybeShowThrowHint();
     };
     wrap.appendChild(petal);
     petalEls.push({ el: petal, dx, dy });
@@ -300,6 +346,7 @@ export function buildLandingMarker(cluster, key, isPinned, animate) {
   landing.className = `marker landing ${colorClass}${isPinned ? " pinned" : ""}${animate ? " enter" : ""}`;
   if (animate) landing.addEventListener("animationend", () => landing.classList.remove("enter"), { once: true });
   landing.dataset.mkey = key;
+  makeKeyboardButton(landing);
   landing.style.left = cluster.x + "%";
   landing.style.top = cluster.y + "%";
 
@@ -319,7 +366,7 @@ export function buildLandingMarker(cluster, key, isPinned, animate) {
     const totalThrows = cluster.lineups[0].throws.length;
     landing.title = totalThrows > 1
       ? `${totalThrows} throw positions for this lineup`
-      : "Click to see throw position";
+      : "Click to open this lineup";
     if (totalThrows > 1) {
       const badge = document.createElement("span");
       badge.className = "marker-badge sub";
@@ -328,6 +375,7 @@ export function buildLandingMarker(cluster, key, isPinned, animate) {
     }
   }
 
+  landing.setAttribute("aria-label", count > 1 ? `${count} lineups here` : (cluster.lineups[0].name || "Lineup") + " — " + landing.title);
   landing.onclick = (e) => {
     e.stopPropagation();
     if (count > 1) {
@@ -336,12 +384,8 @@ export function buildLandingMarker(cluster, key, isPinned, animate) {
       return;
     }
     const lineup = cluster.lineups[0];
-    if (state.selectedLineupId === lineup.id) {
-      openDetail(lineup.id);
-    } else {
-      state.selectedLineupId = lineup.id;
-      renderMarkers();
-    }
+    if (state.selectedLineupId === lineup.id) openDetail(lineup.id);
+    else pickLineup(lineup);
   };
   return landing;
 }
@@ -355,6 +399,8 @@ export function buildThrows(openLineup, landingEl, animate) {
     tp.style.left = t.pos.x + "%";
     tp.style.top = t.pos.y + "%";
     tp.title = "Click to open this lineup";
+    makeKeyboardButton(tp);
+    tp.setAttribute("aria-label", `Open ${openLineup.name || "lineup"}, throw position ${throwIdx + 1}`);
     tp.onclick = (e) => { e.stopPropagation(); openDetail(openLineup.id, throwIdx); };
     markerLayer.appendChild(tp);
 

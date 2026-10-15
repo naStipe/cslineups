@@ -1,8 +1,8 @@
 import { setAddMode } from "./add-mode.js";
 import { initAuth } from "./auth.js";
 import { MAPS } from "./constants.js";
-import { closeDetailPanel } from "./detail-panel.js";
-import { detailPanel, homeBrand, lightboxModal, lightboxNext, lightboxPrev, sidebarBrand } from "./dom.js";
+import { closeDetailPanel, hideDetailPanel, openDetail } from "./detail-panel.js";
+import { appShell, detailPanel, homeBrand, lightboxModal, lightboxNext, lightboxPrev, sidebarBrand } from "./dom.js";
 import "./fx.js"; // side effect only: home-screen visual effects
 import "./profile-modal.js"; // side effect only: wires up the profile button + modal
 import { enterMap, goHome } from "./home-screen.js";
@@ -17,7 +17,7 @@ import { state } from "./state.js";
 // direct render if there's no map entry to pop (shouldn't happen in normal flow).
 function goHomeFromLogo() {
   closeSidebar();
-  if (history.state && history.state.view === "map") history.back();
+  if (history.state && history.state.view === "map" && !history.state.lineup) history.back();
   else goHome();
 }
 homeBrand.onclick = goHomeFromLogo;
@@ -26,9 +26,18 @@ sidebarBrand.onclick = goHomeFromLogo;
 // Browser Back/Forward between the chooser and a map view. URL-driven and
 // render-only — never pushes, or Back would get stuck.
 window.addEventListener("popstate", () => {
-  const id = new URLSearchParams(window.location.search).get("map");
-  if (id && MAPS.some(m => m.id === id)) enterMap(id);
-  else goHome();
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("map");
+  if (!id || !MAPS.some(m => m.id === id)) { goHome(); return; }
+  // Same map still on screen: only the open lineup changed (Back/Forward
+  // over a dossier entry), so open/close it without reloading the map.
+  if (id === state.mapId && !appShell.hidden) {
+    const lineupId = params.get("lineup");
+    if (lineupId && state.lineups.some(l => l.id === lineupId)) openDetail(lineupId);
+    else if (detailPanel.classList.contains("open")) hideDetailPanel();
+    return;
+  }
+  enterMap(id);
 });
 
 document.addEventListener("keydown", (e) => {

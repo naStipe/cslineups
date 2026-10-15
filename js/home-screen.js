@@ -1,5 +1,5 @@
 import { setAddMode } from "./add-mode.js";
-import { closeDetailPanel } from "./detail-panel.js";
+import { hideDetailPanel } from "./detail-panel.js";
 import { appShell, homeScreen } from "./dom.js";
 import { selectMap } from "./map-data.js";
 import { preloadMapImages } from "./map-preload.js";
@@ -33,7 +33,7 @@ export function switchMap(id) {
 }
 
 export function goHome() {
-  closeDetailPanel();
+  hideDetailPanel();
   setAddMode(false);
   window.location.href = "/maps";
 }

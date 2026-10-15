@@ -10,16 +10,19 @@
 
   var root = document.documentElement;
   var LINK = "a, button, [role='button'], label[for], summary, .marker, .map-item, .lineup-item, .filter-chip, .map-card, .lightbox-nav, .tm-upload-trigger";
+  // Areas where the native cursor is more precise/expected: the interactive map
+  // (pan, grab, crosshair) and any open dialog. The custom cursor hides there.
+  var NATIVE = ".map-stage, .modal-backdrop.show, .detail-panel.open";
   var TEXT = "input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=button]):not([type=submit]), textarea, select, [contenteditable='true']";
 
   var css = document.createElement("style");
   css.textContent =
-    "html.has-cursor,html.has-cursor *{cursor:none!important}" +
+    "html.has-cursor,html.has-cursor :not(" + NATIVE + "):not(:is(" + NATIVE + ") *){cursor:none!important}" +
     "html.has-cursor :is(" + TEXT + "){cursor:text!important}" +
     "html.has-cursor select{cursor:default!important}" +
     ".c-dot,.c-ring{position:fixed;top:0;left:0;z-index:2147483000;pointer-events:none;opacity:0;transition:opacity .25s;will-change:transform;contain:layout style}" +
     ".c-dot.is-on,.c-ring.is-on{opacity:1}" +
-    ".c-dot.is-text,.c-ring.is-text{opacity:0!important}" +
+    ".c-dot.is-text,.c-ring.is-text,.c-dot.is-native,.c-ring.is-native{opacity:0!important}" +
     ".c-dot::before,.c-ring::before{content:'';position:absolute;border-radius:50%}" +
     /* Only transform/opacity are animated, so state changes run on the compositor and never trigger layout. */
     ".c-dot::before{width:7px;height:7px;margin:-3.5px 0 0 -3.5px;background:#ffa53e;transition:transform .3s cubic-bezier(.22,1,.36,1),opacity .3s}" +
@@ -55,6 +58,9 @@
   // changes (pointerover), not on every mouse move.
   function state(t) {
     if (!t || !t.closest) return;
+    var isNative = !!t.closest(NATIVE);
+    dot.classList.toggle("is-native", isNative);
+    ring.classList.toggle("is-native", isNative);
     var isText = !!t.closest(TEXT);
     dot.classList.toggle("is-text", isText);
     ring.classList.toggle("is-text", isText);
@@ -102,6 +108,11 @@
   window.addEventListener("pointerup", function () {
     ring.classList.remove("is-down");
     state(lastTarget);
+  });
+  // Clicks often open or close a dialog under a still pointer, so re-check what
+  // is under it (no pointerover fires until the mouse moves).
+  document.addEventListener("click", function () {
+    setTimeout(function () { if (seen) state(document.elementFromPoint(tx, ty)); }, 0);
   });
   // A hidden tab pauses rAF; resync so the ring does not resume from a stale spot.
   document.addEventListener("visibilitychange", function () { rx = tx; ry = ty; });

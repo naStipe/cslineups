@@ -72,7 +72,9 @@ export function buildLineupList() {
   if (matches.length === 0) {
     const empty = document.createElement("p");
     empty.className = "lineup-list-empty";
-    empty.textContent = state.lineups.length === 0 ? "No lineups on this map." : "No matches.";
+    empty.textContent = state.lineups.length === 0
+      ? (state.lineupsLoading ? "Loading lineups…" : "No lineups on this map.")
+      : "No matches.";
     lineupList.appendChild(empty);
     return;
   }
@@ -265,7 +267,9 @@ function renderMobileSearchResults() {
   if (matches.length === 0) {
     const empty = document.createElement("p");
     empty.className = "lineup-list-empty";
-    empty.textContent = state.lineups.length === 0 ? "No lineups on this map." : "No matches.";
+    empty.textContent = state.lineups.length === 0
+      ? (state.lineupsLoading ? "Loading lineups…" : "No lineups on this map.")
+      : "No matches.";
     mobileSearchResults.appendChild(empty);
     return;
   }
