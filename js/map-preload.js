@@ -6,6 +6,7 @@ import { state } from "./state.js";
 // the switch animation. The Image objects are kept referenced so the decoded
 // bitmaps are not garbage collected before they are needed.
 const kept = [];
+let started = false;
 
 function radarFiles() {
   const files = [];
@@ -34,7 +35,11 @@ function load(src) {
   });
 }
 
+// Called when the map app is first entered (not on the landing page), and
+// only does the work once.
 export function preloadMapImages() {
+  if (started) return;
+  started = true;
   const current = MAPS.find(m => m.id === state.mapId);
   const rest = radarFiles().filter(f => !current || f !== current.file);
   const run = async () => {

@@ -791,6 +791,7 @@ body.view-official:not(.is-admin) #fabAddBtn{display:none;}
 }
 .map-loading-text{
   font-family:var(--font-mono);font-size:11.5px;letter-spacing:.1em;color:var(--text-dim);
+  white-space:nowrap;
 }
 @keyframes map-spin{to{transform:rotate(360deg);}}
 
@@ -2162,7 +2163,7 @@ html.fx [data-reveal].is-in{opacity:1;translate:0 0;}
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
 }
 .notice-banner--compact .notice-dot{width:6px;height:6px;border-radius:50%;background:var(--signal);opacity:.7;flex-shrink:0;}
-.notice-banner--compact p{flex:none;font-size:12px;line-height:1.4;color:var(--text-faint);}
+.notice-banner--compact p{flex:0 1 auto;min-width:0;overflow-wrap:anywhere;font-size:12px;line-height:1.4;color:var(--text-faint);}
 .notice-banner--compact strong{color:var(--text-dim);font-weight:600;}
 .notice-banner--compact a{color:var(--text-dim);text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px;transition:color .3s,text-decoration-color .3s;}
 .notice-banner--compact a:hover{color:var(--signal);text-decoration-color:var(--signal);}
@@ -2387,4 +2388,18 @@ html::-webkit-scrollbar-track,body::-webkit-scrollbar-track{background:var(--voi
   .filters{justify-content:center;}
   .filter-chip{flex:none;}
   .filter-chip .chip-count{min-width:22px;text-align:center;font-variant-numeric:tabular-nums;}
+}
+/* Between the phone layout and ~1280px the fixed-width side zones leave the
+   chip row too little room (chips get cut off with no cue), so the "Types"
+   popup button stands in for it, centered between the side zones. */
+@media (min-width:769px) and (max-width:1279px){
+  .filters{display:none;}
+  .type-filter-btn{
+    display:flex;align-items:center;gap:7px;margin:0 auto;flex:none;
+    background:var(--panel-2);border:1px solid var(--line);color:var(--text-dim);
+    border-radius:999px;padding:7px 14px;font-size:12px;cursor:pointer;
+    font-family:var(--font-mono);letter-spacing:.02em;transition:border-color .3s,color .3s;
+  }
+  .type-filter-btn:hover{border-color:var(--signal-dim);color:var(--text);}
+  .type-filter-btn svg{flex-shrink:0;color:var(--text-faint);}
 }

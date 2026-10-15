@@ -7,7 +7,6 @@ import "./fx.js"; // side effect only: home-screen visual effects
 import "./profile-modal.js"; // side effect only: wires up the profile button + modal
 import { enterMap, goHome } from "./home-screen.js";
 import { focusLineup } from "./lineup-list.js";
-import { preloadMapImages } from "./map-preload.js";
 import { renderMarkers } from "./markers.js";
 import { resetZoom } from "./pan-zoom.js";
 import { buildFilters, buildSidebar, closeSidebar } from "./sidebar.js";
@@ -110,6 +109,19 @@ loadConfig().then(async () => {
   handleDeepLink();
 });
 
-// After first paint, warm every radar image so map switches show instantly.
-if (document.readyState === "complete") preloadMapImages();
-else window.addEventListener("load", preloadMapImages, { once: true });
+// Home "Guides for every map" cards ship with prerendered counts; refresh
+// them with the live official-lineup counts (one small request).
+async function refreshHomeMapCounts() {
+  const els = document.querySelectorAll("[data-map-count]");
+  if (!els.length) return;
+  try {
+    const res = await fetch("/api/lineups?counts=true");
+    if (!res.ok) return;
+    const counts = await res.json();
+    els.forEach(el => {
+      const n = counts[el.dataset.mapCount] || 0;
+      el.textContent = n === 0 ? "Lineups coming soon" : `${n} lineup${n === 1 ? "" : "s"}`;
+    });
+  } catch (e) { /* keep the prerendered counts */ }
+}
+if (!document.documentElement.hasAttribute("data-deep-link")) refreshHomeMapCounts();

@@ -2,6 +2,7 @@ import { setAddMode } from "./add-mode.js";
 import { closeDetailPanel } from "./detail-panel.js";
 import { appShell, homeScreen } from "./dom.js";
 import { selectMap } from "./map-data.js";
+import { preloadMapImages } from "./map-preload.js";
 import { closeSidebar } from "./sidebar.js";
 
 // enterMap / goHome are pure view renders (no history). The nav wrappers
@@ -12,7 +13,10 @@ export function enterMap(id) {
   homeScreen.style.display = "none";
   appShell.removeAttribute("hidden");
   closeSidebar();
-  return selectMap(id);
+  const loaded = selectMap(id);
+  // Warm the other radars once the user is actually in the map app.
+  preloadMapImages();
+  return loaded;
 }
 
 // From the chooser into a map: push a new history entry.

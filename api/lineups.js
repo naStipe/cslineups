@@ -177,6 +177,8 @@ module.exports = async function handler(req, res) {
         (data || []).forEach(row => {
           counts[row.map_id] = (counts[row.map_id] || 0) + 1;
         });
+        // Public, identical for everyone: let the edge absorb home-page loads.
+        res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=600");
         res.status(200).json(counts);
         return;
       }

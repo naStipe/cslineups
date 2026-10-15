@@ -277,7 +277,7 @@ async function renderMapsIndex(res, C) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script>if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))document.documentElement.classList.add("fx-hero");</script>
 <title>Choose a Map — CS2 Grenade Lineups | Lineupr</title>
-<meta name="description" content="Pick a CS2 map — Dust II, Mirage, Inferno, Nuke, Ancient, Anubis, Overpass or Cache — and browse its official smoke, flash, molotov and HE grenade lineups.">
+<meta name="description" content="Pick a CS2 map — Dust II, Mirage, Inferno, Nuke, Ancient, Anubis, Vertigo, Cache or Overpass — and browse its official smoke, flash, molotov and HE grenade lineups.">
 <link rel="canonical" href="${SITE}/maps">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta property="og:type" content="website">
@@ -305,6 +305,10 @@ ${jsonLd.map(jsonLdScript).join("\n")}
       ${BRAND_SVG.replace('width="26" height="26"', 'width="32" height="32"')}
       <span class="home-wordmark">lineup<span class="home-wordmark-r">r</span></span>
     </a>
+    <nav class="home-nav" aria-label="Primary">
+      <a href="/blog" class="home-nav-link">Blog</a>
+      <a href="/?map=dust2" class="home-nav-cta">Open the map</a>
+    </nav>
   </header>
   <div class="home-body">
     <div class="maps-head">
@@ -319,14 +323,7 @@ ${cards}
   <footer class="home-footer" aria-label="Map chooser footer">
     <nav class="home-footer-links" aria-label="Browse lineups by map">
       <a href="/">Home</a>
-      <a href="/dust2">Dust II lineups</a>
-      <a href="/mirage">Mirage lineups</a>
-      <a href="/inferno">Inferno lineups</a>
-      <a href="/nuke">Nuke lineups</a>
-      <a href="/ancient">Ancient lineups</a>
-      <a href="/anubis">Anubis lineups</a>
-      <a href="/overpass">Overpass lineups</a>
-      <a href="/cache">Cache lineups</a>
+${C.MAPS.map(m => `      <a href="/${m.id}">${esc(m.name)} lineups</a>`).join("\n")}
       <a href="/blog">Blog</a>
       <a href="/privacy.html">Privacy</a>
       <a href="/terms.html">Terms</a>

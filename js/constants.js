@@ -16,17 +16,17 @@ export const MAPS = [
   { id: "inferno",  name: "Inferno",   file: "maps/inferno.webp",       logo: "maps/inferno-logo.jpg",  cheatsheet: [
     { label: "Instant smokes", file: "maps/inferno-insta-smokes.webp" },
   ] },
-  { id: "nuke",     name: "Nuke",      file: "maps/nuke-radar.png",     logo: "maps/nuke-logo.jpg",     cheatsheet: [], levels: [
-    { id: "top",    label: "Upper", file: "maps/nuke-radar.png" },
-    { id: "bottom", label: "Lower", file: "maps/nuke-radar-lower.png" },
+  { id: "nuke",     name: "Nuke",      file: "maps/nuke-radar.webp",     logo: "maps/nuke-logo.jpg",     cheatsheet: [], levels: [
+    { id: "top",    label: "Upper", file: "maps/nuke-radar.webp" },
+    { id: "bottom", label: "Lower", file: "maps/nuke-radar-lower.webp" },
   ] },
   { id: "ancient",  name: "Ancient",   file: "maps/ancient.webp",       logo: "maps/ancient-logo.jpg",  cheatsheet: [] },
-  { id: "anubis",   name: "Anubis",    file: "maps/anubis.png",         logo: "maps/anubis-logo.jpg",   cheatsheet: [
+  { id: "anubis",   name: "Anubis",    file: "maps/anubis.webp",         logo: "maps/anubis-logo.jpg",   cheatsheet: [
     { label: "Instant smokes", file: "maps/anubis-insta-smokes.webp" },
   ] },
-  { id: "vertigo",  name: "Vertigo",   file: "maps/vertigo-radar.png",  logo: "maps/vertigo-logo.jpg",  cheatsheet: [], levels: [
-    { id: "top",    label: "Upper", file: "maps/vertigo-radar.png" },
-    { id: "bottom", label: "Lower", file: "maps/vertigo-radar-lower.png" },
+  { id: "vertigo",  name: "Vertigo",   file: "maps/vertigo-radar.webp",  logo: "maps/vertigo-logo.jpg",  cheatsheet: [], levels: [
+    { id: "top",    label: "Upper", file: "maps/vertigo-radar.webp" },
+    { id: "bottom", label: "Lower", file: "maps/vertigo-radar-lower.webp" },
   ] },
   { id: "cache",    name: "Cache",     file: "maps/cache.webp",         logo: "maps/cache-logo.jpg",    cheatsheet: [] },
   // Not in the active map pool right now — kept last so it doesn't crowd the front of the grid.
