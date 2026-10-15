@@ -190,7 +190,6 @@ ${imageDims}<meta property="og:site_name" content="Lineupr">
 <style>${PAGE_CSS}</style>
 ${(jsonLd || []).map(jsonLdScript).join("\n")}
 <script defer src="/site-fx.js"></script>
-<script defer src="/cursor.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -246,7 +245,7 @@ async function renderMapsIndex(res, C) {
   const total = lineups.length;
   const cards = C.MAPS.map((m, i) => {
     const n = counts[m.id] || 0;
-    return `<a class="map-card" href="/?map=${esc(m.id)}" data-reveal data-spot data-tilt data-cursor="Open">
+    return `<a class="map-card" href="/?map=${esc(m.id)}" data-reveal data-spot data-tilt>
 <div class="map-card-bg" style="background-image:url('/maps/${m.id}-logo.jpg')"></div>
 <span class="map-card-index" aria-hidden="true">${String(i + 1).padStart(2, "0")}</span>
 <span class="map-card-badge${n === 0 ? " empty" : ""}"><b>${n}</b> lineup${n === 1 ? "" : "s"}</span>
