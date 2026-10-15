@@ -252,7 +252,7 @@ async function renderMapsIndex(res, C) {
 <span class="map-card-badge${n === 0 ? " empty" : ""}"><b>${n}</b> lineup${n === 1 ? "" : "s"}</span>
 <div class="map-card-content">
 <div class="map-card-name">${esc(m.name)}</div>
-<div class="map-card-count${n === 0 ? " empty" : ""}">${n === 0 ? "No lineups yet" : `Open ${n} lineup${n === 1 ? "" : "s"}`}<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+<div class="map-card-count${n === 0 ? " empty" : ""}">${n === 0 ? "No lineups yet" : `${n} lineup${n === 1 ? "" : "s"}`}<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
 </div>
 </a>`;
   }).join("\n");
