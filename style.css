@@ -1950,6 +1950,8 @@ body.is-admin .admin-link{ display:block; }
 .profile-head-text h3{ margin:0; font-size:18px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .profile-email{ margin:2px 0 0; font-family:var(--font-mono); font-size:11px; color:var(--text-faint);
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.profile-admin-stat{ margin:4px 0 0; font-family:var(--font-mono); font-size:11px; color:var(--signal); }
+.profile-admin-stat[hidden]{ display:none; }
 
 .profile-section{ padding:16px 0; border-bottom:1px solid var(--line-soft); display:flex; flex-direction:column; gap:8px; }
 .profile-section:last-child{ border-bottom:none; padding-bottom:4px; }

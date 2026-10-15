@@ -3,10 +3,10 @@
 // the service key server-side); password changes go straight to Supabase
 // auth with the user's own session.
 
-import { applyAuthState, authHeaders, authProfile, authUser, getAuthClient, refreshProfile, signOut } from "./auth.js";
+import { applyAuthState, authHeaders, authProfile, authUser, getAuthClient, isAdmin, refreshProfile, signOut } from "./auth.js";
 import {
   changePasswordBtn, closeProfile, deleteAccountBtn, deleteMsg, passwordMsg,
-  profileBtn, profileModal, profileModalAvatar, profileModalEmail,
+  profileAccountCount, profileBtn, profileModal, profileModalAvatar, profileModalEmail,
   profileModalName, profileNewPassword, profileNewPassword2,
   profileUsernameInput, saveUsernameBtn, usernameMsg,
 } from "./dom.js";
@@ -40,10 +40,26 @@ function fillProfileModal() {
   profileNewPassword2.value = "";
 }
 
+// Admin-only: number of registered accounts, fetched fresh on every open.
+async function loadAccountCount() {
+  profileAccountCount.hidden = !isAdmin();
+  if (!isAdmin()) return;
+  profileAccountCount.textContent = "Accounts: …";
+  try {
+    const res = await fetch("/api/admin?stats=1", { headers: await authHeaders() });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+    profileAccountCount.textContent = `Accounts: ${body.accounts.toLocaleString()}`;
+  } catch {
+    profileAccountCount.textContent = "Accounts: unavailable";
+  }
+}
+
 profileBtn.onclick = () => {
   if (!authUser) return;
   clearMsgs();
   fillProfileModal();
+  loadAccountCount();
   profileModal.classList.add("show");
 };
 

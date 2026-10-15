@@ -160,6 +160,23 @@ module.exports = async function handler(req, res) {
     // GET — the moderation queue. Personal lineups that have at least one
     // uploaded image. ?status=all includes already-reviewed ones; default is
     // unreviewed only.
+    // GET ?stats=1 — site-wide numbers for the admin's settings panel.
+    // Counts auth.users (the real list of registered accounts) via the auth
+    // admin API's `total`; falls back to counting profile rows if this
+    // supabase-js build doesn't report it.
+    if (req.method === "GET" && req.query && req.query.stats) {
+      let accounts = null;
+      const { data: page, error: listErr } = await sb.auth.admin.listUsers({ page: 1, perPage: 1 });
+      if (!listErr && page && typeof page.total === "number") accounts = page.total;
+      if (accounts === null) {
+        const { count, error } = await sb.from("profiles").select("id", { count: "exact", head: true });
+        if (error) throw new Error(error.message);
+        accounts = count || 0;
+      }
+      res.status(200).json({ accounts });
+      return;
+    }
+
     if (req.method === "GET") {
       const status = (req.query && req.query.status) || "unreviewed";
 
