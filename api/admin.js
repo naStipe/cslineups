@@ -177,10 +177,58 @@ module.exports = async function handler(req, res) {
       return;
     }
 
+    // GET ?users=1 — account management list: every registered account with
+    // how many personal lineups / uploaded screenshots it owns.
+    if (req.method === "GET" && req.query && req.query.users) {
+      const authUsers = [];
+      for (let page = 1; page <= 50; page++) {
+        const { data, error } = await sb.auth.admin.listUsers({ page, perPage: 1000 });
+        if (error) throw new Error(error.message);
+        const batch = (data && data.users) || [];
+        authUsers.push(...batch);
+        if (batch.length < 1000) break;
+      }
+
+      const { data: profiles } = await sb.from("profiles").select("id, username, is_admin");
+      const profileById = {};
+      (profiles || []).forEach(p => { profileById[p.id] = p; });
+
+      const { data: lineupRows, error: lineupErr } = await sb.from("lineups")
+        .select("id, owner_id, throws").eq("is_official", false);
+      if (lineupErr) throw new Error(lineupErr.message);
+      const stats = {};
+      for (const row of (lineupRows || [])) {
+        if (!row.owner_id) continue;
+        const st = stats[row.owner_id] || (stats[row.owner_id] = { lineups: 0, screenshots: 0 });
+        st.lineups++;
+        st.screenshots += (row.throws || []).reduce((n, t) => n + throwImageUrls(t).length, 0);
+      }
+
+      const users = authUsers.map(u => ({
+        id: u.id,
+        email: u.email || null,
+        username: (profileById[u.id] && profileById[u.id].username) || null,
+        isAdmin: !!(profileById[u.id] && profileById[u.id].is_admin),
+        provider: (u.app_metadata && u.app_metadata.provider) || null,
+        confirmed: !!(u.email_confirmed_at || u.confirmed_at),
+        createdAt: u.created_at || null,
+        lastSignInAt: u.last_sign_in_at || null,
+        lineups: (stats[u.id] && stats[u.id].lineups) || 0,
+        screenshots: (stats[u.id] && stats[u.id].screenshots) || 0,
+      })).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+
+      res.status(200).json({ users });
+      return;
+    }
+
+    // GET — the moderation queue (or, with ?userId=, everything one account
+    // has uploaded, reviewed or not).
     if (req.method === "GET") {
-      const status = (req.query && req.query.status) || "unreviewed";
+      const userId = req.query && req.query.userId;
+      const status = userId ? "all" : ((req.query && req.query.status) || "unreviewed");
 
       let query = sb.from("lineups").select("*").eq("is_official", false);
+      if (userId) query = query.eq("owner_id", userId);
       if (status !== "all") query = query.is("moderation_reviewed_at", null);
       const { data, error } = await query.order("created_at", { ascending: false });
       if (error) throw new Error(error.message);

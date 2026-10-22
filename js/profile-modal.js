@@ -6,7 +6,7 @@
 import { applyAuthState, authHeaders, authProfile, authUser, getAuthClient, isAdmin, refreshProfile, signOut } from "./auth.js";
 import {
   changePasswordBtn, closeProfile, deleteAccountBtn, deleteMsg, passwordMsg,
-  profileAccountCount, profileBtn, profileModal, profileModalAvatar, profileModalEmail,
+  profileAccountCount, profileAccountsLink, profileBtn, profileModal, profileModalAvatar, profileModalEmail,
   profileModalName, profileNewPassword, profileNewPassword2,
   profileUsernameInput, saveUsernameBtn, usernameMsg,
 } from "./dom.js";
@@ -43,6 +43,7 @@ function fillProfileModal() {
 // Admin-only: number of registered accounts, fetched fresh on every open.
 async function loadAccountCount() {
   profileAccountCount.hidden = !isAdmin();
+  profileAccountsLink.hidden = !isAdmin();
   if (!isAdmin()) return;
   profileAccountCount.textContent = "Accounts: …";
   try {

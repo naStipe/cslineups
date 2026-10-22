@@ -253,6 +253,7 @@ export const profileModalName = document.getElementById("profileModalName");
 export const profileModalEmail = document.getElementById("profileModalEmail");
 
 export const profileAccountCount = document.getElementById("profileAccountCount");
+export const profileAccountsLink = document.getElementById("profileAccountsLink");
 
 export const closeProfile = document.getElementById("closeProfile");
 

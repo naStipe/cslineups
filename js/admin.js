@@ -15,13 +15,14 @@ const TYPE_LABELS = Object.fromEntries(TYPES.map(t => [t.id, t.label]));
 
 const el = (id) => document.getElementById(id);
 const els = {};
-["statusToggle", "adminEmail", "adminSignOut", "adminSignin", "adminError",
+["statusToggle", "viewToggle", "adminAccounts", "adminEmail", "adminSignOut", "adminSignin", "adminError",
  "adminEmailInput", "adminPasswordInput", "adminSigninBtn", "adminGoogleBtn", "adminTurnstile",
  "adminDenied", "adminMain", "adminHint", "adminQueue",
  "adminLightbox", "adminLightboxImg", "adminLightboxClose"].forEach(id => { els[id] = el(id); });
 
 let sb = null;
 let status = "unreviewed";
+let view = new URLSearchParams(location.search).get("view") === "accounts" ? "accounts" : "moderation";
 
 async function loadConfig() {
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -76,6 +77,7 @@ async function render() {
     show(els.adminDenied, false);
     show(els.adminMain, false);
     show(els.statusToggle, false);
+    show(els.viewToggle, false);
     show(els.adminSignOut, false);
     els.adminEmail.textContent = "";
     return;
@@ -92,13 +94,87 @@ async function render() {
     show(els.adminDenied, true);
     show(els.adminMain, false);
     show(els.statusToggle, false);
+    show(els.viewToggle, false);
     return;
   }
 
   show(els.adminDenied, false);
   show(els.adminMain, true);
-  show(els.statusToggle, true);
-  await loadQueue();
+  show(els.viewToggle, true);
+  await showView();
+}
+
+async function showView() {
+  els.viewToggle.querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.view === view));
+  show(els.statusToggle, view === "moderation");
+  show(els.adminQueue, view === "moderation");
+  show(els.adminAccounts, view === "accounts");
+  if (view === "accounts") await loadAccounts();
+  else await loadQueue();
+}
+
+// ---- Accounts ------------------------------------------------------------
+
+function fmtDate(iso) { return iso ? new Date(iso).toLocaleDateString() : "never"; }
+
+async function loadAccounts() {
+  els.adminHint.textContent = "Loading accounts…";
+  els.adminAccounts.innerHTML = "";
+  let users;
+  try {
+    const res = await fetch("/api/admin?users=1", { headers: await authHeaders() });
+    if (!res.ok) throw new Error(await res.text().catch(() => `HTTP ${res.status}`));
+    users = (await res.json()).users || [];
+  } catch (e) {
+    els.adminHint.textContent = `Failed to load accounts: ${e.message}`;
+    return;
+  }
+  const withUploads = users.filter(u => u.screenshots > 0).length;
+  els.adminHint.textContent = `${users.length} account${users.length === 1 ? "" : "s"} · ${withUploads} with uploads`;
+  users.forEach(u => els.adminAccounts.appendChild(renderAccount(u)));
+}
+
+function renderAccount(u) {
+  const row = document.createElement("div");
+  row.className = "admin-account";
+  const name = u.username || "(no username)";
+  const uploads = u.screenshots
+    ? `${u.screenshots} screenshot${u.screenshots === 1 ? "" : "s"} · ${u.lineups} lineup${u.lineups === 1 ? "" : "s"}`
+    : "no uploads";
+  row.innerHTML = `
+    <button class="admin-account-head" type="button" ${u.screenshots ? "" : "disabled"}>
+      <span class="admin-account-main">
+        <strong>${escapeHtml(name)}</strong>${u.isAdmin ? ` <span class="admin-tag">admin</span>` : ""}
+        <span class="admin-account-email">${escapeHtml(u.email || u.id)}</span>
+      </span>
+      <span class="admin-account-meta">
+        <span>${escapeHtml(u.provider || "email")}${u.confirmed ? "" : " · unconfirmed"}</span>
+        <span>joined ${escapeHtml(fmtDate(u.createdAt))} · last seen ${escapeHtml(fmtDate(u.lastSignInAt))}</span>
+      </span>
+      <span class="admin-account-uploads${u.screenshots ? " has-uploads" : ""}">${escapeHtml(uploads)}</span>
+    </button>
+    <div class="admin-account-body" hidden></div>`;
+
+  const head = row.querySelector(".admin-account-head");
+  const body = row.querySelector(".admin-account-body");
+  let loaded = false;
+  head.onclick = async () => {
+    body.hidden = !body.hidden;
+    if (body.hidden || loaded) return;
+    body.textContent = "Loading uploads…";
+    try {
+      const res = await fetch(`/api/admin?userId=${encodeURIComponent(u.id)}`, { headers: await authHeaders() });
+      if (!res.ok) throw new Error(await res.text().catch(() => `HTTP ${res.status}`));
+      const items = (await res.json()).items || [];
+      body.innerHTML = "";
+      items.forEach(item => body.appendChild(renderCard(item, { readOnly: true })));
+      if (!items.length) body.textContent = "No uploads.";
+      loaded = true;
+    } catch (e) {
+      body.textContent = `Failed to load uploads: ${e.message}`;
+    }
+  };
+  return row;
 }
 
 // ---- Queue ---------------------------------------------------------------
@@ -131,7 +207,7 @@ async function loadQueue() {
 
 const SLOT_LABELS = { standing: "Where to stand", screenshots: "Where to aim", precise: "Precise", result: "Result" };
 
-function renderCard(item) {
+function renderCard(item, { readOnly = false } = {}) {
   const card = document.createElement("div");
   card.className = "admin-card";
   if (item.reviewedAt) card.classList.add("is-reviewed");
@@ -146,7 +222,7 @@ function renderCard(item) {
       <figure class="admin-shot" data-slot="${escapeHtml(img.slot)}">
         <img loading="lazy" src="${escapeHtml(img.viewUrl)}" data-full="${escapeHtml(img.viewUrl)}" alt="${escapeHtml(SLOT_LABELS[img.slot] || img.slot)}">
         <figcaption>${escapeHtml(SLOT_LABELS[img.slot] || img.slot)}</figcaption>
-        <button class="admin-shot-reject" data-lineup="${escapeHtml(item.id)}" data-url="${escapeHtml(img.url)}" title="Reject this screenshot">✕</button>
+        ${readOnly ? "" : `<button class="admin-shot-reject" data-lineup="${escapeHtml(item.id)}" data-url="${escapeHtml(img.url)}" title="Reject this screenshot">✕</button>`}
       </figure>`).join("");
     return `
       <div class="admin-throw">
@@ -166,7 +242,7 @@ function renderCard(item) {
       <div class="admin-card-owner">${escapeHtml(item.ownerEmail || item.ownerId || "unknown")}</div>
     </div>
     ${throwsHtml}
-    <div class="admin-card-actions">
+    ${readOnly ? "" : `<div class="admin-card-actions">
       ${item.reviewedAt
         ? `<button class="ghost-btn" data-action="unreview" data-lineup="${escapeHtml(item.id)}">↩ Move back to pending</button>`
         : `<button class="primary-btn" data-action="approve" data-lineup="${escapeHtml(item.id)}">✓ Approve (mark reviewed)</button>`}
@@ -174,7 +250,7 @@ function renderCard(item) {
         ? `<button class="ghost-btn admin-publish" data-action="publish" data-lineup="${escapeHtml(item.id)}">★ Publish to official map</button>`
         : `<span class="admin-card-sub" title="Only lineups the owner submitted can be published">Not submitted for publication</span>`}
       <button class="ghost-btn danger" data-action="delete-lineup" data-lineup="${escapeHtml(item.id)}">Delete whole lineup</button>
-    </div>`;
+    </div>`}`;
 
   card.querySelectorAll("img[data-full]").forEach(img => {
     img.onclick = () => { els.adminLightboxImg.src = img.dataset.full; els.adminLightbox.classList.add("show"); };
@@ -316,6 +392,13 @@ async function refreshCounts() {
 
 function wireEvents() {
   const turnstile = mountTurnstile(els.adminTurnstile);
+  els.viewToggle.querySelectorAll("button").forEach(btn => {
+    btn.onclick = () => {
+      view = btn.dataset.view;
+      history.replaceState(null, "", view === "accounts" ? "?view=accounts" : location.pathname);
+      showView();
+    };
+  });
   els.statusToggle.querySelectorAll("button").forEach(btn => {
     btn.onclick = () => {
       status = btn.dataset.status;

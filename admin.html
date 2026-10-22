@@ -25,6 +25,10 @@
       <span class="home-wordmark">lineup<span class="home-wordmark-r">r</span> <span class="admin-tag">admin</span></span>
     </div>
     <div class="admin-header-right">
+      <div class="admin-status-toggle" id="viewToggle" hidden>
+        <button class="view-toggle-btn active" data-view="moderation">Screenshots</button>
+        <button class="view-toggle-btn" data-view="accounts">Accounts</button>
+      </div>
       <div class="admin-status-toggle" id="statusToggle" hidden>
         <button class="view-toggle-btn active" data-status="unreviewed">Pending</button>
         <button class="view-toggle-btn" data-status="all">All</button>
@@ -58,6 +62,7 @@
   <main class="admin-main" id="adminMain" hidden>
     <p class="admin-hint" id="adminHint">Loading…</p>
     <div class="admin-queue" id="adminQueue"></div>
+    <div class="admin-accounts" id="adminAccounts" hidden></div>
   </main>
 </div>
 

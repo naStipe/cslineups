@@ -1873,7 +1873,7 @@ body.is-admin .admin-link{ display:block; }
 .admin-body{ overflow:auto; }
 /* Explicit display below would otherwise beat the [hidden] attribute's
    UA display:none, leaving gated panels visible. Keep [hidden] authoritative. */
-.admin-signin[hidden], .admin-denied[hidden], .admin-main[hidden], .admin-status-toggle[hidden]{ display:none; }
+.admin-signin[hidden], .admin-denied[hidden], .admin-main[hidden], .admin-status-toggle[hidden], .admin-accounts[hidden], .admin-queue[hidden], .admin-account-body[hidden]{ display:none; }
 .app[hidden]{ display:none; }
 .admin-wrap{ max-width:1100px; margin:0 auto; padding:20px 22px 80px; }
 .admin-header{ display:flex; align-items:center; justify-content:space-between; gap:16px;
@@ -2391,3 +2391,20 @@ html::-webkit-scrollbar-track,body::-webkit-scrollbar-track{background:var(--voi
 /* Legal line under the sign-in/sign-up form */
 .auth-legal{ margin:10px 0 0; font-size:12px; line-height:1.5; color:var(--text-dim); }
 .auth-legal a{ color:inherit; text-decoration:underline; }
+
+/* ---- Admin account management ---- */
+.profile-admin-link{ margin-top:8px; display:inline-block; text-decoration:none; font-size:12px; padding:6px 10px; }
+.profile-admin-link[hidden]{ display:none; }
+.admin-accounts{ display:flex; flex-direction:column; gap:8px; }
+.admin-account{ background:var(--panel); border:1px solid var(--line); border-radius:10px; }
+.admin-account-head{ all:unset; box-sizing:border-box; width:100%; display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1.6fr) auto;
+  gap:14px; align-items:center; padding:12px 16px; cursor:pointer; color:var(--text); font-size:13px; }
+.admin-account-head:disabled{ cursor:default; }
+.admin-account-head:not(:disabled):hover{ background:color-mix(in srgb, var(--signal) 6%, var(--panel)); }
+.admin-account-main{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+.admin-account-email{ font-family:var(--font-mono); font-size:11px; color:var(--text-faint); word-break:break-all; }
+.admin-account-meta{ display:flex; flex-direction:column; gap:2px; font-family:var(--font-mono); font-size:11px; color:var(--text-dim); }
+.admin-account-uploads{ font-family:var(--font-mono); font-size:11px; color:var(--text-faint); white-space:nowrap; }
+.admin-account-uploads.has-uploads{ color:var(--signal); }
+.admin-account-body{ padding:4px 16px 16px; display:flex; flex-direction:column; gap:14px; color:var(--text-dim); font-size:12px; }
+@media (max-width:720px){ .admin-account-head{ grid-template-columns:1fr; gap:6px; } }
