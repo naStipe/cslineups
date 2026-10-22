@@ -4,20 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cookie Policy | Lineupr</title>
-<meta name="description" content="What cookies Lineupr uses, including Google Analytics, and how to opt out.">
+<meta name="description" content="Which cookies and browser storage Lineupr uses, including optional Google Analytics, and how to change your choice.">
 <link rel="canonical" href="https://www.lineupr.org/cookies.html">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta name="robots" content="noindex">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="/fonts/fonts.css" rel="stylesheet">
 <link rel="stylesheet" href="/blog/blog.css">
 <style>.cookie-table{width:100%;border-collapse:collapse;margin:0 0 20px;font-size:14px}
 .cookie-table th,.cookie-table td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-.cookie-table th{color:var(--dim);font-weight:600}
+.cookie-table th{font-weight:600}
+.table-wrap{overflow-x:auto}
 #resetConsentBtn{font:inherit;font-weight:600;padding:9px 16px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--text);cursor:pointer}
 #resetConsentBtn:hover{border-color:var(--signal)}
-#resetConsentStatus{margin-left:10px;color:var(--dim);font-size:13px}</style>
+#resetConsentStatus{margin-left:10px;font-size:13px}</style>
+<script defer src="/consent.js"></script>
 <script defer src="/site-fx.js"></script>
 <script type="module" src="/analytics.js"></script>
 </head>
@@ -33,42 +33,51 @@
 <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> › Cookie Policy</nav>
 <main>
 <h1>Cookie Policy</h1>
-<p class="byline">Last updated: September 18, 2026</p>
+<p class="byline">Last updated: October 22, 2026</p>
 
-<p>Cookies are small files a site stores in your browser. Lineupr (operated by naStipe.dev, Business ID 3447010-7) uses a small number of them, described below.</p>
+<p>Lineupr (operated by naStipe.dev, Business ID 3447010-7) stores a few small pieces of data in your browser, as cookies or in your browser's local storage. Under Finnish law (Act on Electronic Communications Services 917/2014, section 205) we may store only what is strictly necessary for the service you use without asking. Everything else needs your consent first.</p>
 
-<h2>Essential cookies</h2>
-<p>Used to keep you signed in and remember your cookie choice. The site can't function correctly without these, so they're not subject to the consent banner.</p>
-<table class="cookie-table">
-<tr><th>Name</th><th>Purpose</th><th>Duration</th></tr>
-<tr><td>Supabase auth session</td><td>Keeps you signed in to your account</td><td>Until sign-out / expiry</td></tr>
-<tr><td>lineupr_consent</td><td>Remembers your cookie banner choice</td><td>Until cleared</td></tr>
-</table>
+<h2>Strictly necessary</h2>
+<p>These make the site work as you asked and are always on.</p>
+<div class="table-wrap"><table class="cookie-table">
+<thead><tr><th>Name</th><th>Type</th><th>Purpose</th><th>Duration</th></tr></thead>
+<tbody>
+<tr><td>sb-…-auth-token</td><td>Local storage (Supabase)</td><td>Keeps you signed in to your account</td><td>Until you sign out; the session refreshes while you use the site</td></tr>
+<tr><td>lineupr_consent</td><td>Local storage</td><td>Remembers whether you accepted or declined analytics</td><td>Until you change it or clear browser data</td></tr>
+<tr><td>lineupr_notice_dismissed, lineupr_throw_hint_seen</td><td>Local storage</td><td>Remembers that you closed a notice or hint, so it isn't shown again</td><td>Until you clear browser data</td></tr>
+<tr><td>Cloudflare Turnstile</td><td>Third-party check (Cloudflare)</td><td>Bot check on the sign-in and sign-up forms, to protect accounts</td><td>Only while you use those forms</td></tr>
+</tbody>
+</table></div>
+<p>We also use <strong>Vercel Web Analytics</strong> for basic page statistics. It sets no cookies and stores nothing in your browser, so it is not covered by the consent banner. It is described in the <a href="/privacy.html">Privacy Policy</a>.</p>
 
-<h2>Analytics cookies (optional)</h2>
-<p>If you accept the cookie banner, Google Analytics sets cookies to measure site usage (pages viewed, rough location, device type). These are not loaded until you accept, and are not used for advertising.</p>
-<table class="cookie-table">
-<tr><th>Name</th><th>Purpose</th><th>Duration</th></tr>
-<tr><td>_ga, _ga_*</td><td>Google Analytics — distinguishes visitors</td><td>Up to 2 years</td></tr>
-</table>
-<p>You can also opt out of Google Analytics site-wide with the <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener">Google Analytics opt-out browser add-on</a>.</p>
+<h2>Analytics (optional, only with your consent)</h2>
+<p>If you press "Accept" on the banner, Google Analytics (Google Ireland Ltd / Google LLC, USA) sets cookies to measure how the site is used: pages viewed, approximate location, device and browser. Nothing from Google Analytics loads before you accept, and the data isn't used for advertising.</p>
+<div class="table-wrap"><table class="cookie-table">
+<thead><tr><th>Name</th><th>Provider</th><th>Purpose</th><th>Duration</th></tr></thead>
+<tbody>
+<tr><td>_ga</td><td>Google Analytics</td><td>Distinguishes visitors with a random identifier</td><td>2 years</td></tr>
+<tr><td>_ga_5N65WW6VB8</td><td>Google Analytics</td><td>Keeps the state of your visit (session)</td><td>2 years</td></tr>
+</tbody>
+</table></div>
 
-<h2>Manage your choice</h2>
-<p>You can change your decision at any time:</p>
-<p><button type="button" id="resetConsentBtn">Reset cookie choice</button><span id="resetConsentStatus"></span></p>
+<h2>Change or withdraw your choice</h2>
+<p>You can change your decision at any time. Withdrawing consent deletes the Google Analytics cookies and shows the banner again.</p>
+<p><button type="button" id="resetConsentBtn">Change cookie choice</button><span id="resetConsentStatus" role="status"></span></p>
+<p>You can also delete cookies and local storage in your browser settings.</p>
 
-<h2>More info</h2>
-<p>See our <a href="/privacy.html">Privacy Policy</a> for how we handle data in general.</p>
+<h2>More information</h2>
+<p>See the <a href="/privacy.html">Privacy Policy</a> for how we handle personal data in general, including transfers to the USA.</p>
 </main>
-<footer class="foot">
-<p><a href="/">Lineupr</a> · <a href="/privacy.html">Privacy Policy</a> · <a href="/terms.html">Terms of Use</a></p>
-</footer>
-</div>
 <script>
 document.getElementById('resetConsentBtn').addEventListener('click', function(){
-  try { localStorage.removeItem('lineupr_consent'); } catch(e){}
-  document.getElementById('resetConsentStatus').textContent = 'Choice reset — reload any page to be asked again.';
+  if (window.lineuprConsent) { window.lineuprConsent.reset(); document.getElementById('resetConsentStatus').textContent = 'Choice cleared. Pick again in the banner below.'; }
+  else { try { localStorage.removeItem('lineupr_consent'); } catch(e){} document.getElementById('resetConsentStatus').textContent = 'Choice cleared. Reload any page to choose again.'; }
 });
 </script>
+<footer class="foot">
+<p><a href="/">Lineupr</a> · <a href="/terms.html">Terms of Use</a> · <a href="/privacy.html">Privacy Policy</a> · <a href="/cookies.html">Cookie Policy</a> · <a href="mailto:support@nastipe.dev?subject=Content%20report">Report content</a></p>
+<p>Lineupr is an independent fan project and is not affiliated with or endorsed by Valve Corporation. Counter-Strike 2 and its map images are trademarks or copyrighted material of Valve.</p>
+</footer>
+</div>
 </body>
 </html>

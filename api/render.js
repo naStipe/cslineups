@@ -199,7 +199,8 @@ ${crumbs ? `<nav class="crumbs" aria-label="Breadcrumb">${crumbs}</nav>` : ""}
 ${body}
 </main>
 <footer class="foot">
-<p><a href="/">Lineupr</a> — the interactive CS2 grenade lineup map. <a href="/maps">Browse lineups by map</a>. <a href="/blog">Blog</a>. · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="/cookies.html">Cookies</a></p>
+<p><a href="/">Lineupr</a> — the interactive CS2 grenade lineup map. <a href="/maps">Browse lineups by map</a>. <a href="/blog">Blog</a>. · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="/cookies.html">Cookies</a> · <a href="mailto:support@nastipe.dev?subject=Content%20report">Report content</a></p>
+<p>Lineupr is an independent fan project, not affiliated with or endorsed by Valve. Counter-Strike 2 and its map images are trademarks or copyrighted material of Valve.</p>
 </footer>
 </div>
 ${lightbox ? LIGHTBOX_HTML : ""}
@@ -290,9 +291,7 @@ async function renderMapsIndex(res, C) {
 <meta name="twitter:title" content="Choose a Map — CS2 Grenade Lineups | Lineupr">
 <meta name="twitter:image" content="${SITE}/og-image.png">
 ${jsonLd.map(jsonLdScript).join("\n")}
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="/fonts/fonts.css" rel="stylesheet">
 <link rel="stylesheet" href="/style.css">
 <script defer src="/site-fx.js"></script>
 <script defer src="/cursor.js"></script>
@@ -327,7 +326,9 @@ ${C.MAPS.map(m => `      <a href="/${m.id}">${esc(m.name)} lineups</a>`).join("\
       <a href="/privacy.html">Privacy</a>
       <a href="/terms.html">Terms</a>
       <a href="/cookies.html">Cookies</a>
+      <a href="mailto:support@nastipe.dev?subject=Content%20report">Report content</a>
     </nav>
+    <p class="home-footer-note">Lineupr is an independent fan project, not affiliated with or endorsed by Valve. Counter-Strike 2 and its map images are trademarks or copyrighted material of Valve.</p>
   </footer>
 </div>
 </body>

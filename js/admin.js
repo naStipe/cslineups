@@ -170,7 +170,9 @@ function renderCard(item) {
       ${item.reviewedAt
         ? `<button class="ghost-btn" data-action="unreview" data-lineup="${escapeHtml(item.id)}">↩ Move back to pending</button>`
         : `<button class="primary-btn" data-action="approve" data-lineup="${escapeHtml(item.id)}">✓ Approve (mark reviewed)</button>`}
-      <button class="ghost-btn admin-publish" data-action="publish" data-lineup="${escapeHtml(item.id)}">★ Publish to official map</button>
+      ${item.submittedAt
+        ? `<button class="ghost-btn admin-publish" data-action="publish" data-lineup="${escapeHtml(item.id)}">★ Publish to official map</button>`
+        : `<span class="admin-card-sub" title="Only lineups the owner submitted can be published">Not submitted for publication</span>`}
       <button class="ghost-btn danger" data-action="delete-lineup" data-lineup="${escapeHtml(item.id)}">Delete whole lineup</button>
     </div>`;
 

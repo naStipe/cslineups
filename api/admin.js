@@ -213,6 +213,7 @@ module.exports = async function handler(req, res) {
           ownerEmail: emails[row.owner_id] || null,
           createdAt: row.created_at,
           reviewedAt: row.moderation_reviewed_at || null,
+          submittedAt: row.submitted_at || null,
           throws: throwsOut,
         });
       }
@@ -237,10 +238,13 @@ module.exports = async function handler(req, res) {
       // untouched, at the cost of a few orphaned public objects).
       if (action === "publish") {
         const { data: row, error: fetchErr } = await sb.from("lineups")
-          .select("id, is_official, throws").eq("id", lineupId).maybeSingle();
+          .select("id, is_official, throws, submitted_at").eq("id", lineupId).maybeSingle();
         if (fetchErr) throw new Error(fetchErr.message);
         if (!row) { res.status(404).json({ error: "Not found" }); return; }
         if (row.is_official) { res.status(400).json({ error: "That lineup is already official" }); return; }
+        // Only lineups whose owner opted in ("Submit to public map") may be
+        // published: the owner's licence to publish depends on it.
+        if (!row.submitted_at) { res.status(403).json({ error: "The owner hasn't submitted this lineup for publication" }); return; }
 
         const orphans = [];
         const newThrows = [];

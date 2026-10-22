@@ -89,6 +89,21 @@ export async function dbPut(record, isOfficial) {
   return res.json();
 }
 
+// Opt a personal lineup in to (submit = true) or out of publication on the
+// public map. Admins can only publish lineups that are submitted.
+export async function dbSubmitLineup(id, submit) {
+  const headers = await authHeaders();
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify({ id, action: "submit", submit: !!submit }),
+  });
+  if (res.status === 401) throw new Error("SIGN_IN_REQUIRED");
+  if (res.status === 403) throw new Error("FORBIDDEN");
+  if (!res.ok) throw new Error("Failed to update submission");
+  return res.json();
+}
+
 export async function dbDelete(id) {
   const headers = await authHeaders();
   const res = await fetch(`${API_URL}?id=${encodeURIComponent(id)}`, {

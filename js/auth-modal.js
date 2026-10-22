@@ -3,7 +3,14 @@ import { authEmailInput, authError, authForgotLink, authForgotWrap, authGoogleBt
 import { closeModal, watchDialog } from "./modal-utils.js";
 import { mountTurnstile } from "./turnstile.js";
 
-const turnstile = mountTurnstile(authTurnstile);
+// Mounted on first use (when the modal opens), so Cloudflare's script only
+// loads for visitors who actually sign in or sign up, not on every page view.
+let turnstileWidget = null;
+const turnstile = {
+  get: () => turnstileWidget || (turnstileWidget = mountTurnstile(authTurnstile)),
+  reset: () => turnstile.get().reset(),
+  getToken: () => turnstile.get().getToken(),
+};
 
 export let authMode = "signin";
 

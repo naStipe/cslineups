@@ -97,6 +97,11 @@ module.exports = async function handler(req, res) {
 
       await removeUserImages(sb, user.id);
 
+      // Rate-limit counters are keyed by user id too; they have no foreign
+      // key to cascade from, so remove them explicitly (GDPR erasure).
+      const { error: rateErr } = await sb.from("rate_limits").delete().eq("user_id", user.id);
+      if (rateErr) throw new Error(rateErr.message);
+
       const { error: profileErr } = await sb.from("profiles").delete().eq("id", user.id);
       if (profileErr) throw new Error(profileErr.message);
 

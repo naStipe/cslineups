@@ -24,9 +24,34 @@
     gtag("config", GA_ID);
   }
 
+  // Withdrawing consent must actually stop tracking: drop the stored choice
+  // and delete the GA cookies (_ga, _ga_<id>) on this host and its parent
+  // domain. A page where GA already ran is reloaded so the script is gone.
+  function clearGaCookies() {
+    var host = location.hostname;
+    var domains = ["", host, "." + host.replace(/^www\./, "")];
+    document.cookie.split(";").forEach(function (c) {
+      var name = c.split("=")[0].trim();
+      if (name !== "_ga" && name.indexOf("_ga_") !== 0) return;
+      domains.forEach(function (d) {
+        document.cookie = name + "=; Max-Age=0; path=/" + (d ? "; domain=" + d : "");
+      });
+    });
+  }
+
+  window.lineuprConsent = {
+    get: stored,
+    reset: function () {
+      try { localStorage.removeItem(KEY); } catch (e) {}
+      clearGaCookies();
+      if (window.__lineuprGaLoaded) { location.reload(); return; }
+      showBanner();
+    },
+  };
+
   var consent = stored();
   if (consent === "granted") { loadGA(); return; }
-  if (consent === "denied") { return; }
+  if (consent === "denied") { clearGaCookies(); return; }
 
   function showBanner() {
     if (document.getElementById("consentBanner")) return;
@@ -43,7 +68,9 @@
       "#consentBanner .cb-actions{display:flex;gap:8px;flex-shrink:0;}" +
       "#consentBanner button{font:inherit;font-weight:600;padding:8px 16px;border-radius:5px;" +
       "border:1px solid #382e25;background:transparent;color:#f2ece2;cursor:pointer;}" +
-      "#consentBanner button.cb-accept{background:#ffa53e;color:#0c0a08;border-color:#ffa53e;}" +
+      // Accept and Decline are deliberately styled identically: rejecting
+      // has to be as easy and as visible as accepting (Traficom guidance).
+
       "#consentBanner button:hover{opacity:.85;}";
     document.head.appendChild(style);
 
@@ -52,8 +79,9 @@
     el.setAttribute("role", "dialog");
     el.setAttribute("aria-label", "Cookie consent");
     el.innerHTML =
-      "<p>We use Google Analytics to see how the site is used. No ads, no selling data. " +
-      '<a href="/cookies.html">Cookie policy</a></p>' +
+      "<p>May we use Google Analytics cookies to measure how the site is used? " +
+      "Google (USA) receives pseudonymous usage data only if you accept. No ads, no data selling. " +
+      '<a href="/cookies.html">Cookie policy</a> · <a href="/privacy.html">Privacy</a></p>' +
       '<div class="cb-actions">' +
       '<button type="button" class="cb-decline">Decline</button>' +
       '<button type="button" class="cb-accept">Accept</button>' +
