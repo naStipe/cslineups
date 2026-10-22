@@ -1,8 +1,8 @@
 import { setAddMode, showAddFlow } from "./add-mode.js";
-import { dbDelete, dbPut, dbSaveLineup, dbUnsaveLineup, throwKey } from "./api.js";
+import { dbDelete, dbPut, dbSaveLineup, dbSubmitLineup, dbUnsaveLineup, throwKey } from "./api.js";
 import { authUser } from "./auth.js";
 import { MOVEMENT_LABELS, RANGE_LABELS, TYPES } from "./constants.js";
-import { addThrowBtn, closeDetail, deleteLineupBtn, detailNameInput, detailOwnerBadge, detailPanel, detailTitle, detailType, saveLineupBtn, shareLineupBtn, throwList, typeModal } from "./dom.js";
+import { addThrowBtn, closeDetail, deleteLineupBtn, detailNameInput, detailOwnerBadge, detailPanel, detailTitle, detailType, saveLineupBtn, shareLineupBtn, submitLineupBtn, submitLineupNote, throwList, typeModal } from "./dom.js";
 import { openLightbox } from "./lightbox.js";
 import { loadLineups, refreshLocal, upsertLocalLineup } from "./map-data.js";
 import { getCssVarColor, renderMarkers } from "./markers.js";
@@ -70,6 +70,8 @@ export function renderDetail(lineup) {
   // (see the per-throw button in the hero card below).
   deleteLineupBtn.classList.toggle("hidden", !editable);
   deleteLineupBtn.textContent = "Delete this lineup";
+
+  renderSubmitControls(lineup, editable);
 
   if (saveLineupBtn) saveLineupBtn.classList.add("hidden"); // superseded by the per-throw button in the hero card
 
@@ -394,6 +396,38 @@ addThrowBtn.onclick = () => {
   showAddFlow(null, null, "Click on the map where you throw from.");
   detailPanel.classList.remove("open");
 };
+
+// "Submit to public map": the owner's explicit opt-in before an admin may
+// publish a personal lineup (and its screenshots) on the official map. The
+// confirm text is the licence grant described in terms.html "Your content".
+const SUBMIT_CONSENT = "Submit this lineup to the public map?\n\n" +
+  "If an admin accepts it, the lineup, its notes and screenshots are published on Lineupr for everyone, " +
+  "without your name, and stay up even if you later delete your account (email support@nastipe.dev to have it removed).\n\n" +
+  "Only submit screenshots and notes you made yourself. You can withdraw the submission any time before it is published.";
+
+function renderSubmitControls(lineup, editable) {
+  if (!submitLineupBtn) return;
+  const show = editable && !lineup.isOfficial;
+  submitLineupBtn.classList.toggle("hidden", !show);
+  submitLineupNote.classList.toggle("hidden", !show || !lineup.submittedAt);
+  if (!show) return;
+  const submitted = !!lineup.submittedAt;
+  submitLineupBtn.textContent = submitted ? "Withdraw public-map submission" : "★ Submit to public map";
+  submitLineupNote.textContent = submitted ? "Submitted for review. An admin may publish it on the public map." : "";
+  submitLineupBtn.onclick = async () => {
+    if (!submitted && !confirm(SUBMIT_CONSENT)) return;
+    submitLineupBtn.disabled = true;
+    try {
+      const { submittedAt } = await dbSubmitLineup(lineup.id, !submitted);
+      lineup.submittedAt = submittedAt;
+      renderSubmitControls(lineup, editable);
+    } catch (e) {
+      alert("Couldn't update the submission. Please try again.");
+    } finally {
+      submitLineupBtn.disabled = false;
+    }
+  };
+}
 
 deleteLineupBtn.onclick = async () => {
   if (!state.selectedLineupId) return;

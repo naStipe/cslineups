@@ -184,6 +184,10 @@ export const addThrowBtn = document.getElementById("addThrowBtn");
 
 export const deleteLineupBtn = document.getElementById("deleteLineupBtn");
 
+export const submitLineupBtn = document.getElementById("submitLineupBtn");
+
+export const submitLineupNote = document.getElementById("submitLineupNote");
+
 export const saveLineupBtn = document.getElementById("saveLineupBtn");
 
 export const shareLineupBtn = document.getElementById("shareLineupBtn");

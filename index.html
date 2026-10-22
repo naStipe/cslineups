@@ -12,7 +12,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
 <meta name="description" content="Personal CS2 grenade lineup database. Map your smokes, flashes, molotovs and HEs with screenshots and technique notes.">
 <link rel="canonical" href="https://www.lineupr.org/">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Lineupr","url":"https://www.lineupr.org","applicationCategory":"Game","description":"Interactive CS2 grenade lineup map with smoke, flash, molotov and HE throws, screenshots and technique notes for every active-duty map.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Lineupr","url":"https://www.lineupr.org","applicationCategory":"Game","description":"Interactive CS2 grenade lineup map with smoke, flash, molotov and HE throws, screenshots and technique notes for popular CS2 maps.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
 <meta property="og:type"         content="website">
 <meta property="og:url"          content="https://www.lineupr.org/">
 <meta property="og:title"        content="Lineupr — CS2 Grenade Lineup Database">
@@ -25,11 +25,9 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
 <meta name="twitter:title"       content="Lineupr — CS2 Grenade Lineup Database">
 <meta name="twitter:description" content="Personal CS2 grenade lineup database. Smokes, flashes, molotovs across all maps.">
 <meta name="twitter:image"       content="https://www.lineupr.org/og-image.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="/fonts/fonts.css" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.js"></script>
+<script defer src="/vendor/supabase-2.110.0.js"></script>
 <script defer src="/cursor.js"></script>
 <script type="module" src="/analytics.js"></script>
 </head>
@@ -77,7 +75,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
     <section class="hero" aria-labelledby="heroTitle">
       <div class="hero-text">
         <p class="hero-eyebrow"><span class="hero-eyebrow-dot"></span>CS2 lineup database</p>
-        <h1 class="hero-title" id="heroTitle">Find lineups. Learn. <span class="hero-accent">Save forever</span></h1>
+        <h1 class="hero-title" id="heroTitle">Find lineups. Learn. <span class="hero-accent">Save yours</span></h1>
         <p class="hero-sub">Lineupr is your all-in-one tool for practicing and sharing game-winning lineups. Learn new smokes, add your own, share with friends. Keep <span class="hero-highlight">YOUR</span> lineups in one place, one click away.</p>
         <div class="hero-actions">
           <a class="hero-cta" href="/maps" data-magnetic><span>Choose your map</span><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
@@ -170,7 +168,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
   <!-- Crawlable links so search engines can discover the server-rendered
        lineup pages (the map cards above are JS-only). -->
   <footer class="home-footer" aria-label="Map chooser footer">
-    <p class="home-footer-note">Lineupr is open-source and community-driven — built by players, for players.</p>
+    <p class="home-footer-note">Built by players, for players. Lineupr is an independent fan project, not affiliated with or endorsed by Valve. Counter-Strike 2 and its map images are trademarks or copyrighted material of Valve.</p>
     <nav class="home-footer-links" aria-label="Browse lineups by map">
       <a href="/maps">All maps</a>
       <a href="/dust2">Dust II lineups</a>
@@ -186,6 +184,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
       <a href="/privacy.html">Privacy</a>
       <a href="/terms.html">Terms</a>
       <a href="/cookies.html">Cookies</a>
+      <a href="mailto:support@nastipe.dev?subject=Content%20report">Report content</a>
     </nav>
   </footer>
 </div>
@@ -378,6 +377,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
       <a href="/privacy.html">Privacy</a>
       <a href="/terms.html">Terms</a>
       <a href="/cookies.html">Cookies</a>
+      <a href="mailto:support@nastipe.dev?subject=Content%20report">Report content</a>
     </nav>
   </footer>
 
@@ -404,6 +404,8 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
       <h3 id="detailTitle">Lineup</h3>
       <div class="throw-list" id="throwList"></div>
       <button class="ghost-btn" id="addThrowBtn">+ Add throw position</button>
+      <button class="ghost-btn hidden" id="submitLineupBtn">★ Submit to public map</button>
+      <p class="submit-note hidden" id="submitLineupNote"></p>
       <button class="ghost-btn danger" id="deleteLineupBtn">Delete this lineup</button>
     </div>
   </div>
@@ -461,6 +463,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
     <button type="submit" class="primary-btn auth-submit-btn" id="authSubmitBtn">Sign in</button>
     </form>
     <button type="button" class="ghost-btn auth-google-btn" id="authGoogleBtn">Continue with Google</button>
+    <p class="auth-legal">By signing up or continuing with Google, you accept the <a href="/terms.html" target="_blank" rel="noopener">Terms of Use</a> and confirm you have read the <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</p>
     <p class="auth-switch"><span id="authSwitchText">Don't have an account?</span> <a href="#" id="authSwitchLink">Sign up</a></p>
     <button type="button" class="ghost-btn" id="cancelAuth">Cancel</button>
   </div>
