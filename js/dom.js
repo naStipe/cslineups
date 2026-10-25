@@ -120,6 +120,14 @@ export const throwModalTitle = document.getElementById("throwModalTitle");
 
 export const throwModalHint = document.getElementById("throwModalHint");
 
+export const tmUploadSummary = document.getElementById("tmUploadSummary");
+
+export const tmPasteHint = document.getElementById("tmPasteHint");
+
+export const lineupNameHint = document.getElementById("lineupNameHint");
+
+export const lineupNameSuggestions = document.getElementById("lineupNameSuggestions");
+
 export const tmPreviewImg = document.getElementById("tmPreviewImg");
 
 export const tmPreviewSvg = document.getElementById("tmPreviewSvg");
