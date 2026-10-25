@@ -21,7 +21,8 @@ export function mountAreaEditor(root, authHeaders) {
     <div class="ae-bar">
       <select class="area-select" id="aeMap" aria-label="Map"></select>
       <div class="side-seg" id="aeLevels" role="radiogroup" aria-label="Radar level" hidden></div>
-      <button type="button" class="ghost-btn" id="aeNew">New area</button>
+      <input type="text" class="area-select" id="aeName" maxlength="40" placeholder="New area name" aria-label="New area name">
+      <button type="button" class="ghost-btn" id="aeNew">Add area</button>
       <button type="button" class="primary-btn" id="aeSave">Save map</button>
     </div>
     <div class="ae-body">
@@ -121,13 +122,17 @@ export function mountAreaEditor(root, authHeaders) {
   };
 
   $("aeNew").onclick = () => {
-    const name = (prompt("Area name (e.g. A Site)") || "").trim().slice(0, 40);
-    if (!name) return;
+    const nameInput = $("aeName");
+    const name = nameInput.value.trim().slice(0, 40);
+    if (!name) { nameInput.focus(); return; }
+    nameInput.value = "";
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 32) || "area";
     if (areas.some(a => a.slug === slug && a.level === levelId)) { toastError("An area with that name already exists on this level."); return; }
     areas.push({ level: levelId, kind: "area", slug, name, sort: areas.length + 1, polygon: [] });
     selected = areas.length - 1; dirty = true; draw();
   };
+
+  $("aeName").onkeydown = (e) => { if (e.key === "Enter") $("aeNew").click(); };
 
   mapSel.onchange = async () => {
     if (dirty && !(await confirmDialog({ title: "Discard unsaved changes?", body: "Switching maps drops the edits to this one.", confirmLabel: "Discard", danger: true }))) { mapSel.value = mapId; return; }
