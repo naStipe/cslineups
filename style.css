@@ -2599,7 +2599,7 @@ kbd{
 .strip-hint{margin:6px 0 0;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.03em;color:var(--text-faint);}
 
 /* ---- Unnamed lineup ---- */
-.detail-name-input.is-unnamed::placeholder{color:var(--text-faint);font-style:italic;}
+.detail-name-input.is-unnamed::placeholder{color:var(--text-faint);-webkit-text-fill-color:var(--text-faint);font-style:italic;}
 .detail-name-input:disabled{color:var(--text);-webkit-text-fill-color:var(--text);opacity:1;border-bottom-color:transparent;}
 .name-nudge{
   display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:2px 0;background:none;border:none;
@@ -2653,9 +2653,14 @@ kbd{
 
   /* Touch targets ≥ 44px for every dossier control */
   .detail-panel .icon-btn{width:44px;height:44px;font-size:16px;}
+  /* With 44px header buttons the name gets its own full-width row. */
+  .detail-head{flex-wrap:wrap;row-gap:4px;}
+  .detail-name-wrap{order:3;flex-basis:100%;padding:4px 0 0;}
   .detail-head-actions{gap:6px;}
   .throw-card-actions button{min-height:44px;padding:8px 6px;}
-  .throw-card-actions{gap:6px 12px;flex-wrap:wrap;}
+  .throw-card-actions{gap:0 14px;flex-wrap:wrap;}
+  .hero-header .throw-card-actions{flex-basis:100%;justify-content:flex-start;margin-left:0;}
+  .hero-header .throw-card-actions .remove-btn{margin-left:auto;}
   .tc-arrow{width:34px;height:34px;}
   .tc-arrow::after{content:"";position:absolute;inset:-6px;}
   .detail-actions .ghost-btn{min-height:44px;}
@@ -2663,6 +2668,11 @@ kbd{
   #detailType::after{content:"";position:absolute;inset:-7px -4px;}
   .detail-strip-thumb{min-height:44px;}
   .name-nudge{min-height:44px;margin-top:0;}
+  /* The generic mobile `.icon-btn{position:relative}` (hit-area rule) was
+     knocking the lightbox ✕ out of its corner into the middle of the image. */
+  .lightbox-close{position:absolute;top:calc(12px + env(safe-area-inset-top, 0px));right:12px;width:44px;height:44px;z-index:2;}
+  .lightbox-close::after{display:none;}
+  .lightbox-nav{z-index:2;}
   .strip-hint{font-size:11px;}
 }
 @media (max-width:480px){
