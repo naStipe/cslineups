@@ -50,6 +50,18 @@ export function resetZoom() {
   mapStage.style.cursor = "";
 }
 
+// Zoom so a box given in map percent (centre cx/cy, size w/h) fills about
+// 60% of the stage, centred. Used when an area is picked.
+export function zoomToBox({ cx, cy, w, h }) {
+  const fw = mapFrame.offsetWidth, fh = mapFrame.offsetHeight;
+  const sw = mapStage.clientWidth, sh = mapStage.clientHeight;
+  const boxW = Math.max(w, 8) / 100 * fw, boxH = Math.max(h, 8) / 100 * fh;
+  zoom = Math.min(MAX_ZOOM, Math.max(1, Math.min(sw * 0.6 / boxW, sh * 0.6 / boxH)));
+  panX = -((cx - 50) / 100) * fw * zoom;
+  panY = -((cy - 50) / 100) * fh * zoom;
+  applyTransform();
+}
+
 export function zoomAt(clientX, clientY, factor) {
   const newZoom = Math.min(Math.max(zoom * factor, 1), MAX_ZOOM);
   if (newZoom === zoom) return;

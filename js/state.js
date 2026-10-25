@@ -8,6 +8,10 @@ export let state = {
   lineupsLoading: false, // true while the current map's lineups are being fetched
   savedThrowKeys: new Set(), // `${lineupId}::${throwId}` for every individual throw position the user has bookmarked
   activeFilters: new Set(TYPES.map(t => t.id)),
+  sideFilter: "all",     // "all" | "t" | "ct" (lineups with side "any" always pass)
+  areas: [],             // map_areas rows for the current map (see js/areas.js)
+  areaFilter: null,      // slug of the selected map area, or null
+  pendingSide: "any",
   pendingType: null,
   pendingName: "",     // type chosen in type modal, awaiting landing click
   pendingLanding: null,  // {x,y} percent, awaiting throw-pos click for a NEW lineup

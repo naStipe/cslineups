@@ -21,6 +21,7 @@ function mapRow(row) {
     mapId:      row.map_id,
     type:       row.type,
     name:       row.name || "",
+    side:       row.side || "any",
     landing:    row.landing,
     throws:     row.throws,
     createdAt:  row.created_at,
@@ -49,6 +50,7 @@ const VALID_MOVEMENTS = [
   "run", "shift-w-throw", "shift-w-jumpthrow", "crouch",
   "crouchaim-jump", "crouchaim-crouchjump",
 ];
+const VALID_SIDES = ["t", "ct", "any"];
 const MAX_THROWS = 20;
 const MAX_SCREENSHOTS = 5;
 const MAX_STANDING = 3;
@@ -140,6 +142,8 @@ function sanitizeLineup(body, userId) {
     mapId: body.mapId,
     type: body.type,
     name: typeof body.name === "string" ? body.name.slice(0, MAX_NAME_LEN) : "",
+    // Optional on old clients: anything unrecognized falls back to "any".
+    side: VALID_SIDES.includes(body.side) ? body.side : "any",
     landing: { x: body.landing.x, y: body.landing.y },
     throws: body.throws.map((t, i) => sanitizeThrow(t, i, userId)),
   };
@@ -224,7 +228,7 @@ module.exports = async function handler(req, res) {
             continue;
           }
           const { error } = await sb.from("lineups").upsert({
-            id: r.id, map_id: clean.mapId, type: clean.type, name: clean.name,
+            id: r.id, map_id: clean.mapId, type: clean.type, name: clean.name, side: clean.side,
             landing: clean.landing, throws: clean.throws,
             created_at: r.createdAt || Date.now(),
             is_official: true, owner_id: null,
@@ -233,6 +237,19 @@ module.exports = async function handler(req, res) {
           imported++;
         }
         res.status(200).json({ ok: true, count: imported, skipped });
+        return;
+      }
+
+      // Admin: set the side on many official lineups at once (they predate
+      // the side field and all default to "any").
+      if (body.action === "set-side") {
+        if (!admin) { res.status(403).json({ error: "Admin access required" }); return; }
+        if (!VALID_SIDES.includes(body.side) || !Array.isArray(body.ids) || body.ids.length === 0 || body.ids.length > 500 || !body.ids.every(i => typeof i === "string")) {
+          res.status(400).json({ error: "Invalid side or ids" }); return;
+        }
+        const { error } = await sb.from("lineups").update({ side: body.side }).in("id", body.ids).eq("is_official", true);
+        if (error) throw new Error(error.message);
+        res.status(200).json({ ok: true, count: body.ids.length });
         return;
       }
 
@@ -299,7 +316,7 @@ module.exports = async function handler(req, res) {
 
       const [{ error }] = await Promise.all([
         sb.from("lineups").upsert({
-          id: body.id, map_id: clean.mapId, type: clean.type, name: clean.name,
+          id: body.id, map_id: clean.mapId, type: clean.type, name: clean.name, side: clean.side,
           landing: clean.landing, throws: clean.throws,
           created_at: body.createdAt || Date.now(),
           is_official: isOfficial, owner_id: ownerId,

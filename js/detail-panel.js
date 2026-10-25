@@ -2,7 +2,7 @@ import { setAddMode, showAddFlow } from "./add-mode.js";
 import { API_URL, SAVED_URL, dbPut, dbSaveLineup, dbSubmitLineup, dbUnsaveLineup, throwKey } from "./api.js";
 import { authUser } from "./auth.js";
 import { MOVEMENT_LABELS, RANGE_LABELS, TYPES } from "./constants.js";
-import { addThrowBtn, closeDetail, deleteLineupBtn, detailNameInput, detailOwnerBadge, detailPanel, detailTitle, detailType, saveLineupBtn, shareLineupBtn, submitLineupBtn, submitLineupNote, throwList, typeModal } from "./dom.js";
+import { addThrowBtn, closeDetail, deleteLineupBtn, detailNameInput, detailOwnerBadge, detailSideSlot, detailPanel, detailTitle, detailType, saveLineupBtn, shareLineupBtn, submitLineupBtn, submitLineupNote, throwList, typeModal } from "./dom.js";
 import { attachInlineZoom, attachSheetDrag, attachStripReorder, attachVariantSwipe, loadFrameImage, loadFrameImages } from "./dossier-gestures.js";
 import { openLightbox } from "./lightbox.js";
 import { loadLineups, refreshLocal, upsertLocalLineup } from "./map-data.js";
@@ -16,6 +16,7 @@ import { escapeHtml } from "./html-utils.js";
 import { openThrowModal } from "./throw-modal.js";
 import { confirmDialog } from "./confirm-dialog.js";
 import { timeEl } from "./time-utils.js";
+import { SIDES, normalizeSide, sideLabel, sideSegment } from "./side.js";
 import { toast, toastError } from "./toast.js";
 import { deferDelete } from "./undo-delete.js";
 
@@ -150,6 +151,7 @@ export function renderDetail(lineup, opts = {}) {
   }
 
   renderName(lineup, editable);
+  renderSide(lineup, editable);
 
   throwList.innerHTML = "";
 
@@ -342,6 +344,37 @@ function buildPagerHtml(lineup) {
       <span class="pager-count" aria-live="polite">${i + 1} / ${n}</span>
       <button type="button" class="pager-btn pager-next" aria-label="Next variant"${i === n - 1 ? " disabled" : ""}>›</button>
     </div>`;
+}
+
+// T / CT side: a segmented control for whoever can edit the lineup, a small
+// read-only badge for everyone else (nothing shown for "any").
+function renderSide(lineup, editable) {
+  if (!detailSideSlot) return;
+  const side = normalizeSide(lineup.side);
+  if (!editable) {
+    detailSideSlot.replaceChildren();
+    if (side !== "any") {
+      const b = document.createElement("span");
+      b.className = "side-badge";
+      b.textContent = sideLabel(side);
+      detailSideSlot.append(b);
+    }
+    return;
+  }
+  detailSideSlot.replaceChildren(sideSegment(SIDES, side, async (v) => {
+    const prev = lineup.side;
+    lineup.side = v;
+    refreshLocal();
+    try {
+      await dbPut(lineup, lineup.isOfficial);
+      toast(`Side set to ${sideLabel(v)}`);
+    } catch (err) {
+      lineup.side = prev;
+      renderSide(lineup, editable);
+      refreshLocal();
+      toastError("Couldn't save the side. Please try again.");
+    }
+  }, { label: "Side" }));
 }
 
 // Name field, plus the "Unnamed position" state: muted placeholder for

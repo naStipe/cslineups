@@ -4,6 +4,7 @@ import { linkSvg, mapStage, markerLayer } from "./dom.js";
 import { syncLineupListSelection } from "./lineup-list.js";
 import { zoom } from "./pan-zoom.js";
 import { state } from "./state.js";
+import { lineupVisible } from "./visibility.js";
 
 export function typeColor(typeId) {
   return TYPES.find(t => t.id === typeId)?.color || "#fff";
@@ -256,7 +257,7 @@ export function renderMarkers(animate = true) {
   // The reposition overlay owns the marker/link layers while it's active —
   // don't let a stray re-render (zoom, filter toggle, etc.) wipe its dots.
   if (state.reposition) return;
-  const visible = state.lineups.filter(l => state.activeFilters.has(l.type));
+  const visible = state.lineups.filter(lineupVisible);
   const clusters = clusterLineups(visible);
 
   // Zooming changes the clustering distance threshold, so a cluster that was

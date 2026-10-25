@@ -326,6 +326,7 @@ saveThrow.onclick = async () => {
         mapId: state.mapId,
         type: draft.typeId,
         name: state.pendingName || "",
+        side: state.pendingSide || "any",
         landing: draft.landingPos,
         throws: [{ id: uid(), createdAt: Date.now(), ...throwEntryBase }],
         createdAt: Date.now(),

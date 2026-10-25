@@ -18,9 +18,10 @@ import { canModifyLineup } from "./permissions.js";
 import { hydrateImages } from "./private-images.js";
 import { startLandingReposition } from "./reposition.js";
 import { emptyState } from "./ui-utils.js";
-import { buildFilters, closeSidebar, saveFilters } from "./sidebar.js";
+import { buildFilters, closeSidebar, refreshAreaUi, saveFilters } from "./sidebar.js";
 import { state } from "./state.js";
 import { toastError } from "./toast.js";
+import { lineupVisible, passesNonTypeFilters } from "./visibility.js";
 
 // Which lineup's inline detail is currently expanded (survives map-selection
 // re-renders; reset whenever the list itself is rebuilt).
@@ -69,7 +70,7 @@ function matchLineups(term) {
 export function countsByType() {
   const term = (lineupSearchInput && lineupSearchInput.value || "").trim().toLowerCase();
   const counts = {};
-  matchLineups(term).forEach(l => { counts[l.type] = (counts[l.type] || 0) + 1; });
+  matchLineups(term).filter(passesNonTypeFilters).forEach(l => { counts[l.type] = (counts[l.type] || 0) + 1; });
   return counts;
 }
 
@@ -103,7 +104,7 @@ function listEmptyState(term) {
 // Lineups currently shown on the map (active type filters), in list order —
 // what the dossier's ←/→ shortcut steps through.
 export function orderedVisibleLineups() {
-  return matchLineups("").filter(l => state.activeFilters.has(l.type));
+  return matchLineups("").filter(lineupVisible);
 }
 
 export function buildLineupList() {
@@ -120,12 +121,12 @@ export function buildLineupList() {
   }
 
   // Everything is listed, but the type chips may hide every marker.
-  if (!matches.some(l => state.activeFilters.has(l.type))) {
+  if (!matches.some(lineupVisible)) {
     lineupList.appendChild(emptyState({
-      title: "Every type is hidden",
+      title: "No lineups match your filters",
       body: "The list below is still searchable.",
       compact: true,
-      action: { label: "Show all types", onClick: () => { clearTypeFilters(); } },
+      action: { label: "Clear filters", onClick: () => { clearTypeFilters(); } },
     }));
   }
 
@@ -264,9 +265,12 @@ export function focusLineup(id) {
   if (!lineup) return;
 
   // Make sure the marker is actually shown before we fly to it.
-  if (!state.activeFilters.has(lineup.type)) {
+  if (!lineupVisible(lineup)) {
     state.activeFilters.add(lineup.type);
+    state.sideFilter = "all";
+    state.areaFilter = null;
     buildFilters();
+    refreshAreaUi();
   }
   state.openClusterKey = null;
   state.selectedLineupId = id;
@@ -300,6 +304,9 @@ export function focusLineup(id) {
 
 function clearTypeFilters() {
   TYPES.forEach(t => state.activeFilters.add(t.id));
+  state.sideFilter = "all";
+  state.areaFilter = null;
+  refreshAreaUi();
   saveFilters();
   buildFilters();
   buildLineupList();

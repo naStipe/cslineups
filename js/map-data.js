@@ -8,7 +8,8 @@ import { currentMapName, detailPanel, mapFrame, lineupCount, lineupSearchInput, 
 import { buildLineupList } from "./lineup-list.js";
 import { renderMarkers, resetRenderedThrowSig } from "./markers.js";
 import { resetZoom } from "./pan-zoom.js";
-import { buildFilters, buildSidebar, restoreFilters, showMapLoading } from "./sidebar.js";
+import { fetchAreas } from "./areas.js";
+import { buildFilters, buildSidebar, refreshAreaUi, restoreFilters, showMapLoading } from "./sidebar.js";
 import { state } from "./state.js";
 import { applyViewModeClass, setViewMode } from "./view-mode.js";
 import { flushPendingDeletes } from "./undo-delete.js";
@@ -19,6 +20,7 @@ export async function selectMap(id) {
   try { localStorage.setItem(LAST_MAP_KEY, id); } catch {}
   state.selectedLineupId = null;
   state.lineups = [];
+  state.areas = [];
   markerLayer.innerHTML = "";
   linkSvg.innerHTML = "";
   resetRenderedThrowSig();
@@ -42,6 +44,12 @@ export async function selectMap(id) {
     .then(() => { if (state.mapId === id) playMapIn(); });
   updateLevelSwitch(id);
   updateCheatsheet(id);
+  fetchAreas(id).then(areas => {
+    if (state.mapId !== id) return;
+    state.areas = areas;
+    refreshAreaUi();
+    renderMarkers();
+  });
   // Per-map memory of the type filters and the official/personal view.
   const savedView = restoreFilters(id);
   if (savedView) state.viewMode = savedView;

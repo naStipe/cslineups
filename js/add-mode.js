@@ -1,9 +1,10 @@
-import { addFlowBar, addFlowCancel, addFlowStep, addFlowText, addModeBtn, cancelType, detailPanel, fabAddBtn, lineupNameHint, lineupNameInput, lineupNameSuggestions, mapFrame, mapImage, markerLayer, typeGrid, typeModal } from "./dom.js";
+import { addFlowBar, addFlowCancel, addFlowStep, addFlowText, addModeBtn, cancelType, detailPanel, fabAddBtn, lineupNameHint, lineupNameInput, lineupNameSuggestions, lineupSideSlot, mapFrame, mapImage, markerLayer, typeGrid, typeModal } from "./dom.js";
 import { getCssVarColor, renderMarkers, typeColor } from "./markers.js";
 import { closeModal } from "./modal-utils.js";
 import { consumeDragFlags } from "./pan-zoom.js";
 import { requireCanCreate } from "./permissions.js";
 import { TYPES } from "./constants.js";
+import { SIDES, sideSegment } from "./side.js";
 import { buildTypeGrid } from "./sidebar.js";
 import { state, uid } from "./state.js";
 import { openThrowModal } from "./throw-modal.js";
@@ -53,6 +54,7 @@ export function startAddFlow() {
   openTypeModal((typeId) => {
     state.pendingType = typeId;
     state.pendingName = lineupNameInput ? lineupNameInput.value.trim() : "";
+    // pendingSide was kept up to date by the segmented control in the dialog.
     closeModal(typeModal);
     showAddFlow(1, 2, "Click on the map where the nade lands.");
   });
@@ -219,6 +221,10 @@ export function openTypeModal(onPick) {
   typePick = onPick;
   enhanceTypeGrid();
   if (lineupNameInput) lineupNameInput.value = "";
+  state.pendingSide = "any";
+  if (lineupSideSlot) {
+    lineupSideSlot.replaceChildren(sideSegment(SIDES, "any", (v) => { state.pendingSide = v; }, { label: "Side" }));
+  }
   let last = null;
   try { last = localStorage.getItem(LAST_TYPE_KEY); } catch {}
   highlightType(TYPES.some(t => t.id === last) ? last : null);

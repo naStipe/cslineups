@@ -282,3 +282,7 @@ export const passwordMsg = document.getElementById("passwordMsg");
 export const deleteAccountBtn = document.getElementById("deleteAccountBtn");
 
 export const deleteMsg = document.getElementById("deleteMsg");
+
+export const sideFilters = document.getElementById("sideFilters");
+export const lineupSideSlot = document.getElementById("lineupSideSlot");
+export const detailSideSlot = document.getElementById("detailSideSlot");

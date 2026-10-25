@@ -219,6 +219,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
          itself stays just the map list. -->
     <div class="lineup-rail">
       <p class="rail-label">Lineups on this map</p>
+      <div class="side-filters" id="sideFilters" aria-label="Filter by side and area"></div>
       <div class="lineup-search">
         <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
           <circle cx="6" cy="6" r="4.3" stroke="currentColor" stroke-width="1.5"/>
@@ -395,6 +396,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
         <div class="detail-name-wrap">
           <input class="detail-name-input" id="detailNameInput" type="text" placeholder="Unnamed position" maxlength="40" aria-label="Lineup name">
           <button type="button" class="name-nudge hidden" id="detailNameNudge">✎ Name this lineup</button>
+          <div class="detail-side" id="detailSideSlot"></div>
         </div>
         <div class="detail-head-actions">
           <button class="ghost-btn hidden" id="saveLineupBtn">☆ Save to my map</button>
@@ -521,6 +523,8 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
     <div class="type-grid" id="typeGrid" role="radiogroup" aria-labelledby="typeModalTitle"></div>
     <label class="field-label" for="lineupNameInput" style="margin-top:8px;">Name this position <span style="color:var(--text-faint);font-size:10px;">optional</span></label>
     <input type="text" id="lineupNameInput" placeholder="e.g. CT Spawn, Mid Box, Window…" autocomplete="off" maxlength="40" aria-describedby="lineupNameHint">
+    <label class="field-label" style="margin-top:12px;">Side <span style="color:var(--text-faint);font-size:10px;">optional</span></label>
+    <div id="lineupSideSlot"></div>
     <div class="name-suggestions" id="lineupNameSuggestions" hidden></div>
     <p class="name-hint" id="lineupNameHint" aria-live="polite"></p>
     <button class="ghost-btn" id="cancelType" data-esc>Cancel</button>
