@@ -9,3 +9,7 @@ All new tables have RLS enabled with **no policies**: they are only reachable
 through the service-role key used by `api/*`, which does its own auth,
 ownership and visibility checks. Never add a permissive policy without also
 updating the corresponding endpoint.
+
+`draft_map_areas.json` is a backup of the first-draft A / Mid / B polygons that
+were in `map_areas` (27 rows, `[x, y]` pairs). They are kept out of production
+until the polygons have been refined in the admin Areas tab.

@@ -9,11 +9,18 @@ import { state } from "./state.js";
 
 const cache = new Map(); // mapId -> Promise<area[]>
 
+// Polygons may be stored as {x,y} points or as [x,y] pairs (the first draft
+// set was loaded that way); the rest of the app works with {x,y}.
+export function normalizeArea(a) {
+  if (!a || !Array.isArray(a.polygon)) return a;
+  return { ...a, polygon: a.polygon.map(p => (Array.isArray(p) ? { x: p[0], y: p[1] } : p)) };
+}
+
 export function fetchAreas(mapId) {
   if (!cache.has(mapId)) {
     const p = fetch(`/api/areas?mapId=${encodeURIComponent(mapId)}`)
       .then(r => (r.ok ? r.json() : []))
-      .then(rows => (Array.isArray(rows) ? rows : []))
+      .then(rows => (Array.isArray(rows) ? rows.map(normalizeArea) : []))
       .catch(() => []);
     cache.set(mapId, p);
   }

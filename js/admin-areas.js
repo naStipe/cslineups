@@ -3,6 +3,7 @@
 // move it, double-click a corner to delete it. Saves one map at a time through
 // PUT /api/areas. Coordinates are percent of the radar image, the same space
 // as lineup positions.
+import { normalizeArea } from "./areas.js";
 import { MAPS } from "./constants.js";
 import { confirmDialog } from "./confirm-dialog.js";
 import { toast, toastError } from "./toast.js";
@@ -44,7 +45,7 @@ export function mountAreaEditor(root, authHeaders) {
     try {
       const res = await fetch(`/api/areas?mapId=${mapId}&t=${Date.now()}`);
       const rows = res.ok ? await res.json() : [];
-      areas = rows.filter(r => r.kind === "area").map(r => ({ level: r.level, kind: "area", slug: r.slug, name: r.name, sort: r.sort, polygon: r.polygon || [] }));
+      areas = rows.filter(r => r.kind === "area").map(normalizeArea).map(r => ({ level: r.level, kind: "area", slug: r.slug, name: r.name, sort: r.sort, polygon: r.polygon || [] }));
       // Callout rows aren't editable here yet; keep them so saving doesn't drop them.
       areas.callouts = rows.filter(r => r.kind === "callout");
     } catch { areas = []; toastError("Couldn't load the areas."); }
