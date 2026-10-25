@@ -2531,3 +2531,158 @@ kbd{
   .skeleton{animation:none;}
   .busy-spinner{animation-duration:1.6s;}
 }
+
+/* ===== Dossier ===== */
+/* Phase D: lineup dossier polish (js/detail-panel.js, js/dossier-gestures.js,
+   js/lightbox.js). Skeleton frames, variant reorder, deep-link highlight,
+   mobile pager / inline zoom / swipe-to-close, unnamed nudge. */
+
+/* ---- Screenshot frames: reserve 16:9, skeleton while loading, fade in ---- */
+.tc-carousel-inner.img-frame{aspect-ratio:16/9;touch-action:pan-y;}
+.tc-carousel-inner.img-frame .tc-carousel-img{height:100%;aspect-ratio:auto;transform-origin:center center;}
+.img-frame{position:relative;overflow:hidden;}
+.img-frame > img{opacity:1;transition:opacity .2s ease, filter .15s;}
+.img-frame.is-loading > img,.img-frame.is-error > img{opacity:0;}
+.img-frame.is-loading::before{
+  content:"";position:absolute;inset:0;background:var(--panel-2);
+  animation:skeletonPulse 1.4s ease-in-out infinite;
+}
+.img-frame.is-error::after{
+  content:"Image unavailable";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:var(--hull);color:var(--text-faint);font-family:var(--font-mono);font-size:10px;
+  letter-spacing:.1em;text-transform:uppercase;line-height:1.4;text-align:center;padding:0 6px;
+}
+.strip-thumb-frame{display:block;aspect-ratio:16/9;background:var(--void);}
+.detail-strip-thumb .strip-thumb-frame img{width:100%;height:100%;aspect-ratio:auto;}
+.strip-thumb-frame.is-error::after{content:"No image";font-size:9px;}
+
+/* ---- Inline zoom ---- */
+.tc-carousel-inner.zoomed{touch-action:none;}
+.tc-carousel-inner.zoomed .tc-carousel-img{cursor:zoom-out;}
+.tc-carousel-inner.zoomed .tc-dots{opacity:0;}
+
+/* ---- Hero: meta, actions, variant switch + deep-link highlight ---- */
+.detail-hero{touch-action:pan-y;}
+.throw-meta time{align-self:center;font-family:var(--font-mono);font-size:10px;color:var(--text-faint);letter-spacing:.03em;}
+.meta-sep{margin:0 8px;color:var(--text-faint);}
+#detailTitle time{color:var(--text-faint);}
+.throw-card-actions button.default-btn:hover{color:var(--signal);}
+.variant-tag:focus{outline:none;}
+.detail-hero.enter-next > :not(.variant-pager){animation:dossierEnterNext .2s ease both;}
+.detail-hero.enter-prev > :not(.variant-pager){animation:dossierEnterPrev .2s ease both;}
+@keyframes dossierEnterNext{from{opacity:0;transform:translateX(16px);}to{opacity:1;transform:none;}}
+@keyframes dossierEnterPrev{from{opacity:0;transform:translateX(-16px);}to{opacity:1;transform:none;}}
+.detail-hero.flash,.detail-strip-thumb.flash{animation:variantFlash 1.6s ease-out both;}
+@keyframes variantFlash{
+  0%,35%{box-shadow:0 0 0 3px color-mix(in srgb, var(--signal) 60%, transparent);}
+  100%{box-shadow:0 0 0 3px transparent;}
+}
+
+/* ---- Variant pager (phone sheet only; the strip does this on desktop) ---- */
+.variant-pager{display:none;}
+
+/* ---- Strip: reorder ---- */
+.detail-strip-thumb:focus-visible{outline:2px solid var(--signal);outline-offset:2px;}
+.detail-strip.can-reorder .detail-strip-thumb{
+  cursor:grab;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:pan-x;
+}
+.detail-strip-thumb img{-webkit-user-drag:none;user-select:none;}
+.detail-strip.reordering .detail-strip-thumb{cursor:grabbing;}
+.detail-strip.reordering .detail-strip-thumb:hover{transform:none;}
+.detail-strip-thumb.drag-placeholder{border-style:dashed;border-color:var(--signal-dim);}
+.detail-strip-thumb.drag-placeholder > *{opacity:.3;}
+.detail-strip-thumb.drag-ghost{
+  position:fixed;z-index:1000;margin:0;pointer-events:none;cursor:grabbing;
+  border-color:var(--signal);box-shadow:0 14px 34px rgba(0,0,0,.55);transition:none;
+}
+.strip-thumb-default{margin-left:5px;color:var(--signal);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;}
+.strip-hint{margin:6px 0 0;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.03em;color:var(--text-faint);}
+
+/* ---- Unnamed lineup ---- */
+.detail-name-input.is-unnamed::placeholder{color:var(--text-faint);-webkit-text-fill-color:var(--text-faint);font-style:italic;}
+.detail-name-input:disabled{color:var(--text);-webkit-text-fill-color:var(--text);opacity:1;border-bottom-color:transparent;}
+.name-nudge{
+  display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:2px 0;background:none;border:none;
+  color:var(--signal);font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;cursor:pointer;
+}
+.name-nudge:hover{text-decoration:underline;text-underline-offset:3px;}
+
+/* ---- Copy-link feedback ---- */
+#shareLineupBtn{transition:color .15s ease, border-color .15s ease;}
+#shareLineupBtn.copied{color:var(--he);border-color:var(--he);}
+
+/* ---- Lightbox loading / error ---- */
+.lightbox-backdrop.lb-loading .lightbox-image,.lightbox-backdrop.lb-error .lightbox-image{opacity:0;}
+.lightbox-backdrop.lb-loading::before,.lightbox-backdrop.lb-error::before{
+  content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:min(88vw, 960px);aspect-ratio:16/9;max-height:80vh;border-radius:4px;background:var(--panel-2);
+}
+.lightbox-backdrop.lb-loading::before{animation:skeletonPulse 1.4s ease-in-out infinite;}
+.lightbox-backdrop.lb-error::before{
+  content:"Image unavailable";display:flex;align-items:center;justify-content:center;background:var(--hull);
+  color:var(--text-faint);font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+}
+.lightbox-image{transition:transform .05s ease, opacity .2s ease;}
+
+@media (max-width:768px){
+  /* Sheet handle: a full-width sticky grab zone (≥44px with its hit area) */
+  .sheet-handle{
+    position:sticky;top:-10px;z-index:3;width:auto;height:26px;margin:-10px -16px 4px;
+    background:var(--panel);border-radius:14px 14px 0 0;touch-action:none;cursor:grab;
+  }
+  .sheet-handle::before{
+    content:"";position:absolute;left:50%;top:11px;width:36px;height:4px;margin-left:-18px;
+    border-radius:2px;background:var(--line);transition:background .15s ease;
+  }
+  .sheet-handle:active::before{background:var(--text-faint);}
+  .sheet-handle::after{content:"";position:absolute;left:0;right:0;top:0;bottom:-18px;}
+
+  .variant-pager{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:0 4px;border-bottom:1px solid var(--line-soft);
+  }
+  .pager-btn{
+    width:44px;height:44px;background:none;border:none;color:var(--text);font-size:22px;line-height:1;
+    cursor:pointer;border-radius:8px;flex-shrink:0;
+  }
+  .pager-btn:disabled{color:var(--line);cursor:default;}
+  .pager-dots{display:flex;gap:6px;align-items:center;margin-left:auto;}
+  .pager-dot{width:6px;height:6px;border-radius:50%;background:var(--line);transition:background .15s ease, transform .15s ease;}
+  .pager-dot.active{background:var(--signal);transform:scale(1.2);}
+  .pager-count{margin-right:auto;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);letter-spacing:.06em;min-width:3.5em;text-align:center;}
+
+  /* Touch targets ≥ 44px for every dossier control */
+  .detail-panel .icon-btn{width:44px;height:44px;font-size:16px;}
+  /* With 44px header buttons the name gets its own full-width row. */
+  .detail-head{flex-wrap:wrap;row-gap:4px;}
+  .detail-name-wrap{order:3;flex-basis:100%;padding:4px 0 0;}
+  .detail-head-actions{gap:6px;}
+  .throw-card-actions button{min-height:44px;padding:8px 6px;}
+  .throw-card-actions{gap:0 14px;flex-wrap:wrap;}
+  .hero-header .throw-card-actions{flex-basis:100%;justify-content:flex-start;margin-left:0;}
+  .hero-header .throw-card-actions .remove-btn{margin-left:auto;}
+  .tc-arrow{width:34px;height:34px;}
+  .tc-arrow::after{content:"";position:absolute;inset:-6px;}
+  .detail-actions .ghost-btn{min-height:44px;}
+  #detailType{position:relative;display:inline-flex;align-items:center;min-height:30px;}
+  #detailType::after{content:"";position:absolute;inset:-7px -4px;}
+  .detail-strip-thumb{min-height:44px;}
+  .name-nudge{min-height:44px;margin-top:0;}
+  /* The generic mobile `.icon-btn{position:relative}` (hit-area rule) was
+     knocking the lightbox ✕ out of its corner into the middle of the image. */
+  .lightbox-close{position:absolute;top:calc(12px + env(safe-area-inset-top, 0px));right:12px;width:44px;height:44px;z-index:2;}
+  .lightbox-close::after{display:none;}
+  .lightbox-nav{z-index:2;}
+  .strip-hint{font-size:11px;}
+}
+@media (max-width:480px){
+  .sheet-handle{margin:-10px -12px 4px;}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .img-frame > img,.lightbox-image{transition:none;}
+  .img-frame.is-loading::before,.lightbox-backdrop.lb-loading::before{animation:none;}
+  .detail-hero.enter-next > *,.detail-hero.enter-prev > *{animation:none !important;}
+  .detail-hero.flash,.detail-strip-thumb.flash{animation:none;box-shadow:0 0 0 3px color-mix(in srgb, var(--signal) 60%, transparent);}
+  .pager-dot,#shareLineupBtn{transition:none;}
+}

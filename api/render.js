@@ -448,7 +448,7 @@ async function renderLineupPage(res, C, mapId, typeId, slug) {
 
     return `<section class="throw">
 <h3>Throw ${i + 1} of ${lineup.throws.length}</h3>
-<ul class="facts"><li>Movement: <b>${movement}</b></li><li>Range: <b>${range}</b></li></ul>
+<ul class="facts"><li>Movement: <b>${movement}</b></li><li>Range: <b>${range}</b></li>${lineup.throws.length > 1 ? `<li><a href="/?map=${esc(map.id)}&amp;lineup=${esc(lineup.id)}&amp;throw=${i + 1}">Open this throw in the map</a></li>` : ""}</ul>
 ${notes ? `<p class="notes">${esc(notes).replace(/\r?\n/g, "<br>")}</p>` : ""}
 ${imgs ? `<div class="shots">\n${imgs}\n</div>` : ""}
 </section>`;

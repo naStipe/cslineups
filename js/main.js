@@ -1,7 +1,7 @@
 import { setAddMode, startAddFlow } from "./add-mode.js";
 import { initAuth } from "./auth.js";
 import { MAPS, TYPES } from "./constants.js";
-import { closeDetailPanel, hideDetailPanel, openDetail } from "./detail-panel.js";
+import { closeDetailPanel, hideDetailPanel, openDetail, throwIndexFromParams } from "./detail-panel.js";
 import { appShell, detailPanel, homeBrand, lightboxModal, lightboxNext, lightboxPrev, lineupSearchInput, sidebarBrand } from "./dom.js";
 import "./fx.js"; // side effect only: home-screen visual effects
 import "./profile-modal.js"; // side effect only: wires up the profile button + modal
@@ -34,7 +34,7 @@ window.addEventListener("popstate", () => {
   // over a dossier entry), so open/close it without reloading the map.
   if (id === state.mapId && !appShell.hidden) {
     const lineupId = params.get("lineup");
-    if (lineupId && state.lineups.some(l => l.id === lineupId)) openDetail(lineupId);
+    if (lineupId && state.lineups.some(l => l.id === lineupId)) openDetail(lineupId, throwIndexFromParams(params) ?? 0);
     else if (detailPanel.classList.contains("open")) hideDetailPanel();
     return;
   }
@@ -138,6 +138,9 @@ buildFilters();
 // Deep links from the server-rendered SEO pages ("Open in interactive
 // map"): /?map=dust2 opens that map, /?map=dust2&lineup=<id> also picks that
 // lineup (outlines it on the map, hides the rest) once its lineups have loaded.
+// /?map=dust2&lineup=<id>&throw=2 (shared from the dossier: 1-based, like the
+// "VARIANT 02" label) opens the dossier straight on that variant and briefly
+// highlights it; the dossier pushes its own history entry above the map one.
 async function handleDeepLink() {
   const params = new URLSearchParams(window.location.search);
   const mapId = params.get("map");
@@ -154,7 +157,9 @@ async function handleDeepLink() {
   // awaited — so poll briefly for the lineup instead of checking once.
   for (let i = 0; i < 50; i++) {
     if (state.lineups.some(l => l.id === lineupId)) {
-      focusLineup(lineupId);
+      const throwIdx = throwIndexFromParams(params);
+      if (throwIdx !== undefined) openDetail(lineupId, throwIdx, { highlight: true });
+      else focusLineup(lineupId);
       return;
     }
     await new Promise(r => setTimeout(r, 100));
