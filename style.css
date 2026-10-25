@@ -2685,4 +2685,92 @@ kbd{
   .detail-hero.enter-next > *,.detail-hero.enter-prev > *{animation:none !important;}
   .detail-hero.flash,.detail-strip-thumb.flash{animation:none;box-shadow:0 0 0 3px color-mix(in srgb, var(--signal) 60%, transparent);}
   .pager-dot,#shareLineupBtn{transition:none;}
+
+/* ===== Throw modal & uploads ===== */
+/* Paste hint above the slots. Phones have no Ctrl+V / desktop drag, so it's
+   hidden on touch-only devices. */
+.tm-paste-hint{
+  margin:0 0 14px;font-size:11.5px;line-height:1.6;color:var(--text-faint);
+}
+.tm-paste-hint kbd{min-width:20px;height:19px;padding:0 5px;font-size:10px;border-radius:4px;vertical-align:1px;}
+@media (hover:none) and (pointer:coarse){ .tm-paste-hint{display:none;} }
+
+/* Each slot column is the drop target (internal thumb moves and desktop
+   files); the highlight is a flat outline, no glow. */
+.tm-upload-col{border-radius:6px;transition:background-color .2s ease, outline-color .2s ease;outline:1.5px dashed transparent;outline-offset:4px;}
+.tm-upload-col.drag-over{outline-color:var(--signal);background:rgba(255,165,62,.05);}
+.tm-thumbs.drag-over{outline:none;}
+.tm-upload-col.slot-received{animation:tm-slot-received .9s ease-out;}
+@keyframes tm-slot-received{
+  0%{outline-color:var(--signal);background:rgba(255,165,62,.08);}
+  100%{outline-color:transparent;background:transparent;}
+}
+
+/* Per-image upload state on the thumb: ring while optimizing/uploading,
+   small check when done, error tint + retry. */
+.tm-thumbs .thumb-status{
+  position:absolute;inset:0;display:grid;place-items:center;
+  background:rgba(12,10,8,.55);transition:opacity .2s ease;pointer-events:none;
+}
+.tm-thumbs .thumb-ring{width:28px;height:28px;transform:rotate(-90deg);}
+.tm-thumbs .thumb-ring circle{fill:none;stroke-width:3;}
+.tm-thumbs .thumb-ring-track{stroke:rgba(242,236,226,.18);}
+.tm-thumbs .thumb-ring-bar{stroke:var(--signal);stroke-linecap:round;transition:stroke-dashoffset .2s linear;}
+.tm-thumbs .thumb.is-compressing .thumb-ring{animation:tm-ring-spin 1s linear infinite;}
+@keyframes tm-ring-spin{ from{transform:rotate(-90deg);} to{transform:rotate(270deg);} }
+.tm-thumbs .thumb-check,.tm-thumbs .thumb-retry{display:none;}
+.tm-thumbs .thumb.is-done .thumb-status{background:transparent;place-items:end start;padding:3px;}
+.tm-thumbs .thumb.is-done .thumb-ring{display:none;}
+.tm-thumbs .thumb.is-done .thumb-check{
+  display:grid;place-items:center;width:15px;height:15px;border-radius:50%;
+  background:var(--signal);color:var(--void);font-size:9px;font-weight:700;line-height:1;
+  animation:tm-check-in .2s ease-out;
+}
+@keyframes tm-check-in{ from{opacity:0;transform:scale(.6);} to{opacity:1;transform:none;} }
+.tm-thumbs .thumb.is-error{border-color:var(--fire);}
+.tm-thumbs .thumb.is-error .thumb-status{background:rgba(12,10,8,.72);pointer-events:auto;}
+.tm-thumbs .thumb.is-error .thumb-ring{display:none;}
+.tm-thumbs .thumb.is-error .thumb-retry{
+  display:grid;place-items:center;width:30px;height:30px;border-radius:50%;
+  background:var(--panel-2);border:1px solid var(--fire);color:var(--text);
+  font-size:15px;line-height:1;cursor:pointer;transition:border-color .15s ease, background .15s ease;
+}
+.tm-thumbs .thumb.is-error .thumb-retry:hover{background:var(--panel);border-color:var(--signal);}
+.tm-thumbs .thumb .thumb-remove{z-index:1;}
+
+/* Footer status next to Save ("Uploading 3 of 8…"). */
+.tm-upload-summary{
+  flex:1;min-width:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-family:var(--font-mono);font-size:10.5px;letter-spacing:.03em;color:var(--text-faint);
+}
+.tm-upload-summary.is-error{color:var(--fire);}
+.tm-footer .tm-upload-summary + .primary-btn{margin-left:0;}
+
+@media (max-width:768px){
+  .tm-thumbs .thumb{width:64px;height:64px;}
+  .tm-thumbs .thumb .thumb-remove{width:24px;height:24px;font-size:12px;}
+  .tm-thumbs .thumb.is-error .thumb-retry{width:36px;height:36px;}
+  .tm-upload-trigger{min-height:36px;padding:6px 12px;}
+  .tm-footer{flex-wrap:wrap;}
+  .tm-upload-summary{order:-1;flex-basis:100%;text-align:left;}
+  .tm-footer .ghost-btn,.tm-footer .primary-btn{min-height:44px;}
+}
+
+/* Type picker: keyboard-selectable type grid + name field helpers. */
+.type-opt[aria-checked="true"]{border-color:var(--signal);background:var(--panel-2);color:var(--text);}
+.type-opt:focus-visible{outline:2px solid var(--signal);outline-offset:2px;}
+.name-hint{margin:6px 0 0;font-size:11.5px;line-height:1.5;color:var(--text-faint);}
+.name-hint.is-warn{color:var(--signal);}
+.name-suggestions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.name-suggestions[hidden]{display:none;}
+.name-suggestions button{
+  border:1px solid var(--line);background:var(--void);color:var(--text-dim);border-radius:999px;
+  padding:4px 10px;font-size:12px;cursor:pointer;transition:.15s ease;
+}
+.name-suggestions button:hover{border-color:var(--signal);color:var(--signal);}
+
+@media (prefers-reduced-motion:reduce){
+  .tm-upload-col.slot-received,.tm-thumbs .thumb.is-done .thumb-check{animation:none;}
+  .tm-thumbs .thumb.is-compressing .thumb-ring{animation-duration:3s;}
+  .tm-thumbs .thumb-ring-bar{transition:none;}
 }

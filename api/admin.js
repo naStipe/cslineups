@@ -1,6 +1,9 @@
 const { createClient } = require("@supabase/supabase-js");
 const r2 = require("./_lib/r2");
 const { setCorsHeaders } = require("./_lib/cors");
+// authenticate() returns { user } or { reason } describing exactly why it
+// failed, which keeps an otherwise opaque 401 diagnosable from the client.
+const { authenticate, isAdmin } = require("./_lib/auth");
 
 function supabase() {
   return createClient(
@@ -10,29 +13,6 @@ function supabase() {
   );
 }
 
-// Verifies the bearer token (the logged-in user's Supabase access token) and
-// returns { user } on success, or { reason } describing exactly why it
-// failed. Keeping the reason distinct (no header vs. no token vs. token
-// rejected + the auth server's message) is what makes an otherwise opaque
-// 401 diagnosable from the client.
-async function getAuthUser(req, sb) {
-  const header = req.headers["authorization"] || req.headers["Authorization"];
-  if (!header) return { reason: "no Authorization header reached the API" };
-  if (!header.startsWith("Bearer ")) return { reason: "Authorization header is not a Bearer token" };
-  const token = header.slice(7).trim();
-  if (!token) return { reason: "Bearer token was empty" };
-  const { data, error } = await sb.auth.getUser(token);
-  if (error) return { reason: `token rejected by auth server: ${error.message}` };
-  if (!data || !data.user) return { reason: "auth server returned no user for this token" };
-  return { user: data.user };
-}
-
-async function isAdmin(sb, userId) {
-  if (!userId) return false;
-  const { data, error } = await sb.from("profiles").select("is_admin").eq("id", userId).maybeSingle();
-  if (error || !data) return false;
-  return !!data.is_admin;
-}
 
 // The two image-URL shapes our upload flow produces (see
 // js/image-upload.js and api/upload-url.js). Given a stored image URL, work
@@ -152,7 +132,7 @@ module.exports = async function handler(req, res) {
     const sb = supabase();
 
     // Every route here is admin-only.
-    const auth = await getAuthUser(req, sb);
+    const auth = await authenticate(req, sb);
     if (!auth.user) { res.status(401).json({ error: `Sign in required (${auth.reason})` }); return; }
     const user = auth.user;
     if (!(await isAdmin(sb, user.id))) { res.status(403).json({ error: "Admin access required" }); return; }

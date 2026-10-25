@@ -517,17 +517,19 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
 <!-- MODAL: new landing spot -> choose type -->
 <div class="modal-backdrop" id="typeModal">
   <div class="modal">
-    <h3>What kind of nade?</h3>
-    <div class="type-grid" id="typeGrid"></div>
-    <label class="field-label" style="margin-top:8px;">Name this position <span style="color:var(--text-faint);font-size:10px;">optional</span></label>
-    <input type="text" id="lineupNameInput" placeholder="e.g. CT Spawn, Mid Box, Window…" autocomplete="off">
+    <h3 id="typeModalTitle">What kind of nade?</h3>
+    <div class="type-grid" id="typeGrid" role="radiogroup" aria-labelledby="typeModalTitle"></div>
+    <label class="field-label" for="lineupNameInput" style="margin-top:8px;">Name this position <span style="color:var(--text-faint);font-size:10px;">optional</span></label>
+    <input type="text" id="lineupNameInput" placeholder="e.g. CT Spawn, Mid Box, Window…" autocomplete="off" maxlength="40" aria-describedby="lineupNameHint">
+    <div class="name-suggestions" id="lineupNameSuggestions" hidden></div>
+    <p class="name-hint" id="lineupNameHint" aria-live="polite"></p>
     <button class="ghost-btn" id="cancelType" data-esc>Cancel</button>
   </div>
 </div>
 
 <!-- MODAL: throw position form -->
 <div class="modal-backdrop" id="throwModal">
-  <div class="modal throw-modal">
+  <div class="modal throw-modal" role="dialog" aria-modal="true" aria-labelledby="throwModalTitle">
 
     <div class="tm-header">
       <div>
@@ -548,8 +550,10 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
 
     <div class="tm-body">
 
-    <!-- Upload zones -->
+    <!-- Upload zones. Images upload in the background as soon as they're
+         added (file picker, Ctrl+V paste, or files dropped on a slot). -->
     <div class="tm-section">
+      <p class="tm-paste-hint" id="tmPasteHint">Tip: paste screenshots with <kbd>Ctrl</kbd>+<kbd>V</kbd>, or drop image files onto a slot.</p>
 
       <div class="tm-upload-row">
         <div class="tm-upload-col">
@@ -632,6 +636,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
 
     <div class="tm-footer">
       <button class="ghost-btn" id="cancelThrowBtn">Cancel</button>
+      <span class="tm-upload-summary" id="tmUploadSummary" aria-live="polite"></span>
       <button class="primary-btn" id="saveThrow">Save position</button>
     </div>
 

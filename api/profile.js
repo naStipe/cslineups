@@ -1,6 +1,7 @@
 const { createClient } = require("@supabase/supabase-js");
 const r2 = require("./_lib/r2");
 const { setCorsHeaders } = require("./_lib/cors");
+const { getAuthUser } = require("./_lib/auth");
 
 function supabase() {
   return createClient(
@@ -10,15 +11,7 @@ function supabase() {
   );
 }
 
-async function getAuthUser(req, sb) {
-  const header = req.headers["authorization"] || req.headers["Authorization"];
-  if (!header || !header.startsWith("Bearer ")) return null;
-  const token = header.slice(7).trim();
-  if (!token) return null;
-  const { data, error } = await sb.auth.getUser(token);
-  if (error || !data || !data.user) return null;
-  return data.user;
-}
+// getAuthUser verifies the bearer token locally (see api/_lib/auth.js).
 
 // Username changes and account deletion both live here, behind the service
 // key, on purpose:

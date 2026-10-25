@@ -1,5 +1,6 @@
 const { createClient } = require("@supabase/supabase-js");
 const { setCorsHeaders } = require("./_lib/cors");
+const { getAuthUser } = require("./_lib/auth");
 const { checkRateLimit } = require("./_lib/rate-limit");
 
 function supabase() {
@@ -10,15 +11,7 @@ function supabase() {
   );
 }
 
-async function getAuthUser(req, sb) {
-  const header = req.headers["authorization"] || req.headers["Authorization"];
-  if (!header || !header.startsWith("Bearer ")) return null;
-  const token = header.slice(7).trim();
-  if (!token) return null;
-  const { data, error } = await sb.auth.getUser(token);
-  if (error || !data || !data.user) return null;
-  return data.user;
-}
+// getAuthUser verifies the bearer token locally (see api/_lib/auth.js).
 
 function mapRow(row) {
   return {
