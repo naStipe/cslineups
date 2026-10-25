@@ -128,7 +128,11 @@ export function renderDetail(lineup, opts = {}) {
   }
 
   if (detailOwnerBadge) {
-    detailOwnerBadge.textContent = lineup.isOfficial ? "Official" : "My lineup";
+    // Personal lineups show where they stand with the official map.
+    detailOwnerBadge.textContent = lineup.isOfficial ? "Official"
+      : lineup.submittedAt ? "Suggested · awaiting review"
+      : lineup.deniedAt ? "Suggestion not accepted"
+      : "My lineup · not approved";
     detailOwnerBadge.classList.toggle("badge-official", lineup.isOfficial);
     detailOwnerBadge.classList.toggle("badge-personal", !lineup.isOfficial);
   }
@@ -688,8 +692,11 @@ function renderSubmitControls(lineup, editable) {
   submitLineupNote.classList.toggle("hidden", !show || !lineup.submittedAt);
   if (!show) return;
   const submitted = !!lineup.submittedAt;
-  submitLineupBtn.textContent = submitted ? "Withdraw public-map submission" : "★ Submit to public map";
-  submitLineupNote.textContent = submitted ? "Submitted for review. An admin may publish it on the public map." : "";
+  submitLineupBtn.textContent = submitted ? "Withdraw suggestion" : "★ Suggest for the official map";
+  submitLineupNote.classList.toggle("hidden", !submitted && !lineup.deniedAt);
+  submitLineupNote.textContent = submitted
+    ? "Suggested. An admin will review it and may add it to the official map."
+    : lineup.deniedAt ? "An admin didn't accept this suggestion. You can improve it and suggest it again." : "";
   submitLineupBtn.onclick = async () => {
     if (!submitted) {
       // First paragraph is the question, the rest is the consent text.
@@ -701,8 +708,10 @@ function renderSubmitControls(lineup, editable) {
     try {
       const { submittedAt } = await dbSubmitLineup(lineup.id, !submitted);
       lineup.submittedAt = submittedAt;
+      if (submittedAt) lineup.deniedAt = null;
+      detailOwnerBadge.textContent = submittedAt ? "Suggested · awaiting review" : "My lineup · not approved";
       renderSubmitControls(lineup, editable);
-      toast(submittedAt ? "Submitted for review" : "Submission withdrawn");
+      toast(submittedAt ? "Suggested for the official map" : "Suggestion withdrawn");
     } catch (e) {
       toastError("Couldn't update the submission. Please try again.");
     } finally {

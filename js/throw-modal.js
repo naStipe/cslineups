@@ -1,8 +1,8 @@
 import { setAddMode } from "./add-mode.js";
-import { dbGetAll, dbPut } from "./api.js";
+import { dbGetAll, dbPut, dbSubmitLineup } from "./api.js";
 import { authUser, isAdmin } from "./auth.js";
 import { openDetail } from "./detail-panel.js";
-import { cancelThrow, cancelThrowBtn, mapImage, movementSelect, notesInput, repositionOnMapBtn, saveThrow, throwModal, throwModalHint, throwModalTitle, throwRangeSelect, tmPasteHint, tmPreviewImg, tmPreviewLanding, tmPreviewSvg, tmPreviewThrow } from "./dom.js";
+import { cancelThrow, cancelThrowBtn, tmSuggest, tmSuggestWrap, mapImage, movementSelect, notesInput, repositionOnMapBtn, saveThrow, throwModal, throwModalHint, throwModalTitle, throwRangeSelect, tmPasteHint, tmPreviewImg, tmPreviewLanding, tmPreviewSvg, tmPreviewThrow } from "./dom.js";
 import { addFiles, clearDropHighlights, discardItems, draftItems, imageUrlOf, releaseItem, renderClip, renderPreciseThumb, renderResultThumb, renderStandingThumbGrid, renderThumbGrid, updateUploadSummary } from "./image-upload.js";
 import { refreshLocal, upsertLocalLineup } from "./map-data.js";
 import { getCssVarColor, typeColor } from "./markers.js";
@@ -81,6 +81,12 @@ export function openThrowModal(throwPos, lineupId, isNewLineup, typeId, landingP
   renderPreciseThumb();
   renderResultThumb();
   renderClip();
+  // Offer the "suggest for the official map" opt-in when creating a personal
+  // lineup as a non-admin (admins publish directly in the official view).
+  if (tmSuggestWrap) {
+    tmSuggest.checked = false;
+    tmSuggestWrap.hidden = !(isNewLineup && !pendingThrowDraft.isOfficial && !isAdmin());
+  }
   throwRangeSelect.value = existingThrow ? existingThrow.range : "throw";
   movementSelect.value = existingThrow ? existingThrow.movement : "none";
   notesInput.value = existingThrow ? existingThrow.notes || "" : "";
@@ -337,6 +343,17 @@ saveThrow.onclick = async () => {
         ownerId: isOfficial ? null : (authUser ? authUser.id : null),
       };
       await dbPut(lineup, isOfficial);
+      // Opted in on a new personal lineup: suggest it for the official map.
+      // The lineup is saved either way; a failed suggestion just says so.
+      if (!isOfficial && tmSuggest && tmSuggest.checked) {
+        try {
+          const { submittedAt } = await dbSubmitLineup(lineup.id, true);
+          lineup.submittedAt = submittedAt;
+          toast("Saved, and suggested for the official map");
+        } catch (e) {
+          toastError("Saved, but the suggestion didn't go through. You can suggest it from the lineup.");
+        }
+      }
       upsertLocalLineup(lineup);
     } else {
       // Work on a copy so a failed save doesn't leave the local lineup

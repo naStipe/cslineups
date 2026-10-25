@@ -3,6 +3,7 @@ import { initAuth } from "./auth.js";
 import { MAPS, TYPES } from "./constants.js";
 import { closeDetailPanel, hideDetailPanel, openDetail, throwIndexFromParams } from "./detail-panel.js";
 import { appShell, detailPanel, homeBrand, lightboxModal, lightboxNext, lightboxPrev, lineupSearchInput, sidebarBrand } from "./dom.js";
+import "./feedback.js"; // side effect only: feedback box
 import "./offline.js"; // side effect only: service worker, offline banner
 import "./collections.js"; // side effect only: collections rail, panel, popover
 import { openCollectionBySlug } from "./collections.js";

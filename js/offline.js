@@ -5,7 +5,7 @@
 // click that still gets through (including on controls built later).
 import { toast } from "./toast.js";
 
-const NEEDS_ONLINE = "#addModeBtn, #fabAddBtn, #addThrowBtn, #deleteLineupBtn, #collNewBtn, #collSelectBtn, #addToCollBtn, #saveLineupBtn, #submitLineupBtn";
+const NEEDS_ONLINE = "#addModeBtn, #fabAddBtn, #addThrowBtn, #deleteLineupBtn, #collNewBtn, #collSelectBtn, #addToCollBtn, #saveLineupBtn, #submitLineupBtn, #feedbackBtn";
 const HINT = "Unavailable while offline";
 
 let banner = null;

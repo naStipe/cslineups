@@ -8,21 +8,20 @@
 
 import { LAST_MAP_KEY, MAPS, MOVEMENT_LABELS, RANGE_LABELS, TYPES } from "./constants.js";
 import { confirmDialog } from "./confirm-dialog.js";
-import { toastError } from "./toast.js";
+import { toast, toastError } from "./toast.js";
 import { escapeHtml } from "./html-utils.js";
 import { mountAreaEditor } from "./admin-areas.js";
 import { mountCollectionModeration } from "./admin-collections.js";
+import { mountFeedback } from "./admin-feedback.js";
 import { mountOfficialSides } from "./admin-official.js";
-import { mountTurnstile } from "./turnstile.js";
 
 const MAP_NAMES = Object.fromEntries(MAPS.map(m => [m.id, m.name]));
 const TYPE_LABELS = Object.fromEntries(TYPES.map(t => [t.id, t.label]));
 
 const el = (id) => document.getElementById(id);
 const els = {};
-["statusToggle", "viewToggle", "adminAccounts", "adminEmail", "adminSignOut", "adminSignin", "adminError",
- "adminEmailInput", "adminPasswordInput", "adminSigninBtn", "adminGoogleBtn", "adminTurnstile",
- "adminDenied", "adminMain", "adminOfficial", "adminAreas", "adminCollections", "adminHint", "adminQueue",
+["statusToggle", "viewToggle", "adminAccounts", "adminEmail", "adminSignOut", "adminWrap",
+ "adminMain", "adminOfficial", "adminAreas", "adminCollections", "adminFeedback", "adminHint", "adminQueue",
  "adminLightbox", "adminLightboxImg", "adminLightboxClose"].forEach(id => { els[id] = el(id); });
 
 // "Back to site" returns to whichever map was open last, not the chooser.
@@ -33,7 +32,7 @@ try {
 
 let sb = null;
 let status = "unreviewed";
-const VIEWS = ["moderation", "accounts", "official", "areas", "collections"];
+const VIEWS = ["moderation", "accounts", "official", "areas", "collections", "feedback"];
 let view = VIEWS.includes(new URLSearchParams(location.search).get("view")) ? new URLSearchParams(location.search).get("view") : "moderation";
 const mounted = new Set();
 
@@ -81,37 +80,24 @@ function show(node, visible) { if (node) node.hidden = !visible; }
 
 // ---- View gating ---------------------------------------------------------
 
+// Only a signed-in admin ever sees this page. Everyone else (signed out,
+// signed in as a normal user, or the profile lookup failing) is sent straight
+// to the main site; the admin UI stays hidden and there is no sign-in form
+// here to probe. /api/admin re-checks admin status on every request, so this
+// gate is about not exposing the UI, not about protecting the data.
+function leave() { location.replace("/"); }
+
 async function render() {
   const { data } = await sb.auth.getSession();
   const session = data && data.session;
+  if (!session) { leave(); return; }
 
-  if (!session) {
-    show(els.adminSignin, true);
-    show(els.adminDenied, false);
-    show(els.adminMain, false);
-    show(els.statusToggle, false);
-    show(els.viewToggle, false);
-    show(els.adminSignOut, false);
-    els.adminEmail.textContent = "";
-    return;
-  }
+  const { data: profile } = await sb.from("profiles").select("is_admin").eq("id", session.user.id).maybeSingle();
+  if (!profile || !profile.is_admin) { leave(); return; }
 
   els.adminEmail.textContent = session.user.email || "";
+  show(els.adminWrap, true);
   show(els.adminSignOut, true);
-  show(els.adminSignin, false);
-
-  // Confirm admin by reading the profile flag directly (the API enforces it
-  // too, but this drives which panel to show).
-  const { data: profile } = await sb.from("profiles").select("is_admin").eq("id", session.user.id).maybeSingle();
-  if (!profile || !profile.is_admin) {
-    show(els.adminDenied, true);
-    show(els.adminMain, false);
-    show(els.statusToggle, false);
-    show(els.viewToggle, false);
-    return;
-  }
-
-  show(els.adminDenied, false);
   show(els.adminMain, true);
   show(els.viewToggle, true);
   await showView();
@@ -125,10 +111,12 @@ async function showView() {
   show(els.adminOfficial, view === "official");
   show(els.adminAreas, view === "areas");
   show(els.adminCollections, view === "collections");
+  show(els.adminFeedback, view === "feedback");
   // The two editors mount once and keep their state when switching tabs.
   if (view === "official" && !mounted.has(view)) { mounted.add(view); mountOfficialSides(els.adminOfficial, authHeaders); }
   if (view === "areas" && !mounted.has(view)) { mounted.add(view); mountAreaEditor(els.adminAreas, authHeaders); }
   if (view === "collections" && !mounted.has(view)) { mounted.add(view); mountCollectionModeration(els.adminCollections, authHeaders); }
+  if (view === "feedback" && !mounted.has(view)) { mounted.add(view); mountFeedback(els.adminFeedback, authHeaders); }
   if (view === "accounts") await loadAccounts();
   else if (view === "moderation") await loadQueue();
 }
@@ -267,8 +255,9 @@ function renderCard(item, { readOnly = false } = {}) {
         ? `<button class="ghost-btn" data-action="unreview" data-lineup="${escapeHtml(item.id)}">↩ Move back to pending</button>`
         : `<button class="primary-btn" data-action="approve" data-lineup="${escapeHtml(item.id)}">✓ Approve (mark reviewed)</button>`}
       ${item.submittedAt
-        ? `<button class="ghost-btn admin-publish" data-action="publish" data-lineup="${escapeHtml(item.id)}">★ Publish to official map</button>`
-        : `<span class="admin-card-sub" title="Only lineups the owner submitted can be published">Not submitted for publication</span>`}
+        ? `<button class="primary-btn admin-publish" data-action="publish" data-lineup="${escapeHtml(item.id)}">★ Approve: publish to official map</button>
+           <button class="ghost-btn danger" data-action="deny" data-lineup="${escapeHtml(item.id)}">Deny suggestion</button>`
+        : `<span class="admin-card-sub" title="Only lineups the owner suggested can be published">${item.deniedAt ? "Suggestion denied" : "Not suggested for the official map"}</span>`}
       <button class="ghost-btn danger" data-action="delete-lineup" data-lineup="${escapeHtml(item.id)}">Delete whole lineup</button>
     </div>`}`;
 
@@ -281,6 +270,7 @@ function renderCard(item, { readOnly = false } = {}) {
   card.querySelector('[data-action="approve"]')?.addEventListener("click", () => markReviewed(item.id, "approve", card));
   card.querySelector('[data-action="unreview"]')?.addEventListener("click", () => markReviewed(item.id, "unreview", card));
   card.querySelector('[data-action="publish"]')?.addEventListener("click", () => publishLineup(item.id, card));
+  card.querySelector('[data-action="deny"]')?.addEventListener("click", () => denySuggestion(item.id, card));
   card.querySelector('[data-action="delete-lineup"]')?.addEventListener("click", () => deleteLineup(item.id, card));
 
   return card;
@@ -379,6 +369,14 @@ async function deleteLineup(lineupId, card) {
 // Publishing copies every screenshot to the public bucket server-side, so it
 // takes a moment — show a busy state and only remove the card on success,
 // rather than optimistically (a failure would otherwise flash it out and back).
+async function denySuggestion(lineupId, card) {
+  if (!(await confirmDialog({ title: "Deny this suggestion?", body: "The lineup stays private to its owner, who will see that it wasn't accepted. They can improve it and suggest it again.", confirmLabel: "Deny", danger: true }))) return;
+  const restore = detach(card);
+  refreshCounts();
+  try { await sendAction("POST", "", { action: "deny", lineupId }); toast("Suggestion denied"); }
+  catch (e) { restore(); refreshCounts(); toastError("Couldn't deny it: " + e.message); }
+}
+
 async function publishLineup(lineupId, card) {
   const ok = await confirmDialog({
     title: "Publish to the official map?",
@@ -419,7 +417,6 @@ async function refreshCounts() {
 // ---- Wiring --------------------------------------------------------------
 
 function wireEvents() {
-  const turnstile = mountTurnstile(els.adminTurnstile);
   els.viewToggle.querySelectorAll("button").forEach(btn => {
     btn.onclick = () => {
       view = btn.dataset.view;
@@ -435,36 +432,7 @@ function wireEvents() {
     };
   });
 
-  els.adminSigninBtn.onclick = async () => {
-    els.adminError.hidden = true;
-    const email = els.adminEmailInput.value.trim();
-    const password = els.adminPasswordInput.value;
-    const captchaToken = turnstile.getToken();
-    if (!captchaToken) {
-      els.adminError.textContent = "Please complete the verification challenge.";
-      els.adminError.hidden = false;
-      return;
-    }
-    try {
-      const { error } = await sb.auth.signInWithPassword({ email, password, options: { captchaToken } });
-      if (error) throw error;
-    } catch (e) {
-      els.adminError.textContent = e.message || "Sign in failed";
-      els.adminError.hidden = false;
-    } finally {
-      turnstile.reset();
-    }
-  };
-  els.adminPasswordInput.onkeydown = (e) => { if (e.key === "Enter") els.adminSigninBtn.click(); };
-
-  els.adminGoogleBtn.onclick = async () => {
-    await sb.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.origin + window.location.pathname, queryParams: { prompt: "select_account" } },
-    });
-  };
-
-  els.adminSignOut.onclick = async () => { await sb.auth.signOut(); };
+  els.adminSignOut.onclick = async () => { await sb.auth.signOut(); leave(); };
 
   const closeLightbox = () => els.adminLightbox.classList.remove("show");
   els.adminLightboxClose.onclick = closeLightbox;
@@ -490,9 +458,8 @@ async function syncAuth() {
 }
 
 (async function init() {
-  els.adminHint.textContent = "Connecting…";
   const ok = await loadConfig();
-  if (!ok) { els.adminHint.textContent = "Config unavailable — check SUPABASE_URL / SUPABASE_ANON_KEY."; return; }
+  if (!ok) { leave(); return; }
   sb = window.supabase.createClient(window.__SUPABASE_URL, window.__SUPABASE_ANON_KEY);
   wireEvents();
   await syncAuth();

@@ -10,6 +10,7 @@ const LIMITS = {
   saved_lineup: { max: 120, windowSeconds: 3600 },  // bookmark/unbookmark a throw
   upload:       { max: 60, windowSeconds: 3600 },   // presign an image upload
   collection_write:  { max: 150, windowSeconds: 3600 }, // any collection / item change
+  feedback:          { max: 6, windowSeconds: 3600 },   // feedback messages (per user, or per visitor IP)
   collection_report: { max: 10, windowSeconds: 3600 },  // report a shared collection
 };
 

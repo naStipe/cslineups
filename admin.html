@@ -14,7 +14,10 @@
 </head>
 <body class="admin-body">
 
-<div class="admin-wrap">
+<!-- Hidden until js/admin.js has confirmed the visitor is signed in as an admin;
+     anyone else is sent to the main site and never sees this UI. There is no
+     sign-in form here: sign in on the main site, then open this page. -->
+<div class="admin-wrap" id="adminWrap" hidden>
   <header class="admin-header">
     <div class="home-brand">
       <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="28" height="28">
@@ -31,9 +34,11 @@
         <button class="view-toggle-btn" data-view="official">Sides</button>
         <button class="view-toggle-btn" data-view="areas">Areas</button>
         <button class="view-toggle-btn" data-view="collections">Collections</button>
+        <button class="view-toggle-btn" data-view="feedback">Feedback</button>
       </div>
       <div class="admin-status-toggle" id="statusToggle" hidden>
         <button class="view-toggle-btn active" data-status="unreviewed">Pending</button>
+        <button class="view-toggle-btn" data-status="suggested">Suggested</button>
         <button class="view-toggle-btn" data-status="all">All</button>
       </div>
       <span class="auth-email" id="adminEmail"></span>
@@ -41,25 +46,6 @@
       <button id="adminSignOut" class="ghost-btn" hidden>Sign out</button>
     </div>
   </header>
-
-  <!-- Sign-in gate (shown when signed out) -->
-  <div class="admin-signin" id="adminSignin" hidden>
-    <h3>Admin sign in</h3>
-    <p class="auth-error info" id="adminError" hidden></p>
-    <label class="field-label">Email</label>
-    <input type="email" id="adminEmailInput" autocomplete="email" placeholder="you@example.com">
-    <label class="field-label">Password</label>
-    <input type="password" id="adminPasswordInput" autocomplete="current-password" placeholder="Password">
-    <div id="adminTurnstile" class="auth-turnstile"></div>
-    <button class="primary-btn" id="adminSigninBtn">Sign in</button>
-    <button class="ghost-btn" id="adminGoogleBtn">Continue with Google</button>
-  </div>
-
-  <!-- Access denied (signed in but not admin) -->
-  <div class="admin-denied" id="adminDenied" hidden>
-    <h3>Access denied</h3>
-    <p>This account isn't an administrator.</p>
-  </div>
 
   <!-- Moderation queue -->
   <main class="admin-main" id="adminMain" hidden>
@@ -69,6 +55,7 @@
     <div class="admin-tool" id="adminOfficial" hidden></div>
     <div class="admin-tool" id="adminAreas" hidden></div>
     <div class="admin-tool" id="adminCollections" hidden></div>
+    <div class="admin-tool" id="adminFeedback" hidden></div>
   </main>
 </div>
 

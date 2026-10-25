@@ -158,6 +158,23 @@ module.exports = async function handler(req, res) {
       return;
     }
 
+    // GET ?feedback=open|closed|all — visitor suggestions and bug reports.
+    if (req.method === "GET" && req.query && req.query.feedback) {
+      const f = req.query.feedback;
+      let q = sb.from("feedback").select("*").order("created_at", { ascending: false }).limit(500);
+      if (f === "open") q = q.eq("status", "open");
+      else if (f === "closed") q = q.neq("status", "open");
+      const { data, error } = await q;
+      if (error) throw new Error(error.message);
+      const emails = await fetchOwnerEmails(sb, new Set((data || []).map(r => r.user_id).filter(Boolean)));
+      res.status(200).json({ items: (data || []).map(r => ({
+        id: r.id, kind: r.kind, message: r.message, contact: r.contact, page: r.page, userAgent: r.user_agent,
+        status: r.status, createdAt: r.created_at, closedAt: r.closed_at,
+        from: r.user_id ? (emails[r.user_id] || r.user_id) : null,
+      })) });
+      return;
+    }
+
     // GET ?collections=1 — shared collections for moderation: every public
     // one, plus any unlisted/private one that has an open report.
     if (req.method === "GET" && req.query && req.query.collections) {
@@ -252,7 +269,10 @@ module.exports = async function handler(req, res) {
 
       let query = sb.from("lineups").select("*").eq("is_official", false);
       if (userId) query = query.eq("owner_id", userId);
-      if (status !== "all") query = query.is("moderation_reviewed_at", null);
+      // "suggested": lineups their owners suggested for the official map and
+      // that still await a decision; "all": everything; default: not yet approved.
+      if (status === "suggested") query = query.not("submitted_at", "is", null);
+      else if (status !== "all") query = query.is("moderation_reviewed_at", null);
       const { data, error } = await query.order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
 
@@ -274,7 +294,9 @@ module.exports = async function handler(req, res) {
           }
           if (imgs.length) throwsOut.push({ id: t.id, range: t.range, movement: t.movement, notes: t.notes || "", images: imgs });
         }
-        if (!throwsOut.length) continue; // no images to moderate on this lineup
+        // Lineups without images have nothing to moderate, except when the
+        // owner suggested one: that still needs an approve / deny decision.
+        if (!throwsOut.length && !row.submitted_at) continue;
         items.push({
           id: row.id,
           mapId: row.map_id,
@@ -285,6 +307,7 @@ module.exports = async function handler(req, res) {
           createdAt: row.created_at,
           reviewedAt: row.moderation_reviewed_at || null,
           submittedAt: row.submitted_at || null,
+          deniedAt: row.submission_denied_at || null,
           throws: throwsOut,
         });
       }
@@ -302,6 +325,16 @@ module.exports = async function handler(req, res) {
 
       // Collection moderation: hide / unhide (takes it off every shared
       // link), delete, or mark its reports as handled.
+      // Feedback: mark solved, discard, or reopen.
+      if (action === "feedback-status") {
+        const { id, status } = body;
+        if (typeof id !== "string" || !/^[0-9a-f-]{36}$/i.test(id) || !["open", "solved", "discarded"].includes(status)) { res.status(400).json({ error: "Invalid feedback update" }); return; }
+        const { error } = await sb.from("feedback").update({ status, closed_at: status === "open" ? null : new Date().toISOString() }).eq("id", id);
+        if (error) throw new Error(error.message);
+        res.status(200).json({ ok: true });
+        return;
+      }
+
       if (typeof action === "string" && action.startsWith("collection-")) {
         const cid = body.collectionId;
         if (typeof cid !== "string" || !/^[0-9a-f-]{36}$/i.test(cid)) { res.status(400).json({ error: "Invalid collectionId" }); return; }
@@ -361,6 +394,22 @@ module.exports = async function handler(req, res) {
 
         await Promise.all(orphans.map(u => removeStorageObject(sb, u)));
         res.status(200).json({ ok: true, published: true });
+        return;
+      }
+
+      // Deny a suggestion for the official map: the lineup stays private to its
+      // owner (and their screenshots untouched); it just stops being a
+      // suggestion, and the owner sees that it was not accepted.
+      if (action === "deny") {
+        const { data: row, error: fetchErr } = await sb.from("lineups").select("id, is_official, submitted_at").eq("id", lineupId).maybeSingle();
+        if (fetchErr) throw new Error(fetchErr.message);
+        if (!row || row.is_official) { res.status(404).json({ error: "Not found" }); return; }
+        if (!row.submitted_at) { res.status(400).json({ error: "That lineup isn't suggested for the official map" }); return; }
+        const { error } = await sb.from("lineups").update({
+          submitted_at: null, submission_denied_at: new Date().toISOString(), moderation_reviewed_at: new Date().toISOString(),
+        }).eq("id", lineupId).eq("is_official", false);
+        if (error) throw new Error(error.message);
+        res.status(200).json({ ok: true, denied: true });
         return;
       }
 

@@ -28,6 +28,7 @@ function mapRow(row) {
     isOfficial: !!row.is_official,
     ownerId:    row.owner_id || null,
     submittedAt: row.submitted_at || null,
+    deniedAt:   row.submission_denied_at || null,
   };
 }
 
@@ -272,7 +273,9 @@ module.exports = async function handler(req, res) {
         if (!row) { res.status(404).json({ error: "Not found" }); return; }
         if (row.is_official || row.owner_id !== user.id) { res.status(403).json({ error: "You can only submit your own lineups" }); return; }
         const submittedAt = body.submit === true ? new Date().toISOString() : null;
-        const { error } = await sb.from("lineups").update({ submitted_at: submittedAt }).eq("id", body.id).eq("owner_id", user.id);
+        // Suggesting again clears an earlier "not accepted".
+        const patch = submittedAt ? { submitted_at: submittedAt, submission_denied_at: null } : { submitted_at: null };
+        const { error } = await sb.from("lineups").update(patch).eq("id", body.id).eq("owner_id", user.id);
         if (error) throw new Error(error.message);
         res.status(200).json({ ok: true, submittedAt });
         return;

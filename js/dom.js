@@ -300,3 +300,8 @@ export const addToCollBtn = document.getElementById("addToCollBtn");
 // Video clip slot in the throw modal
 export const clipInput = document.getElementById("clipInput");
 export const clipWrap = document.getElementById("clipWrap");
+
+// Feedback box
+export const feedbackBtn = document.getElementById("feedbackBtn");
+export const tmSuggestWrap = document.getElementById("tmSuggestWrap");
+export const tmSuggest = document.getElementById("tmSuggest");
