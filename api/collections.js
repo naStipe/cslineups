@@ -7,18 +7,19 @@
 //   POST   {action:"create"|"update"|"add-items"|"remove-item"|"reorder"|"update-item"|"fork"|"report"}
 //   DELETE ?id=<uuid>
 //
-// Sharing rule (option "a"): a shared collection only exposes OFFICIAL
-// lineups to viewers. The owner's personal lineups stay private (their
-// screenshots live in the private bucket and /api/private-image only serves
-// the owner), so to viewers they appear as "locked" placeholders. The owner
-// always sees their own personal lineups. Nothing here ever returns another
-// user's personal lineup data.
+// Sharing rule: a collection set to Unlisted or Public exposes the lineups in
+// it, official ones and the owner's personal ones, to anyone with the link
+// (the share dialog says so). Personal lineups are only visible while the
+// collection stays shared (see api/_lib/sharing.js, which also governs their
+// screenshots in /api/private-image). A personal lineup that is not (or no
+// longer) shared appears to other viewers as a "locked" placeholder.
 const crypto = require("crypto");
 const { createClient } = require("@supabase/supabase-js");
 const { setCorsHeaders } = require("./_lib/cors");
 const { getAuthUser, isAdmin } = require("./_lib/auth");
 const { checkRateLimit } = require("./_lib/rate-limit");
 const { MAPS } = require("./_lib/constants");
+const { sharedPersonalIds } = require("./_lib/sharing");
 
 const MAX_COLLECTIONS_PER_USER = 50;
 const MAX_ITEMS = 30;
@@ -78,7 +79,8 @@ async function resolveItems(sb, collection, viewerId) {
     if (lerr) throw new Error(lerr.message);
     (rows || []).forEach(r => byId.set(r.id, r));
   }
-  const isOwner = viewerId && viewerId === collection.owner_id;
+  const rows = [...byId.values()];
+  const shared = await sharedPersonalIds(sb, rows);
   return (items || []).map(i => {
     const base = {
       id: i.id, position: i.position, lineupId: i.lineup_id, throwId: i.throw_id,
@@ -87,7 +89,7 @@ async function resolveItems(sb, collection, viewerId) {
     };
     const row = i.lineup_id ? byId.get(i.lineup_id) : null;
     if (!row) return { ...base, status: "missing" };
-    if (row.is_official || (isOwner && row.owner_id === viewerId)) return { ...base, status: "ok", lineup: lineupShape(row) };
+    if (row.is_official || (viewerId && row.owner_id === viewerId) || shared.has(row.id)) return { ...base, status: "ok", lineup: lineupShape(row) };
     return { ...base, status: "locked" };
   });
 }
@@ -123,9 +125,12 @@ async function prepareItems(sb, collection, requested, user) {
   const { data: rows, error } = await sb.from("lineups").select("id, map_id, type, name, is_official, owner_id, throws").in("id", ids);
   if (error) throw new Error(error.message);
   const byId = new Map((rows || []).map(r => [r.id, r]));
+  // Your own lineups, official ones, and other people's personal lineups that
+  // they currently share (so a copied or bookmarked one can be collected too).
+  const shared = await sharedPersonalIds(sb, rows);
   return requested.map(r => {
     const row = r && byId.get(r.lineupId);
-    if (!row || (!row.is_official && row.owner_id !== user.id)) throw new HttpError(400, "A lineup could not be added (not found or not yours)");
+    if (!row || (!row.is_official && row.owner_id !== user.id && !shared.has(row.id))) throw new HttpError(400, "A lineup could not be added (not found or not yours)");
     if (row.map_id !== collection.map_id) throw new HttpError(400, "Lineups must be on the same map as the collection");
     let throwId = null;
     if (r.throwId != null) {
@@ -329,8 +334,7 @@ module.exports = async function handler(req, res) {
       const src = await loadViewable(sb, { id: isUuid(body.id) ? body.id : undefined, slug: body.slug ? str(body.slug, 10) : undefined }, user, admin);
       const { count } = await sb.from("collections").select("id", { count: "exact", head: true }).eq("owner_id", user.id);
       if ((count || 0) >= MAX_COLLECTIONS_PER_USER) throw new HttpError(400, `You can have at most ${MAX_COLLECTIONS_PER_USER} collections`);
-      // Only items the forker can actually see carry over (so a fork never
-      // pulls in someone else's personal lineups).
+      // Only items the forker can actually see carry over.
       const items = (await resolveItems(sb, src, user.id)).filter(i => i.status === "ok");
       const copy = await insertCollection(sb, {
         owner_id: user.id, map_id: src.map_id, name: str(`${src.name} (copy)`, 80), description: src.description, forked_from: src.id,

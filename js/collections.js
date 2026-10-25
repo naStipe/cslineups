@@ -16,15 +16,17 @@ import {
   addItems, createCollection, deleteCollection, forkCollection, getById, getBySlug, listMine,
   removeItem, reorderItems, reportCollection, shareUrl, updateCollection, updateItem,
 } from "./collections-api.js";
+import { dbGetAll, dbGetMine, dbSaveLineup, throwKey } from "./api.js";
 import { authUser } from "./auth.js";
 import { openAuthModal } from "./auth-modal.js";
 import { MAPS, TYPES } from "./constants.js";
 import {
-  addToCollBtn, collList, collNewBtn, collPanel, collPopover, collRail, collSelectBar, collSelectBtn,
+  addToCollBtn, collList, collNewBtn, detailPanel, collPanel, collPopover, collRail, collSelectBar, collSelectBtn,
   linkSvg, markerLayer, appShell,
 } from "./dom.js";
 import { escapeHtml } from "./html-utils.js";
 import { closeDetailPanel, openDetail, selectedThrowIdx } from "./detail-panel.js";
+import { focusLineup } from "./lineup-list.js";
 import { loadLineups, refreshLocal } from "./map-data.js";
 import { hooks } from "./marker-hooks.js";
 import { closeModal, watchDialog } from "./modal-utils.js";
@@ -152,35 +154,46 @@ async function saveEditModal() {
 }
 
 // ------------------------------------------------------- add-to popover ---
+// Tick the collections a lineup (or the selected lineups) should be in, then
+// press Save. Nothing changes until Save; unticking a collection that holds
+// it takes it out. "New collection" creates one with the lineups straight away.
 let popAnchor = null;
-let popCtx = null; // { lineupIds, throwId, wholeOnly }
+let popCtx = null; // { lineupIds, throwId, throws, variantOnly, pending: Map(collectionId -> wanted) }
 
 function popoverOpen() { return !collPopover.hidden; }
 function closePopover() { collPopover.hidden = true; popAnchor = null; popCtx = null; }
+
+const popThrow = () => (popCtx.lineupIds.length === 1 && popCtx.variantOnly ? popCtx.throwId : null);
+const heldCount = (c) => popCtx.lineupIds.filter(id => c.members.includes(keyOf(id, popThrow()))).length;
+// "all" | "some" | "none", as it would be after the pending changes.
+function popState(c) {
+  if (popCtx.pending.has(c.id)) return popCtx.pending.get(c.id) ? "all" : "none";
+  const h = heldCount(c);
+  return h === 0 ? "none" : h === popCtx.lineupIds.length ? "all" : "some";
+}
 
 // ctx: { lineupIds: [...], throwId?: string|null, throws?: n } — throwId is
 // the variant being viewed (single-lineup adds only).
 async function openPopover(anchor, ctx) {
   if (!authUser) { openAuthModal("signin"); return; }
   if (popoverOpen() && popAnchor === anchor) { closePopover(); return; }
-  popAnchor = anchor; popCtx = { ...ctx, variantOnly: false };
+  popAnchor = anchor; popCtx = { ...ctx, variantOnly: false, pending: new Map() };
   if (!mineLoaded) await refreshCollections();
   renderPopover();
   collPopover.hidden = false;
   const r = anchor.getBoundingClientRect();
-  const w = 280;
+  const w = 300;
   const left = Math.min(Math.max(8, r.right - w), window.innerWidth - w - 8);
   const top = Math.min(r.bottom + 6, window.innerHeight - collPopover.offsetHeight - 8);
   collPopover.style.left = left + "px";
   collPopover.style.top = Math.max(8, top) + "px";
-  const first = collPopover.querySelector("input[type=checkbox], input[type=text]");
+  const first = collPopover.querySelector(".coll-check, input[type=text]");
   if (first) first.focus({ preventScroll: true });
 }
 
 function renderPopover() {
   const { lineupIds, throwId, throws } = popCtx;
   const single = lineupIds.length === 1;
-  const useThrow = single && popCtx.variantOnly ? throwId : null;
   collPopover.replaceChildren();
 
   const head = document.createElement("div");
@@ -199,7 +212,7 @@ function renderPopover() {
       b.className = "side-seg-btn" + (on ? " active" : "");
       b.setAttribute("role", "radio"); b.setAttribute("aria-checked", on ? "true" : "false");
       b.textContent = label;
-      b.onclick = () => { popCtx.variantOnly = id === "variant"; renderPopover(); };
+      b.onclick = () => { popCtx.variantOnly = id === "variant"; popCtx.pending.clear(); renderPopover(); };
       seg.append(b);
     });
     collPopover.append(seg);
@@ -210,71 +223,98 @@ function renderPopover() {
   if (!mine.length) {
     const p = document.createElement("p");
     p.className = "coll-pop-empty";
-    p.textContent = "No collections on this map yet. Create the first one below.";
+    p.textContent = "You have no collections on this map yet. Create the first one below.";
     list.append(p);
   }
   mine.forEach(c => {
-    const have = lineupIds.filter(id => c.members.includes(keyOf(id, useThrow))).length;
-    const label = document.createElement("label");
-    label.className = "coll-pop-row";
-    const cb = document.createElement("input");
-    cb.type = "checkbox";
-    cb.checked = have === lineupIds.length;
-    cb.indeterminate = have > 0 && have < lineupIds.length;
-    const name = document.createElement("span");
-    name.textContent = c.name;
-    const n = document.createElement("small");
-    n.textContent = String(c.itemCount);
-    label.append(cb, name, n);
-    cb.onchange = () => togglePopoverMembership(c, lineupIds, useThrow, cb);
-    list.append(label);
+    const st = popState(c);
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "coll-pop-row" + (popCtx.pending.has(c.id) ? " changed" : "");
+    row.setAttribute("role", "checkbox");
+    row.setAttribute("aria-checked", st === "all" ? "true" : st === "some" ? "mixed" : "false");
+    row.innerHTML = `<span class="coll-check ${st}" aria-hidden="true"></span><span class="coll-pop-name"></span><small></small>`;
+    row.querySelector(".coll-pop-name").textContent = c.name;
+    row.querySelector("small").textContent = String(c.itemCount);
+    row.onclick = () => {
+      popCtx.pending.set(c.id, st !== "all");
+      // Back to what it already was: not a change.
+      const h = heldCount(c);
+      const wasAll = h === popCtx.lineupIds.length;
+      if (popCtx.pending.get(c.id) === wasAll && (wasAll || h === 0)) popCtx.pending.delete(c.id);
+      renderPopover();
+    };
+    list.append(row);
   });
   collPopover.append(list);
 
+  const save = document.createElement("button");
+  save.type = "button";
+  save.className = "primary-btn coll-pop-save";
+  save.textContent = "Save";
+  save.disabled = popCtx.pending.size === 0;
+  save.onclick = savePopover;
+  const cancel = Object.assign(document.createElement("button"), { type: "button", className: "ghost-btn", textContent: "Cancel" });
+  cancel.onclick = closePopover;
+  const actions = document.createElement("div");
+  actions.className = "coll-pop-actions";
+  actions.append(cancel, save);
+  collPopover.append(actions);
+
   const foot = document.createElement("form");
   foot.className = "coll-pop-new";
-  foot.innerHTML = `<input type="text" maxlength="80" placeholder="New collection…" aria-label="New collection name" autocomplete="off"><button type="submit" class="ghost-btn">Create</button>`;
+  foot.innerHTML = `<input type="text" class="coll-input" maxlength="80" placeholder="New collection name" aria-label="New collection name" autocomplete="off"><button type="submit" class="ghost-btn">Create</button>`;
   foot.onsubmit = async (e) => {
     e.preventDefault();
     const input = foot.querySelector("input");
     const name = input.value.trim();
-    if (!name) return;
+    if (!name) { input.focus(); return; }
     const btn = foot.querySelector("button");
     setBusy(btn, true, "…");
     try {
-      const created = await createCollection(state.mapId, name, "", lineupIds.map(id => ({ lineupId: id, throwId: useThrow || undefined })));
+      const created = await createCollection(state.mapId, name, "", lineupIds.map(id => ({ lineupId: id, throwId: popThrow() || undefined })));
       mine.unshift(created);
-      renderRail(); renderPopover();
-      toast(`Added to “${created.name}”`, { action: { label: "Open", onClick: () => { closePopover(); openCollection({ id: created.id }); } } });
+      renderRail();
+      closePopover();
+      toast(`Added to “${created.name}”`, { action: { label: "Open", onClick: () => openCollection({ id: created.id }) } });
     } catch (err) { toastError(err.message); setBusy(btn, false); }
   };
   collPopover.append(foot);
 }
 
-async function togglePopoverMembership(c, lineupIds, throwId, cb) {
-  const adding = cb.checked;
-  const keys = lineupIds.map(id => keyOf(id, throwId));
-  const prevMembers = [...c.members], prevCount = c.itemCount;
-  // Optimistic: update locally, roll back on failure.
-  if (adding) { keys.forEach(k => { if (!c.members.includes(k)) { c.members.push(k); c.itemCount++; } }); }
-  else { c.members = c.members.filter(m => !keys.includes(m)); c.itemCount = c.members.length; }
-  renderRail();
-  try {
-    if (adding) {
-      await addItems(c.id, lineupIds.map(id => ({ lineupId: id, throwId: throwId || undefined })));
-      toast(`Added to “${c.name}”`, { action: { label: "Open", onClick: () => { closePopover(); openCollection({ id: c.id }); } } });
-    } else {
-      await Promise.all(lineupIds.map(id => removeItem(c.id, { lineupId: id, ...(throwId ? { throwId } : {}) })));
-      toast(`Removed from “${c.name}”`);
+async function savePopover() {
+  const ctx = popCtx;
+  if (!ctx || !ctx.pending.size) return;
+  const btn = collPopover.querySelector(".coll-pop-save");
+  setBusy(btn, true, "Saving…");
+  const throwId = popThrow();
+  const keys = ctx.lineupIds.map(id => keyOf(id, throwId));
+  const jobs = [...ctx.pending].map(async ([cid, want]) => {
+    const c = mine.find(x => x.id === cid);
+    if (!c) return;
+    const held = keys.filter(k => c.members.includes(k)).length;
+    if (want && held < keys.length) {
+      await addItems(c.id, ctx.lineupIds.map(id => ({ lineupId: id, throwId: throwId || undefined })));
+      keys.forEach(k => { if (!c.members.includes(k)) c.members.push(k); });
+    } else if (!want && held > 0) {
+      await Promise.all(ctx.lineupIds.map(id => removeItem(c.id, { lineupId: id, ...(throwId ? { throwId } : {}) })));
+      c.members = c.members.filter(m => !keys.includes(m));
     }
-    if (view && view.data.id === c.id) reloadOpenCollection();
-  } catch (e) {
-    c.members = prevMembers; c.itemCount = prevCount;
-    cb.checked = !adding;
-    renderRail(); renderPopover();
-    toastError(e.message);
+    c.itemCount = c.members.length;
+  });
+  const results = await Promise.allSettled(jobs);
+  const failed = results.filter(r => r.status === "rejected");
+  renderRail();
+  if (view && ctx.pending.has(view.data.id)) reloadOpenCollection();
+  if (failed.length) {
+    toastError(failed[0].reason && failed[0].reason.message ? failed[0].reason.message : "Some changes didn't save.");
+    ctx.pending.clear();
+    if (popoverOpen()) renderPopover();
+    return;
   }
-  if (popoverOpen()) renderPopover();
+  closePopover();
+  toast(`Saved to ${ctx.pending.size} collection${ctx.pending.size === 1 ? "" : "s"}`);
+  if (selection.size) { selection.clear(); setSelectMode(false); }
 }
 
 if (addToCollBtn) {
@@ -291,11 +331,16 @@ document.addEventListener("pointerdown", (e) => {
 }, true);
 
 // ---------------------------------------------------------- multi-select ---
+// Select mode (or Shift-click) picks lineups on the map. A combined marker
+// opens up so the lineups inside it can be picked one at a time. While adding
+// lineups to an open collection ("picking") the same mechanism feeds that
+// collection directly.
+const picking = () => !!(view && view.picking);
+
 function setSelectMode(on) {
   selectMode = on;
   document.body.classList.toggle("select-mode", on);
   if (collSelectBtn) { collSelectBtn.setAttribute("aria-pressed", on ? "true" : "false"); collSelectBtn.classList.toggle("active", on); }
-  if (!on && !selection.size) syncSelectionUi();
   syncSelectionUi();
 }
 
@@ -305,29 +350,43 @@ function syncSelectionUi() {
     bar.hidden = !(selection.size || selectMode);
     $("collSelectCount").textContent = selection.size
       ? `${selection.size} selected`
-      : "Tap lineups on the map to select them";
+      : picking() ? `Click lineups on the map to add them to “${view.data.name}”` : "Tap lineups on the map to select them";
     $("collSelectAdd").disabled = !selection.size;
+    $("collSelectAdd").textContent = picking() ? (selection.size ? `Add ${selection.size} to collection` : "Add to collection") : "Add to collection";
+    $("collSelectClear").textContent = picking() ? "Done" : "Clear";
   }
   markerLayer.querySelectorAll(".marker.landing[data-lids]").forEach(el => {
     const ids = el.dataset.lids.split(",");
     el.classList.toggle("multi-sel", ids.length > 0 && ids.every(id => selection.has(id)));
   });
+  markerLayer.querySelectorAll(".fan-petal[data-lid]").forEach(el => {
+    el.classList.toggle("multi-sel", selection.has(el.dataset.lid));
+  });
+}
+
+function endSelecting() {
+  selection.clear();
+  setSelectMode(false);
+  if (picking()) finishPicking();
 }
 
 if (collSelectBtn) collSelectBtn.onclick = () => {
   if (!authUser) { openAuthModal("signin"); return; }
-  if (selectMode) { selection.clear(); setSelectMode(false); } else setSelectMode(true);
+  if (selectMode) endSelecting(); else setSelectMode(true);
 };
-$("collSelectClear").onclick = () => { selection.clear(); setSelectMode(false); };
-$("collSelectAdd").onclick = (e) => openPopover(e.currentTarget, { lineupIds: [...selection] });
+$("collSelectClear").onclick = endSelecting;
+$("collSelectAdd").onclick = (e) => (picking() ? commitPicking() : openPopover(e.currentTarget, { lineupIds: [...selection] }));
 
-// Marker clicks: Shift-click (or Select mode) toggles instead of opening.
+// Marker clicks: Shift-click (or Select mode, or picking) toggles instead of opening.
 hooks.intercept = (e, lineups) => {
-  if (!(e.shiftKey || selectMode) || view) return false;
+  if (view && !picking()) return false;
+  if (!(e.shiftKey || selectMode || picking())) return false;
   if (!authUser) { openAuthModal("signin"); return true; }
-  const ids = lineups.map(l => l.id);
-  const all = ids.every(id => selection.has(id));
-  ids.forEach(id => (all ? selection.delete(id) : selection.add(id)));
+  // A combined marker is not toggled as a whole: let it open so each lineup
+  // inside can be chosen on its own.
+  if (lineups.length > 1) return false;
+  const id = lineups[0].id;
+  if (selection.has(id)) selection.delete(id); else selection.add(id);
   syncSelectionUi();
   return true;
 };
@@ -432,7 +491,8 @@ async function reloadOpenCollection() {
     const fresh = await getById(view.data.id);
     view.data = fresh;
     view.step = Math.min(view.step, Math.max(0, fresh.items.length - 1));
-    applyViewLineups();
+    if (view.picking) refreshLocal(); // adding lineups: keep the whole map on screen
+    else applyViewLineups();
     renderPanel();
   } catch (e) { console.warn(e); }
 }
@@ -462,7 +522,10 @@ export async function openCollectionBySlug(slug) {
   await openCollection({ slug }, { fromUrl: true });
 }
 
-function goStep(i) {
+// Prev / Next / clicking a step focuses that lineup on the map (pins its marker
+// and throw lines, flashes it) without opening it. If the lineup view is already
+// open (stepping from inside it), it follows along instead.
+function goStep(i, { open = false } = {}) {
   if (!view) return;
   const items = view.data.items;
   if (!items.length) return;
@@ -475,11 +538,78 @@ function goStep(i) {
   view.step = idx;
   const it = items[idx];
   const tIdx = Math.max(0, it.lineup.throws.findIndex(t => t.id === it.throwId));
-  openDetail(it.lineupId, tIdx);
+  if (open || detailPanel.classList.contains("open")) openDetail(it.lineupId, tIdx);
+  else { state.openClusterKey = null; focusLineup(it.lineupId); }
   renderPanel();
 }
 const nextStep = () => goStep(view.step + 1);
 const prevStep = () => goStep(view.step - 1);
+
+// ---- Adding lineups to the open collection --------------------------------
+// The collection view only shows the collection's own lineups, which is
+// useless for filling an empty one. "Add lineups" brings the whole map back
+// and turns on select mode; picked lineups go straight into this collection.
+async function startPicking() {
+  if (!view || !isOwner()) return;
+  view.picking = true;
+  closeDetailPanel(); closePopover();
+  selection.clear();
+  setSelectMode(true);
+  try {
+    const [official, own] = await Promise.all([dbGetAll(), authUser ? dbGetMine().catch(() => []) : []]);
+    const seen = new Set();
+    state.lineups = [...official, ...own].filter(l => !seen.has(l.id) && seen.add(l.id));
+  } catch (e) {
+    toastError("Couldn't load the lineups on this map.");
+    view.picking = false; setSelectMode(false);
+    return;
+  }
+  state.activeFilters = new Set(TYPES.map(t => t.id));
+  state.selectedLineupId = null;
+  renderPanel();
+  refreshLocal();
+  syncSelectionUi();
+}
+
+async function commitPicking() {
+  const ids = [...selection];
+  if (!view || !ids.length) return;
+  const btn = $("collSelectAdd");
+  setBusy(btn, true, "Adding…");
+  try {
+    const r = await addItems(view.data.id, ids.map(id => ({ lineupId: id })));
+    toast(r.added ? `Added ${r.added} lineup${r.added === 1 ? "" : "s"}` : "Those are already in the collection");
+    selection.clear();
+    await reloadOpenCollection();
+    refreshCollections();
+  } catch (e) { toastError(e.message); }
+  setBusy(btn, false);
+  syncSelectionUi();
+}
+
+function finishPicking() {
+  if (!view) return;
+  view.picking = false;
+  selection.clear();
+  setSelectMode(false);
+  applyViewLineups();
+  renderPanel();
+}
+
+// "Save to my map" for a lineup in someone else's collection: bookmarks the
+// variant it points at, or every variant if it covers the whole lineup.
+async function saveItemToMap(it) {
+  if (!authUser) { openAuthModal("signin"); return; }
+  const ids = it.throwId ? [it.throwId] : it.lineup.throws.map(t => t.id);
+  try {
+    for (const tid of ids) {
+      if (state.savedThrowKeys.has(throwKey(it.lineupId, tid))) continue;
+      await dbSaveLineup(it.lineupId, tid);
+      state.savedThrowKeys.add(throwKey(it.lineupId, tid));
+    }
+    toast("Saved to your map");
+  } catch (e) { toastError((e && e.message) || "Couldn't save it."); }
+}
 
 // Step bar inside the dossier (which is a full-screen overlay while a
 // lineup is open): position in the strategy, Prev / Next, and the role /
@@ -548,6 +678,7 @@ function renderPanel() {
     b.type = "button"; b.className = cls; b.textContent = label; b.onclick = fn; actions.append(b); return b;
   };
   if (owner) {
+    btn(view.picking ? "Adding lineups…" : "＋ Add lineups", startPicking, "primary-btn").disabled = !!view.picking;
     btn("Edit", () => openEditModal({ collection: data }));
     btn("Share", openShareModal);
     btn("Duplicate", duplicateCollection);
@@ -578,8 +709,9 @@ function renderPanel() {
     list.append(Object.assign(document.createElement("li"), { className: "coll-items-empty" }));
     list.firstChild.append(emptyState({
       title: "This collection is empty",
-      body: owner ? "Open a lineup and press ＋ to add it, or Shift-click markers on the map and add them all at once." : "The owner hasn't added any lineups yet.",
+      body: owner ? "Add lineups from the map: press “Add lineups”, then click the lineups you want." : "The owner hasn't added any lineups yet.",
       compact: true,
+      action: owner && !view.picking ? { label: "＋ Add lineups", onClick: startPicking } : undefined,
     }));
   }
   data.items.forEach((it, i) => list.append(renderItem(it, i, owner)));
@@ -588,7 +720,7 @@ function renderPanel() {
   if (!owner) {
     const note = document.createElement("p");
     note.className = "coll-foot-note";
-    note.textContent = "Shared collections only show official lineups.";
+    note.textContent = "Shared with you by the owner. Save a lineup to your map, or save the whole collection as a copy.";
     collPanel.append(note);
   }
 }
@@ -612,20 +744,25 @@ function renderItem(it, i, owner) {
   main.onclick = () => goStep(i);
   row.append(num, main);
 
+  const tools = document.createElement("span");
+  tools.className = "coll-item-tools";
+  const mk = (label, aria, fn, disabled) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "icon-btn"; b.textContent = label; b.setAttribute("aria-label", aria); b.title = aria; b.onclick = fn; b.disabled = !!disabled;
+    return b;
+  };
+  if (it.status === "ok") tools.append(mk("↗", `Open ${name}`, () => goStep(i, { open: true })));
+  // Someone else's lineup (official, or shared by its owner): bookmark it.
+  if (it.status === "ok" && !(authUser && it.lineup.ownerId === authUser.id)) tools.append(mk("☆", `Save ${name} to my map`, () => saveItemToMap(it)));
   if (owner) {
-    const tools = document.createElement("span");
-    tools.className = "coll-item-tools";
-    const mk = (label, aria, fn, disabled) => {
-      const b = document.createElement("button");
-      b.type = "button"; b.className = "icon-btn"; b.textContent = label; b.setAttribute("aria-label", aria); b.onclick = fn; b.disabled = !!disabled;
-      return b;
-    };
     tools.append(
       mk("↑", `Move ${name} up`, () => moveItem(i, -1), i === 0),
       mk("↓", `Move ${name} down`, () => moveItem(i, 1), i === view.data.items.length - 1),
       mk("✕", `Remove ${name}`, () => removeItemUndoable(it)),
     );
-    row.append(tools);
+  }
+  row.append(tools);
+  if (owner) {
     li.draggable = true;
     li.ondragstart = (e) => { li.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", String(i)); };
     li.ondragend = () => li.classList.remove("dragging");
@@ -828,7 +965,7 @@ registerShortcut({
   when: () => !appShell.hidden && !!authUser, handler: () => openEditModal(),
 });
 registerLayer({ priority: 85, isOpen: popoverOpen, close: closePopover });
-registerLayer({ priority: 55, isOpen: () => selection.size > 0 || selectMode, close: () => { selection.clear(); setSelectMode(false); } });
+registerLayer({ priority: 55, isOpen: () => selection.size > 0 || selectMode, close: endSelecting });
 registerLayer({ priority: 35, isOpen: () => !!view, close: exitCollection });
 
 // The map changed / its lineups (re)loaded: keep the sidebar list in step.

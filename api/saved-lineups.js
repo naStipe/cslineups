@@ -2,6 +2,7 @@ const { createClient } = require("@supabase/supabase-js");
 const { setCorsHeaders } = require("./_lib/cors");
 const { getAuthUser } = require("./_lib/auth");
 const { checkRateLimit } = require("./_lib/rate-limit");
+const { sharedPersonalIds } = require("./_lib/sharing");
 
 function supabase() {
   return createClient(
@@ -27,8 +28,9 @@ function mapRow(row) {
   };
 }
 
-// Bookmarks: which official lineups a signed-in user has saved to their
-// personal map. Every method here requires a signed-in user.
+// Bookmarks: which lineups a signed-in user has saved to their personal map:
+// official ones, and other people's personal lineups while their owner has
+// them in a shared collection (see api/_lib/sharing.js). Every method here requires a signed-in user.
 module.exports = async function handler(req, res) {
   setCorsHeaders(req, res, "GET, POST, DELETE, OPTIONS");
   if (req.method === "OPTIONS") {
@@ -65,8 +67,11 @@ module.exports = async function handler(req, res) {
       if (mapId) query = query.eq("map_id", mapId);
       const { data, error } = await query;
       if (error) throw new Error(error.message);
+      // Someone else's personal lineup only shows while it is still shared.
+      const shared = await sharedPersonalIds(sb, data);
 
       const result = (data || [])
+        .filter(row => row.is_official || row.owner_id === user.id || shared.has(row.id))
         .map(row => {
           const wanted = throwIdsByLineup[row.id];
           const throws = (row.throws || []).filter(t => wanted.has(t.id));
@@ -88,12 +93,12 @@ module.exports = async function handler(req, res) {
         return;
       }
 
-      // Can only bookmark lineups/throws that actually exist and are
-      // official — saving someone's personal lineup wouldn't make sense
-      // (and RLS on the underlying lineups table would hide it from you anyway).
-      const { data: lineup, error: lookupErr } = await sb.from("lineups").select("id, is_official, throws").eq("id", lineupId).maybeSingle();
+      // Can only bookmark lineups/throws that exist and that you may see:
+      // official ones, or another user's personal lineup that they share.
+      const { data: lineup, error: lookupErr } = await sb.from("lineups").select("id, is_official, owner_id, throws").eq("id", lineupId).maybeSingle();
       if (lookupErr) throw new Error(lookupErr.message);
-      if (!lineup || !lineup.is_official) { res.status(400).json({ error: "That lineup can't be saved" }); return; }
+      const sharedOk = lineup && !lineup.is_official && lineup.owner_id !== user.id && (await sharedPersonalIds(sb, [lineup])).has(lineup.id);
+      if (!lineup || !(lineup.is_official || sharedOk)) { res.status(400).json({ error: "That lineup can't be saved" }); return; }
       if (!(lineup.throws || []).some(t => t.id === throwId)) { res.status(400).json({ error: "That throw position doesn't exist" }); return; }
 
       const { error } = await sb.from("saved_lineups").upsert({ user_id: user.id, lineup_id: lineupId, throw_id: throwId });

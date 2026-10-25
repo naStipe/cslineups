@@ -23,14 +23,13 @@ export async function resolveImageSrc(url) {
   if (!url || !isPrivateStorageUrl(url)) return url || "";
   if (blobUrlCache.has(url)) return blobUrlCache.get(url);
 
+  // Signed out (or session expired) is fine: images of lineups that someone
+  // shared in a collection are served without a login; the server decides.
   const token = await getAccessToken();
-  if (!token) return ""; // signed out (or session expired) — nothing to show
 
   let res;
   try {
-    res = await fetch(url, {
-      headers: { "Authorization": `Bearer ${token}` },
-    });
+    res = await fetch(url, token ? { headers: { "Authorization": `Bearer ${token}` } } : undefined);
   } catch {
     return "";
   }

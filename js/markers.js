@@ -171,8 +171,11 @@ export function renderClusterFan(cluster, key, animate = true) {
     petal.appendChild(labelEl);
     makeKeyboardButton(petal);
     petal.setAttribute("aria-label", label);
+    petal.dataset.lid = lineup.id; // read by multi-select
     petal.onclick = (e) => {
       e.stopPropagation();
+      // Select mode: toggle this lineup and keep the fan open for the next pick.
+      if (hooks.intercept && hooks.intercept(e, [lineup])) return;
       state.openClusterKey = null;
       state.selectedLineupId = lineup.id;
 

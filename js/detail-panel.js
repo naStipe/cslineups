@@ -19,6 +19,7 @@ import { timeEl } from "./time-utils.js";
 import { resolveImageSrc } from "./private-images.js";
 import { SIDES, normalizeSide, sideLabel, sideSegment } from "./side.js";
 import { toast, toastError } from "./toast.js";
+import { setBusy } from "./ui-utils.js";
 import { deferDelete } from "./undo-delete.js";
 
 export let selectedThrowIdx = 0;
@@ -108,8 +109,12 @@ function focusActiveThumb() {
 
 export function renderDetail(lineup, opts = {}) {
   const editable = canModifyLineup(lineup);
-  const canBookmark = state.viewMode === "official" && lineup.isOfficial && !!authUser;
-  const isBookmarkedRef = state.viewMode === "personal" && lineup.isOfficial;
+  // Someone else's personal lineup only reaches you through a collection its
+  // owner shared; it can be bookmarked to your map like an official one.
+  const othersPersonal = !lineup.isOfficial && !editable;
+  const inCollection = !!state.collectionView;
+  const canBookmark = !!authUser && ((state.viewMode === "official" && lineup.isOfficial) || (inCollection && (lineup.isOfficial || othersPersonal)) || (othersPersonal && state.viewMode === "official"));
+  const isBookmarkedRef = state.viewMode === "personal" && !inCollection && (lineup.isOfficial || othersPersonal);
   const multi = lineup.throws.length > 1;
 
   renderDetailType(lineup, editable);
@@ -130,6 +135,7 @@ export function renderDetail(lineup, opts = {}) {
   if (detailOwnerBadge) {
     // Personal lineups show where they stand with the official map.
     detailOwnerBadge.textContent = lineup.isOfficial ? "Official"
+      : !editable ? "Shared lineup"
       : lineup.submittedAt ? "Suggested · awaiting review"
       : lineup.deniedAt ? "Suggestion not accepted"
       : "My lineup · not approved";
@@ -352,8 +358,9 @@ function buildPagerHtml(lineup) {
     </div>`;
 }
 
-// T / CT side: a segmented control for whoever can edit the lineup, a small
-// read-only badge for everyone else (nothing shown for "any").
+// T / CT side: a segmented control for whoever can edit the lineup (the change
+// is only saved when "Save" is pressed), a small read-only badge for everyone
+// else (nothing shown for "any").
 function renderSide(lineup, editable) {
   if (!detailSideSlot) return;
   const side = normalizeSide(lineup.side);
@@ -367,20 +374,28 @@ function renderSide(lineup, editable) {
     }
     return;
   }
-  detailSideSlot.replaceChildren(sideSegment(SIDES, side, async (v) => {
+  let chosen = side;
+  const save = Object.assign(document.createElement("button"), { type: "button", className: "primary-btn side-save", textContent: "Save", hidden: true });
+  const seg = sideSegment(SIDES, side, (v) => { chosen = v; save.hidden = chosen === normalizeSide(lineup.side); }, { label: "Side" });
+  save.onclick = async () => {
+    setBusy(save, true, "Saving…");
     const prev = lineup.side;
-    lineup.side = v;
-    refreshLocal();
+    lineup.side = chosen;
     try {
       await dbPut(lineup, lineup.isOfficial);
-      toast(`Side set to ${sideLabel(v)}`);
+      refreshLocal();
+      toast(`Side set to ${sideLabel(chosen)}`);
+      save.hidden = true;
     } catch (err) {
       lineup.side = prev;
-      renderSide(lineup, editable);
-      refreshLocal();
       toastError("Couldn't save the side. Please try again.");
     }
-  }, { label: "Side" }));
+    setBusy(save, false);
+  };
+  const wrap = document.createElement("div");
+  wrap.className = "side-edit";
+  wrap.append(seg, save);
+  detailSideSlot.replaceChildren(wrap);
 }
 
 // Name field, plus the "Unnamed position" state: muted placeholder for

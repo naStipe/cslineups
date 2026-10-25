@@ -9,12 +9,13 @@
 //
 // Admin moderation viewing of *other* users' private images is handled
 // separately in api/admin.js (via the service key, bypassing this
-// ownership check entirely) — this route is only for a user viewing their
-// own images.
+// ownership check entirely) — this route serves a user's own images, plus
+// images of lineups their owner has shared in a collection (api/_lib/sharing.js).
 const { createClient } = require("@supabase/supabase-js");
 const r2 = require("./_lib/r2");
 const { setCorsHeaders } = require("./_lib/cors");
 const { getAuthUser } = require("./_lib/auth");
+const { isSharedPrivateImage } = require("./_lib/sharing");
 
 function supabase() {
   return createClient(
@@ -33,8 +34,7 @@ module.exports = async function handler(req, res) {
 
   try {
     const sb = supabase();
-    const user = await getAuthUser(req, sb);
-    if (!user) { res.status(401).json({ error: "Sign in required" }); return; }
+    const user = await getAuthUser(req, sb); // may be null: shared images work signed out
 
     const raw = req.query && req.query.path;
     const path = typeof raw === "string" ? decodeURIComponent(raw) : "";
@@ -43,7 +43,15 @@ module.exports = async function handler(req, res) {
     const ownerId = path.slice(0, slash);
     const filename = path.slice(slash + 1);
     if (!ownerId || !filename) { res.status(400).json({ error: "Malformed path" }); return; }
-    if (ownerId !== user.id) { res.status(403).json({ error: "You can only view your own images" }); return; }
+    // Your own images, or one used by a lineup its owner currently shares in
+    // a collection (anyone with that collection's link may see it, even signed
+    // out). Anything else stays private.
+    if (!user || ownerId !== user.id) {
+      if (!(await isSharedPrivateImage(sb, ownerId, filename))) {
+        res.status(user ? 403 : 401).json({ error: user ? "You can only view your own images" : "Sign in required" });
+        return;
+      }
+    }
 
     const key = r2.privateKey(ownerId, filename);
     const signedUrl = await r2.presignGet(r2.PRIVATE_BUCKET(), key, 300);
