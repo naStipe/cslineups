@@ -405,6 +405,8 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
   <!-- EXPANDED LINEUP PANEL -->
   <div class="detail-panel" id="detailPanel">
     <div class="detail-panel-inner" role="dialog" aria-modal="true" aria-labelledby="detailDialogTitle">
+      <!-- Shown while a collection is open: where we are in the strategy (js/collections.js) -->
+      <div class="detail-coll-bar" id="detailCollBar" hidden></div>
       <h2 class="sr-only" id="detailDialogTitle">Lineup</h2>
       <div class="sheet-handle" aria-hidden="true"></div>
       <div class="detail-head">

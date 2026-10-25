@@ -3008,3 +3008,17 @@ body.in-collection .fab-add-btn{display:none;}
   .coll-fields{grid-template-columns:1fr;}
 }
 @media (prefers-reduced-motion:reduce){ .coll-panel,.coll-popover{animation:none;} }
+
+.marker.has-step > .marker-badge:not(.step){display:none;}
+body.in-collection .side-filters,body.in-collection .area-label{display:none;}
+.detail-coll-bar{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding:10px 12px;margin-bottom:10px;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;
+  border-left:3px solid var(--signal);
+}
+.detail-coll-bar[hidden]{display:none;}
+.detail-coll-info{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0;font-size:13px;}
+.detail-coll-chips{display:inline-flex;gap:6px;}
+.detail-coll-info .coll-item-note{margin:0;flex-basis:100%;}
+.detail-coll-nav{display:flex;gap:8px;}
+@media (max-width:768px){ .detail-coll-nav .ghost-btn,.detail-coll-nav .primary-btn{min-height:44px;} }

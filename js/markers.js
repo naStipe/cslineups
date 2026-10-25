@@ -311,6 +311,7 @@ export function renderMarkers(animate = true) {
       el.classList.remove("leaving");
       el.classList.toggle("pinned", !!d.isPinned);
       el.classList.toggle("dimmed", !!d.dimmed);
+      if (hooks.badge) hooks.badge(el, d.cluster);
       if (d.isPinned) pinnedLandingEl = el;
     } else {
       if (el.classList.contains("leaving")) return;  // already fading out

@@ -341,15 +341,18 @@ const stepOf = (lineupId) => {
 
 // Numbered badges on landing markers while a collection is open.
 hooks.badge = (el, cluster) => {
+  // Also called for markers kept across renders, so start from a clean slate.
+  el.querySelectorAll(".marker-badge.step").forEach(n => n.remove());
+  el.classList.remove("has-step", "coll-current");
   if (!view) return;
   const nums = cluster.lineups.flatMap(l => stepOf(l.id)).sort((a, b) => a - b);
   if (!nums.length) return;
-  el.querySelector(".marker-badge")?.remove();
+  el.classList.add("has-step");
   const b = document.createElement("span");
   b.className = "marker-badge step";
   b.textContent = nums.join("·");
   el.appendChild(b);
-  el.classList.toggle("coll-current", cluster.lineups.some(l => view.data.items[view.step] && view.data.items[view.step].lineupId === l.id));
+  if (cluster.lineups.some(l => view.data.items[view.step] && view.data.items[view.step].lineupId === l.id)) el.classList.add("coll-current");
 };
 
 // Runs after every marker render: throw lines for the collection's chosen
@@ -436,6 +439,7 @@ async function reloadOpenCollection() {
 
 function leaveViewState() {
   document.body.classList.remove("in-collection");
+  const bar = $("detailCollBar"); if (bar) { bar.hidden = true; bar.replaceChildren(); }
   collPanel.hidden = true;
   collPanel.replaceChildren();
   state.collectionView = null;
@@ -477,9 +481,41 @@ function goStep(i) {
 const nextStep = () => goStep(view.step + 1);
 const prevStep = () => goStep(view.step - 1);
 
+// Step bar inside the dossier (which is a full-screen overlay while a
+// lineup is open): position in the strategy, Prev / Next, and the role /
+// timing / note the owner attached to this step.
+function renderDossierBar() {
+  const bar = $("detailCollBar");
+  if (!bar) return;
+  const it = view && view.data.items[view.step];
+  if (!view || !it || it.status !== "ok") { bar.hidden = true; bar.replaceChildren(); return; }
+  bar.hidden = false;
+  bar.replaceChildren();
+  const info = document.createElement("div");
+  info.className = "detail-coll-info";
+  const t = document.createElement("strong");
+  t.textContent = `${view.data.name} · Step ${view.step + 1} of ${view.data.items.length}`;
+  info.append(t);
+  const chips = document.createElement("span");
+  chips.className = "detail-coll-chips";
+  if (it.role) chips.append(Object.assign(document.createElement("span"), { className: "coll-chip", textContent: it.role }));
+  if (it.timing) chips.append(Object.assign(document.createElement("span"), { className: "coll-chip alt", textContent: it.timing }));
+  info.append(chips);
+  if (it.note) info.append(Object.assign(document.createElement("p"), { className: "coll-item-note", textContent: it.note }));
+  const nav = document.createElement("div");
+  nav.className = "detail-coll-nav";
+  const prev = Object.assign(document.createElement("button"), { type: "button", className: "ghost-btn", textContent: "‹ Prev" });
+  const next = Object.assign(document.createElement("button"), { type: "button", className: "primary-btn", textContent: "Next ›" });
+  prev.onclick = prevStep; next.onclick = nextStep;
+  if (okItems().length < 2) { prev.disabled = true; next.disabled = true; }
+  nav.append(prev, next);
+  bar.append(info, nav);
+}
+
 // ----------------------------------------------------------------- panel ---
 function renderPanel() {
   if (!view) return;
+  renderDossierBar();
   const { data } = view;
   const owner = isOwner();
   collPanel.hidden = false;
