@@ -3022,3 +3022,10 @@ body.in-collection .side-filters,body.in-collection .area-label{display:none;}
 .detail-coll-info .coll-item-note{margin:0;flex-basis:100%;}
 .detail-coll-nav{display:flex;gap:8px;}
 @media (max-width:768px){ .detail-coll-nav .ghost-btn,.detail-coll-nav .primary-btn{min-height:44px;} }
+
+.cm-item{align-items:flex-start;justify-content:space-between;}
+.cm-item.reported{border-color:var(--fire);}
+.cm-info{display:flex;flex-direction:column;gap:3px;min-width:0;}
+.cm-meta{font-size:12px;color:var(--text-dim);overflow-wrap:anywhere;}
+.cm-report{font-size:12px;color:var(--fire);}
+.cm-actions{display:flex;flex-wrap:wrap;gap:6px;flex-shrink:0;}

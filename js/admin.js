@@ -11,6 +11,7 @@ import { confirmDialog } from "./confirm-dialog.js";
 import { toastError } from "./toast.js";
 import { escapeHtml } from "./html-utils.js";
 import { mountAreaEditor } from "./admin-areas.js";
+import { mountCollectionModeration } from "./admin-collections.js";
 import { mountOfficialSides } from "./admin-official.js";
 import { mountTurnstile } from "./turnstile.js";
 
@@ -21,7 +22,7 @@ const el = (id) => document.getElementById(id);
 const els = {};
 ["statusToggle", "viewToggle", "adminAccounts", "adminEmail", "adminSignOut", "adminSignin", "adminError",
  "adminEmailInput", "adminPasswordInput", "adminSigninBtn", "adminGoogleBtn", "adminTurnstile",
- "adminDenied", "adminMain", "adminOfficial", "adminAreas", "adminHint", "adminQueue",
+ "adminDenied", "adminMain", "adminOfficial", "adminAreas", "adminCollections", "adminHint", "adminQueue",
  "adminLightbox", "adminLightboxImg", "adminLightboxClose"].forEach(id => { els[id] = el(id); });
 
 // "Back to site" returns to whichever map was open last, not the chooser.
@@ -32,7 +33,7 @@ try {
 
 let sb = null;
 let status = "unreviewed";
-const VIEWS = ["moderation", "accounts", "official", "areas"];
+const VIEWS = ["moderation", "accounts", "official", "areas", "collections"];
 let view = VIEWS.includes(new URLSearchParams(location.search).get("view")) ? new URLSearchParams(location.search).get("view") : "moderation";
 const mounted = new Set();
 
@@ -123,9 +124,11 @@ async function showView() {
   show(els.adminAccounts, view === "accounts");
   show(els.adminOfficial, view === "official");
   show(els.adminAreas, view === "areas");
+  show(els.adminCollections, view === "collections");
   // The two editors mount once and keep their state when switching tabs.
   if (view === "official" && !mounted.has(view)) { mounted.add(view); mountOfficialSides(els.adminOfficial, authHeaders); }
   if (view === "areas" && !mounted.has(view)) { mounted.add(view); mountAreaEditor(els.adminAreas, authHeaders); }
+  if (view === "collections" && !mounted.has(view)) { mounted.add(view); mountCollectionModeration(els.adminCollections, authHeaders); }
   if (view === "accounts") await loadAccounts();
   else if (view === "moderation") await loadQueue();
 }

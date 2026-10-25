@@ -164,7 +164,7 @@ window.addEventListener('mouseup',function(){if(d){d=false;t();}});
 })();
 </script>`;
 
-function layout({ title, description, path, ogImage, ogType, jsonLd, crumbs, body, lightbox }) {
+function layout({ title, description, path, ogImage, ogType, jsonLd, crumbs, body, lightbox, robots, head }) {
   const canonical = SITE + path;
   const image = ogImage || `${SITE}/og-image.png`;
   const imageDims = ogImage ? "" : `<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n`;
@@ -176,6 +176,7 @@ function layout({ title, description, path, ogImage, ogType, jsonLd, crumbs, bod
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
 <link rel="canonical" href="${esc(canonical)}">
+${robots ? `<meta name="robots" content="${esc(robots)}">\n` : ""}${head || ""}
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta property="og:type" content="${ogType || "website"}">
 <meta property="og:url" content="${esc(canonical)}">
@@ -520,6 +521,61 @@ ${relatedHtml}
   }), CACHE_OK);
 }
 
+// ------------------------------------------------------- shared collection ---
+// /c/<slug>: link-preview + crawlable page for a shared collection. Real
+// visitors are sent straight on to the interactive app; Discord / Telegram /
+// crawlers read the title, description and image from here. Only OFFICIAL
+// lineups are ever listed (a collection's personal lineups stay private).
+// Public collections are indexable; unlisted ones are noindex.
+async function renderCollectionPage(res, C, slug) {
+  if (!/^[A-Za-z0-9]{10}$/.test(slug)) return notFound(res);
+  const sb = supabase();
+  const { data: col, error } = await sb.from("collections").select("*").eq("share_slug", slug).maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!col || col.visibility === "private" || col.moderation_hidden_at) return notFound(res);
+  const map = C.MAPS.find(m => m.id === col.map_id);
+  if (!map) return notFound(res);
+
+  const { data: items, error: ierr } = await sb.from("collection_items").select("lineup_id, role, timing, position").eq("collection_id", col.id).order("position");
+  if (ierr) throw new Error(ierr.message);
+  const ids = (items || []).map(i => i.lineup_id).filter(Boolean);
+  let lineups = [];
+  if (ids.length) {
+    const { data: rows, error: lerr } = await sb.from("lineups").select("*").in("id", ids).eq("is_official", true);
+    if (lerr) throw new Error(lerr.message);
+    lineups = (rows || []).map(r => ({ id: r.id, mapId: r.map_id, type: r.type, name: r.name || "", landing: r.landing, throws: Array.isArray(r.throws) ? r.throws : [], createdAt: r.created_at }));
+  }
+  const byId = new Map(lineups.map(l => [l.id, l]));
+  const visible = (items || []).map(i => ({ item: i, lineup: byId.get(i.lineup_id) })).filter(x => x.lineup);
+  const total = (items || []).length;
+
+  const title = `${col.name} · ${total} lineup${total === 1 ? "" : "s"} · ${map.name} | Lineupr`;
+  const description = (col.description && col.description.trim()) || `A ${map.name} CS2 grenade lineup collection on Lineupr: ${total} lineup${total === 1 ? "" : "s"} to practise as one strategy.`;
+  const appUrl = `/?map=${encodeURIComponent(col.map_id)}&collection=${encodeURIComponent(slug)}`;
+  const ogImage = (visible.map(x => firstValidScreenshot(x.lineup)).find(Boolean)) || null;
+
+  const list = visible.map(({ item, lineup }, i) => {
+    const type = C.TYPES.find(t => t.id === lineup.type);
+    const label = lineupDisplayName(lineup, type ? type.label : lineup.type);
+    const extra = [item.role, item.timing].filter(Boolean).map(esc).join(" · ");
+    return `<li><strong>${i + 1}.</strong> <a href="${esc(lineupPath(lineup))}">${esc(label)}</a><span class="sub">${esc(type ? type.label : "")}${extra ? " · " + extra : ""}</span></li>`;
+  }).join("");
+
+  sendHtml(res, 200, layout({
+    title, description, path: `/c/${slug}`, ogImage,
+    robots: col.visibility === "public" ? "index,follow" : "noindex,nofollow",
+    // Real browsers go straight to the app; link-preview bots don't run JS.
+    head: `<script>if(!/bot|crawl|spider|preview|facebookexternalhit|discord|telegram|slack/i.test(navigator.userAgent))location.replace(${JSON.stringify(appUrl)});</script>\n`,
+    crumbs: `<a href="/">Lineupr</a> › <a href="/${esc(map.id)}">${esc(map.name)}</a> › Collection`,
+    body: `<h1>${esc(col.name)}</h1>
+<p class="lede">${esc(description)}</p>
+<p><a class="cta" href="${esc(appUrl)}">Open in the interactive map</a></p>
+<h2>${total} lineup${total === 1 ? "" : "s"} on ${esc(map.name)}</h2>
+<ul class="plain">${list || "<li>No official lineups to show.</li>"}</ul>
+${visible.length < total ? `<p class="lede">${total - visible.length} more ${total - visible.length === 1 ? "item is" : "items are"} personal or no longer available.</p>` : ""}`,
+  }), CACHE_OK);
+}
+
 // ------------------------------------------------------------------ 404 ---
 function notFound(res) {
   sendHtml(res, 404, layout({
@@ -538,6 +594,7 @@ module.exports = async function handler(req, res) {
     // is also directly reachable at /api/render — validate again here.
     if (q.page === "maps") return await renderMapsIndex(res, C);
     if (q.page === "map") return await renderMapPage(res, C, String(q.map || ""));
+    if (q.page === "collection") return await renderCollectionPage(res, C, String(q.slug || ""));
     if (q.page === "lineup") {
       return await renderLineupPage(res, C, String(q.map || ""), String(q.type || ""), String(q.slug || ""));
     }

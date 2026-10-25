@@ -44,11 +44,16 @@ module.exports = async function handler(req, res) {
     const latestLineupDate = lineupDates.length ? lineupDates[lineupDates.length - 1] : null;
     const latestBlogDate = BLOG_POSTS.map(p => p.lastmod).filter(Boolean).sort().pop() || null;
 
+    // Public (not hidden) collections are indexable; unlisted ones never appear.
+    const { data: pubCols } = await supabase().from("collections").select("share_slug, updated_at")
+      .eq("visibility", "public").is("moderation_hidden_at", null).limit(5000);
+
     const urls = [
       urlTag(`${SITE}/`, latestLineupDate),
       urlTag(`${SITE}/maps`, latestLineupDate),
       ...MAPS.map(m => urlTag(`${SITE}/${m.id}`)),
       ...lineups.map(l => urlTag(SITE + lineupPath(l), isoDate(l.createdAt))),
+      ...(pubCols || []).map(c => urlTag(`${SITE}/c/${c.share_slug}`, (c.updated_at || "").slice(0, 10) || null)),
       urlTag(`${SITE}/blog`, latestBlogDate),
       ...BLOG_POSTS.map(p => urlTag(`${SITE}/blog/${p.file}`, p.lastmod)),
     ];

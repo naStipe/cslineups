@@ -59,6 +59,7 @@
   "rewrites": [
     { "source": "/maps", "destination": "/api/render?page=maps" },
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/c/:slug([A-Za-z0-9]{10})", "destination": "/api/render?page=collection&slug=:slug" },
     {
       "source": "/:map(dust2|mirage|inferno|nuke|ancient|anubis|vertigo|overpass|cache)",
       "destination": "/api/render?page=map&map=:map"
