@@ -174,15 +174,36 @@ module.exports = async function handler(req, res) {
       (profiles || []).forEach(p => { profileById[p.id] = p; });
 
       const { data: lineupRows, error: lineupErr } = await sb.from("lineups")
-        .select("id, owner_id, throws").eq("is_official", false);
+        .select("id, owner_id, throws, created_at").eq("is_official", false);
       if (lineupErr) throw new Error(lineupErr.message);
       const stats = {};
       for (const row of (lineupRows || [])) {
         if (!row.owner_id) continue;
-        const st = stats[row.owner_id] || (stats[row.owner_id] = { lineups: 0, screenshots: 0 });
+        const st = stats[row.owner_id] || (stats[row.owner_id] = { lineups: 0, screenshots: 0, lastLineupAt: 0 });
         st.lineups++;
+        if (Number(row.created_at) > st.lastLineupAt) st.lastLineupAt = Number(row.created_at);
         st.screenshots += (row.throws || []).reduce((n, t) => n + throwImageUrls(t).length, 0);
       }
+
+      // "Last seen": Supabase's last_sign_in_at only moves on a real sign-in,
+      // not when a saved session silently refreshes, so anyone who stays
+      // logged in looks idle for days. Take the latest of that and actual
+      // activity: their newest lineup and their last write (the rate-limit
+      // table stamps every upload / save / delete).
+      const { data: limitRows } = await sb.from("rate_limits").select("user_id, window_start");
+      const lastWriteById = {};
+      (limitRows || []).forEach(r => {
+        const t = Date.parse(r.window_start);
+        if (t > (lastWriteById[r.user_id] || 0)) lastWriteById[r.user_id] = t;
+      });
+      const lastSeen = (u) => {
+        const t = Math.max(
+          Date.parse(u.last_sign_in_at) || 0,
+          (stats[u.id] && stats[u.id].lastLineupAt) || 0,
+          lastWriteById[u.id] || 0,
+        );
+        return t ? new Date(t).toISOString() : null;
+      };
 
       const users = authUsers.map(u => ({
         id: u.id,
@@ -192,7 +213,7 @@ module.exports = async function handler(req, res) {
         provider: (u.app_metadata && u.app_metadata.provider) || null,
         confirmed: !!(u.email_confirmed_at || u.confirmed_at),
         createdAt: u.created_at || null,
-        lastSignInAt: u.last_sign_in_at || null,
+        lastSignInAt: lastSeen(u),
         lineups: (stats[u.id] && stats[u.id].lineups) || 0,
         screenshots: (stats[u.id] && stats[u.id].screenshots) || 0,
       })).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
