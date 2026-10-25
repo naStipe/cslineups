@@ -516,10 +516,12 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
 <!-- MODAL: new landing spot -> choose type -->
 <div class="modal-backdrop" id="typeModal">
   <div class="modal">
-    <h3>What kind of nade?</h3>
-    <div class="type-grid" id="typeGrid"></div>
-    <label class="field-label" style="margin-top:8px;">Name this position <span style="color:var(--text-faint);font-size:10px;">optional</span></label>
-    <input type="text" id="lineupNameInput" placeholder="e.g. CT Spawn, Mid Box, Window…" autocomplete="off">
+    <h3 id="typeModalTitle">What kind of nade?</h3>
+    <div class="type-grid" id="typeGrid" role="radiogroup" aria-labelledby="typeModalTitle"></div>
+    <label class="field-label" for="lineupNameInput" style="margin-top:8px;">Name this position <span style="color:var(--text-faint);font-size:10px;">optional</span></label>
+    <input type="text" id="lineupNameInput" placeholder="e.g. CT Spawn, Mid Box, Window…" autocomplete="off" maxlength="40" aria-describedby="lineupNameHint">
+    <div class="name-suggestions" id="lineupNameSuggestions" hidden></div>
+    <p class="name-hint" id="lineupNameHint" aria-live="polite"></p>
     <button class="ghost-btn" id="cancelType" data-esc>Cancel</button>
   </div>
 </div>

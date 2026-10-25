@@ -121,6 +121,9 @@ function sanitizeThrow(t, i, userId) {
     standing,
     precise: t.precise != null ? t.precise : null,
     result: t.result != null ? t.result : null,
+    // When this throw position was added (ms since epoch; the dossier shows
+    // "added N ago"). Optional: throws saved before it existed have none.
+    ...(isFiniteNum(t.createdAt) && t.createdAt > 0 ? { createdAt: Math.trunc(t.createdAt) } : {}),
   };
 }
 

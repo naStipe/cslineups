@@ -2614,14 +2614,6 @@ kbd{
 }
 .name-suggestions button:hover{border-color:var(--signal);color:var(--signal);}
 
-/* Dossier: nudge under an unnamed lineup's name field. */
-.name-nudge{
-  display:inline-flex;align-items:center;gap:4px;margin-top:4px;padding:2px 0;
-  background:none;border:none;color:var(--text-faint);font-family:var(--font-mono);
-  font-size:10.5px;letter-spacing:.04em;cursor:pointer;
-}
-.name-nudge:hover,.name-nudge:focus-visible{color:var(--signal);}
-
 @media (prefers-reduced-motion:reduce){
   .tm-upload-col.slot-received,.tm-thumbs .thumb.is-done .thumb-check{animation:none;}
   .tm-thumbs .thumb.is-compressing .thumb-ring{animation-duration:3s;}

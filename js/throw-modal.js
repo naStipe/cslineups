@@ -327,7 +327,7 @@ saveThrow.onclick = async () => {
         type: draft.typeId,
         name: state.pendingName || "",
         landing: draft.landingPos,
-        throws: [{ id: uid(), ...throwEntryBase }],
+        throws: [{ id: uid(), createdAt: Date.now(), ...throwEntryBase }],
         createdAt: Date.now(),
         isOfficial,
         ownerId: isOfficial ? null : (authUser ? authUser.id : null),
@@ -341,9 +341,10 @@ saveThrow.onclick = async () => {
       if (draft.editingThrowId) {
         const idx = lineup.throws.findIndex(t => t.id === draft.editingThrowId);
         if (idx === -1) throw new Error("Could not find the throw position to update.");
-        lineup.throws[idx] = { id: draft.editingThrowId, ...throwEntryBase };
+        const prev = lineup.throws[idx];
+        lineup.throws[idx] = { id: draft.editingThrowId, ...(prev.createdAt ? { createdAt: prev.createdAt } : {}), ...throwEntryBase };
       } else {
-        lineup.throws.push({ id: uid(), ...throwEntryBase });
+        lineup.throws.push({ id: uid(), createdAt: Date.now(), ...throwEntryBase });
       }
       await dbPut(lineup, lineup.isOfficial);
       Object.assign(existingLineup, lineup);
