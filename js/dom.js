@@ -296,3 +296,7 @@ export const collPanel = document.getElementById("collPanel");
 export const collSelectBar = document.getElementById("collSelectBar");
 export const collPopover = document.getElementById("collPopover");
 export const addToCollBtn = document.getElementById("addToCollBtn");
+
+// Video clip slot in the throw modal
+export const clipInput = document.getElementById("clipInput");
+export const clipWrap = document.getElementById("clipWrap");

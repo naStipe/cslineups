@@ -1,7 +1,7 @@
 import { authUser, getAccessToken } from "./auth.js";
-import { preciseInput, preciseThumbWrap, resultInput, resultThumbWrap, screenshotInput, standingInput, standingThumbGrid, thumbGrid, tmUploadSummary } from "./dom.js";
+import { clipInput, clipWrap, preciseInput, preciseThumbWrap, resultInput, resultThumbWrap, screenshotInput, standingInput, standingThumbGrid, thumbGrid, tmUploadSummary } from "./dom.js";
 import { escapeHtml } from "./html-utils.js";
-import { hydrateImages } from "./private-images.js";
+import { hydrateImages, resolveImageSrc } from "./private-images.js";
 import { markThrowDraftDirty, pendingThrowDraft } from "./throw-modal.js";
 import { toast, toastError } from "./toast.js";
 
@@ -67,7 +67,7 @@ export function imageUrlOf(v) {
 // Every upload item in a draft, in slot order.
 export function draftItems(draft) {
   if (!draft) return [];
-  return [...draft.standing, ...draft.screenshots, draft.precise, draft.result].filter(isUploadItem);
+  return [...draft.standing, ...draft.screenshots, draft.precise, draft.result, draft.clip].filter(isUploadItem);
 }
 
 // ── Compression ─────────────────────────────────────────────────────────
@@ -289,11 +289,12 @@ function fileProblem(file) {
   return null;
 }
 
-function createItem(file, isOfficial) {
+function createItem(file, isOfficial, kind = "image") {
   const type = guessType(file);
   const f = file.type === type ? file : new File([file], file.name || "image", { type });
   return {
     id: `up${++itemSeq}`,
+    kind,
     file: f,
     previewUrl: URL.createObjectURL(f),
     status: "compressing",
@@ -316,6 +317,7 @@ function startUpload(item) {
   updateItemUi(item);
   item.promise = (async () => {
     if (!authUser) throw new Error("Sign in to upload images.");
+    if (item.kind === "video") item.blob = item.file; // clips are uploaded as picked
     if (!item.blob) {
       compressingCount++;
       try { item.blob = await compressForUpload(item.file); }
@@ -592,6 +594,7 @@ function applyItemState(t, item) {
 // Progress events arrive many times a second: update the one thumb in
 // place instead of re-rendering the slot.
 function updateItemUi(item) {
+  if (item.kind === "video") { updateClipUi(item); updateUploadSummary(); return; }
   const t = document.querySelector(`#throwModal .thumb[data-item-id="${item.id}"]`);
   if (t) applyItemState(t, item);
   updateUploadSummary();
@@ -607,7 +610,7 @@ export function updateUploadSummary() {
   let text = "";
   if (failed) text = `${failed} upload${failed > 1 ? "s" : ""} failed`; // the thumb has the retry button
   else if (items.length && done < items.length) text = `Uploading ${done + 1} of ${items.length}…`;
-  else if (items.length) text = items.length === 1 ? "Screenshot uploaded" : `All ${items.length} screenshots uploaded`;
+  else if (items.length) text = items.length === 1 ? "Upload finished" : `All ${items.length} uploads finished`;
   if (tmUploadSummary.textContent !== text) tmUploadSummary.textContent = text;
   tmUploadSummary.classList.toggle("is-error", !!failed);
 }
@@ -683,3 +686,116 @@ Object.keys(CATS).forEach((cat) => {
     addFiles(cat, CATS[cat].kind === "single" ? files.slice(0, 1) : files);
   };
 });
+
+
+// ── Clip (one short video per throw position) ───────────────────────────
+// Same background upload as screenshots, minus compression: the file goes to
+// R2 exactly as picked. Limits are a courtesy; api/upload-url.js and the
+// save-time HEAD in api/lineups.js are the real gate (mp4 / webm, 20 MB).
+const CLIP_TYPES = ["video/mp4", "video/webm"];
+const MAX_CLIP_BYTES = 20 * 1024 * 1024;
+const MAX_CLIP_SECONDS = 15;
+
+// Reads the clip's duration from its metadata without playing it.
+function clipDuration(file) {
+  return new Promise((resolve, reject) => {
+    const v = document.createElement("video");
+    const url = URL.createObjectURL(file);
+    const done = (fn, val) => { URL.revokeObjectURL(url); v.removeAttribute("src"); fn(val); };
+    v.preload = "metadata";
+    v.onloadedmetadata = () => done(resolve, v.duration);
+    v.onerror = () => done(reject, new Error("That video can't be read by your browser."));
+    v.src = url;
+  });
+}
+
+export async function addClip(file) {
+  const draft = pendingThrowDraft;
+  if (!draft || !file) return;
+  if (!authUser) { toastError("Sign in to upload clips."); return; }
+  if (!CLIP_TYPES.includes(file.type)) { toastError("Clips must be MP4 or WebM."); return; }
+  if (file.size > MAX_CLIP_BYTES) { toastError(`That clip is too large (max ${MAX_CLIP_BYTES / (1024 * 1024)}MB).`); return; }
+  try {
+    const secs = await clipDuration(file);
+    if (!(secs > 0) || secs > MAX_CLIP_SECONDS + 0.5) { toastError(`Clips can be at most ${MAX_CLIP_SECONDS} seconds (this one is ${Math.round(secs)} s).`); return; }
+  } catch (e) { toastError(e.message); return; }
+  if (draft !== pendingThrowDraft) return; // modal closed while checking
+  if (isUploadItem(draft.clip)) discardItems([draft.clip]);
+  draft.clip = createItem(file, draft.isOfficial, "video");
+  startUpload(draft.clip);
+  markThrowDraftDirty();
+  renderClip();
+}
+
+export function removeClip() {
+  const draft = pendingThrowDraft;
+  if (!draft) return;
+  if (isUploadItem(draft.clip)) discardItems([draft.clip]);
+  draft.clip = null;
+  markThrowDraftDirty();
+  renderClip();
+}
+
+function clipStatusText(item) {
+  if (item.status === "uploading") return `Uploading ${Math.round(item.progress * 100)}%`;
+  if (item.status === "done") return "Uploaded";
+  if (item.status === "error") return `Upload failed: ${item.error || "unknown error"}`;
+  return "Preparing…";
+}
+
+function updateClipUi(item) {
+  const row = clipWrap && clipWrap.querySelector(`[data-item-id="${item.id}"]`);
+  if (!row) return;
+  row.querySelector(".tm-clip-status").textContent = clipStatusText(item);
+  row.classList.toggle("is-error", item.status === "error");
+  row.classList.toggle("is-done", item.status === "done");
+  const bar = row.querySelector(".tm-clip-bar span");
+  if (bar) bar.style.width = (item.status === "done" ? 100 : Math.round(item.progress * 100)) + "%";
+  row.querySelector(".tm-clip-retry").hidden = item.status !== "error";
+}
+
+export function renderClip() {
+  if (!clipWrap || !pendingThrowDraft) return;
+  const clip = pendingThrowDraft.clip;
+  clipWrap.replaceChildren();
+  if (!clip) return;
+  const row = document.createElement("div");
+  row.className = "tm-clip-row";
+  const isItem = isUploadItem(clip);
+  if (isItem) row.dataset.itemId = clip.id;
+  const video = document.createElement("video");
+  video.muted = true; video.playsInline = true; video.preload = "metadata"; video.className = "tm-clip-video";
+  if (isItem) video.src = clip.previewUrl;
+  else resolveImageSrc(clip).then(src => { if (src) video.src = src; });
+  const info = document.createElement("div");
+  info.className = "tm-clip-info";
+  info.innerHTML = `<span class="tm-clip-status"></span><span class="tm-clip-bar"><span></span></span>`;
+  const retry = Object.assign(document.createElement("button"), { type: "button", className: "ghost-btn tm-clip-retry", textContent: "Retry", hidden: true });
+  const remove = Object.assign(document.createElement("button"), { type: "button", className: "ghost-btn tm-clip-remove", textContent: "Remove" });
+  retry.onclick = () => { retryUpload(clip); };
+  remove.onclick = removeClip;
+  info.append(retry, remove);
+  row.append(video, info);
+  clipWrap.append(row);
+  if (isItem) updateClipUi(clip);
+  else { row.querySelector(".tm-clip-status").textContent = "Saved clip"; row.querySelector(".tm-clip-bar").hidden = true; }
+}
+
+if (clipInput) {
+  clipInput.addEventListener("change", () => {
+    const file = clipInput.files && clipInput.files[0];
+    clipInput.value = "";
+    if (file) addClip(file);
+  });
+}
+if (clipWrap) {
+  const zone = clipWrap.parentElement;
+  const hasFile = (e) => e.dataTransfer && [...e.dataTransfer.types].includes("Files");
+  zone.addEventListener("dragover", (e) => { if (hasFile(e)) { e.preventDefault(); zone.classList.add("drop"); } });
+  zone.addEventListener("dragleave", () => zone.classList.remove("drop"));
+  zone.addEventListener("drop", (e) => {
+    zone.classList.remove("drop");
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f && f.type.startsWith("video/")) { e.preventDefault(); e.stopPropagation(); addClip(f); }
+  });
+}

@@ -3,7 +3,7 @@ const r2 = require("./_lib/r2");
 const { setCorsHeaders } = require("./_lib/cors");
 const { getAuthUser, isAdmin } = require("./_lib/auth");
 const { checkRateLimit } = require("./_lib/rate-limit");
-const { verifyNewImages, setLongCache } = require("./_lib/uploads");
+const { isVideoName, verifyNewImages, setLongCache } = require("./_lib/uploads");
 
 function supabase() {
   return createClient(
@@ -112,6 +112,8 @@ function sanitizeThrow(t, i, userId) {
   standing.forEach((u, j) => { if (!isOwnStorageUrl(u, userId)) throw new Error(`throws[${i}].standing[${j}] is not a valid image URL`); });
   if (t.precise != null && !isOwnStorageUrl(t.precise, userId)) throw new Error(`throws[${i}].precise is not a valid image URL`);
   if (t.result != null && !isOwnStorageUrl(t.result, userId)) throw new Error(`throws[${i}].result is not a valid image URL`);
+  // One optional clip (mp4 / webm) per throw position, same storage rules as images.
+  if (t.clip != null && (!isOwnStorageUrl(t.clip, userId) || !isVideoName(t.clip))) throw new Error(`throws[${i}].clip is not a valid clip URL`);
 
   return {
     id: t.id,
@@ -123,6 +125,7 @@ function sanitizeThrow(t, i, userId) {
     standing,
     precise: t.precise != null ? t.precise : null,
     result: t.result != null ? t.result : null,
+    clip: t.clip != null ? t.clip : null,
     // When this throw position was added (ms since epoch; the dossier shows
     // "added N ago"). Optional: throws saved before it existed have none.
     ...(isFiniteNum(t.createdAt) && t.createdAt > 0 ? { createdAt: Math.trunc(t.createdAt) } : {}),

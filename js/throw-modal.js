@@ -3,7 +3,7 @@ import { dbGetAll, dbPut } from "./api.js";
 import { authUser, isAdmin } from "./auth.js";
 import { openDetail } from "./detail-panel.js";
 import { cancelThrow, cancelThrowBtn, mapImage, movementSelect, notesInput, repositionOnMapBtn, saveThrow, throwModal, throwModalHint, throwModalTitle, throwRangeSelect, tmPasteHint, tmPreviewImg, tmPreviewLanding, tmPreviewSvg, tmPreviewThrow } from "./dom.js";
-import { addFiles, clearDropHighlights, discardItems, draftItems, imageUrlOf, releaseItem, renderPreciseThumb, renderResultThumb, renderStandingThumbGrid, renderThumbGrid, updateUploadSummary } from "./image-upload.js";
+import { addFiles, clearDropHighlights, discardItems, draftItems, imageUrlOf, releaseItem, renderClip, renderPreciseThumb, renderResultThumb, renderStandingThumbGrid, renderThumbGrid, updateUploadSummary } from "./image-upload.js";
 import { refreshLocal, upsertLocalLineup } from "./map-data.js";
 import { getCssVarColor, typeColor } from "./markers.js";
 import { closeModal, watchDialog } from "./modal-utils.js";
@@ -69,6 +69,7 @@ export function openThrowModal(throwPos, lineupId, isNewLineup, typeId, landingP
     screenshots: existingThrow ? [...existingThrow.screenshots] : [],
     precise: existingThrow ? existingThrow.precise || null : null,
     result: existingThrow ? existingThrow.result || null : null,
+    clip: existingThrow ? existingThrow.clip || null : null,
     editingThrowId: existingThrow ? existingThrow.id : null,
     dirty: false,
   };
@@ -79,6 +80,7 @@ export function openThrowModal(throwPos, lineupId, isNewLineup, typeId, landingP
   renderThumbGrid();
   renderPreciseThumb();
   renderResultThumb();
+  renderClip();
   throwRangeSelect.value = existingThrow ? existingThrow.range : "throw";
   movementSelect.value = existingThrow ? existingThrow.movement : "none";
   notesInput.value = existingThrow ? existingThrow.notes || "" : "";
@@ -315,6 +317,7 @@ saveThrow.onclick = async () => {
       screenshots: draft.screenshots.map(imageUrlOf),
       precise: draft.precise ? imageUrlOf(draft.precise) : null,
       result: draft.result ? imageUrlOf(draft.result) : null,
+      clip: draft.clip ? imageUrlOf(draft.clip) : null,
       range: throwRangeSelect.value,
       movement: movementSelect.value,
       notes: notesInput.value.trim(),

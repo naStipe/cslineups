@@ -10,7 +10,12 @@ const ALLOWED_EXT = {
   "image/png": "png",
   "image/webp": "webp",
   "image/gif": "gif",
+  // One short clip per throw position (see js/image-upload.js addClip).
+  "video/mp4": "mp4",
+  "video/webm": "webm",
 };
+
+const VIDEO_EXT = ["mp4", "webm"];
 
 // The hard per-object cap. A presigned PUT can't enforce it by signature
 // (R2 has no POST Object / content-length-range, see api/_lib/r2.js), so it
@@ -18,6 +23,12 @@ const ALLOWED_EXT = {
 // save time for every newly referenced image (verifyNewImages below), and by
 // the legacy confirm action for clients still running the old upload flow.
 const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
+// Clips are bigger by nature: ~15 s of H.264 / WebM.
+const MAX_VIDEO_BYTES = 20 * 1024 * 1024;
+
+const isVideoName = (name) => VIDEO_EXT.includes(String(name).split(".").pop().toLowerCase());
+// The cap that applies to a stored object, from its key / filename.
+const maxBytesFor = (name) => (isVideoName(name) ? MAX_VIDEO_BYTES : MAX_UPLOAD_BYTES);
 
 function randomFilename(ext) {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
@@ -26,7 +37,7 @@ function randomFilename(ext) {
 // What randomFilename produces (base36 timestamp, "-", 1-6 random base36
 // chars, one of our extensions). The delete action only accepts names in
 // this shape, so it can never be pointed at a hand-named or legacy object.
-const RANDOM_FILENAME = /^[a-z0-9]{6,12}-[a-z0-9]{1,6}\.(jpg|png|webp|gif)$/;
+const RANDOM_FILENAME = /^[a-z0-9]{6,12}-[a-z0-9]{1,6}\.(jpg|png|webp|gif|mp4|webm)$/;
 
 // Resolves the bucket/key/publicUrl for an isOfficial+filename pair from
 // just that pair plus the caller's own id, so no route ever trusts a
@@ -77,6 +88,7 @@ function imageUrls(throws) {
     for (const u of Array.isArray(t.standing) ? t.standing : []) out.push(u);
     if (t.precise) out.push(t.precise);
     if (t.result) out.push(t.result);
+    if (t.clip) out.push(t.clip);
   }
   return out.filter(u => typeof u === "string");
 }
@@ -102,7 +114,7 @@ async function verifyNewImages(nextThrows, prevThrows, userId) {
     if (!target) return { url, problem: "invalid" };
     const meta = await r2.headObject(target.bucket, target.key);
     if (!meta) return { url, problem: "missing" };
-    if (meta.contentLength > MAX_UPLOAD_BYTES) {
+    if (meta.contentLength > maxBytesFor(target.key)) {
       try { await r2.deleteObject(target.bucket, target.key); } catch (err) { console.error("delete oversized upload failed", target.key, err); }
       return { url, problem: "too_large" };
     }
@@ -110,7 +122,7 @@ async function verifyNewImages(nextThrows, prevThrows, userId) {
   }));
 
   if (checks.some(c => c.problem === "too_large")) {
-    return { ok: false, status: 413, error: `An image is too large (max ${MAX_UPLOAD_BYTES / (1024 * 1024)}MB). Remove it and try again.` };
+    return { ok: false, status: 413, error: `An upload is too large (images max ${MAX_UPLOAD_BYTES / (1024 * 1024)}MB, clips max ${MAX_VIDEO_BYTES / (1024 * 1024)}MB). Remove it and try again.` };
   }
   if (checks.some(c => c.problem)) {
     return { ok: false, status: 400, error: "An image upload didn't finish. Remove it, add it again and save." };
@@ -138,6 +150,9 @@ async function setLongCache(targets) {
 module.exports = {
   ALLOWED_EXT,
   MAX_UPLOAD_BYTES,
+  MAX_VIDEO_BYTES,
+  maxBytesFor,
+  isVideoName,
   RANDOM_FILENAME,
   randomFilename,
   resolveTarget,

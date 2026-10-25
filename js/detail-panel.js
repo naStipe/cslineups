@@ -16,6 +16,7 @@ import { escapeHtml } from "./html-utils.js";
 import { openThrowModal } from "./throw-modal.js";
 import { confirmDialog } from "./confirm-dialog.js";
 import { timeEl } from "./time-utils.js";
+import { resolveImageSrc } from "./private-images.js";
 import { SIDES, normalizeSide, sideLabel, sideSegment } from "./side.js";
 import { toast, toastError } from "./toast.js";
 import { deferDelete } from "./undo-delete.js";
@@ -174,6 +175,7 @@ export function renderDetail(lineup, opts = {}) {
   if (vt && !lineup.isOfficial && active.createdAt) vt.replaceWith(timeEl(active.createdAt, "added "));
   else if (vt) vt.remove();
   wireCarousels(hero, active);
+  wireClips(hero);
   const heroEditBtn = hero.querySelector(".edit-btn");
   const heroRemoveBtn = hero.querySelector(".remove-btn");
   const heroReposBtn = hero.querySelector(".reposition-btn");
@@ -463,6 +465,63 @@ async function saveThrowOrder(lineup, order, { focusThumb = false } = {}) {
   }
 }
 
+// One short clip per throw position: muted, looped, inline, nothing fetched
+// until it scrolls into view (wireClips). The poster is the throw's result
+// (or first) screenshot.
+function clipHtml(t) {
+  const poster = t.result || (t.screenshots && t.screenshots[0]) || (t.standing && t.standing[0]) || "";
+  return `
+    <div class="tc-clip" data-clip="${escapeHtml(t.clip)}" data-poster="${escapeHtml(poster)}">
+      <div class="tc-carousel-label">Clip</div>
+      <div class="img-frame clip-frame">
+        <video muted loop playsinline preload="none" aria-label="Clip of this throw"></video>
+      </div>
+      <div class="clip-controls">
+        <button type="button" class="ghost-btn clip-play" aria-pressed="true">Pause</button>
+        <button type="button" class="ghost-btn clip-speed" aria-pressed="false" title="Half speed, for timing jumpthrows">0.5×</button>
+      </div>
+    </div>`;
+}
+
+// Lazy-loads each clip when it becomes visible and plays it while it is on
+// screen (unless the user paused it or prefers reduced motion).
+export function wireClips(container) {
+  const reduced = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  container.querySelectorAll(".tc-clip").forEach(box => {
+    const video = box.querySelector("video");
+    const playBtn = box.querySelector(".clip-play");
+    const speedBtn = box.querySelector(".clip-speed");
+    let loaded = false, userPaused = reduced;
+    const sync = () => { playBtn.textContent = video.paused ? "Play" : "Pause"; playBtn.setAttribute("aria-pressed", video.paused ? "false" : "true"); };
+    const load = async () => {
+      loaded = true;
+      const [src, poster] = await Promise.all([resolveImageSrc(box.dataset.clip), box.dataset.poster ? resolveImageSrc(box.dataset.poster) : ""]);
+      if (!src) { box.querySelector(".clip-frame").classList.add("clip-failed"); return; }
+      if (poster) video.poster = poster;
+      video.preload = "metadata";
+      video.src = src;
+      if (!userPaused) video.play().catch(() => {});
+    };
+    playBtn.onclick = () => {
+      if (video.paused) { userPaused = false; video.play().catch(() => {}); } else { userPaused = true; video.pause(); }
+    };
+    speedBtn.onclick = () => {
+      const slow = video.playbackRate !== 0.5;
+      video.playbackRate = slow ? 0.5 : 1;
+      speedBtn.setAttribute("aria-pressed", slow ? "true" : "false");
+      speedBtn.classList.toggle("active", slow);
+    };
+    video.addEventListener("play", sync); video.addEventListener("pause", sync); sync();
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(en => {
+        if (en.isIntersecting) { if (!loaded) load(); else if (!userPaused) video.play().catch(() => {}); }
+        else if (loaded) video.pause();
+      });
+    }, { threshold: 0.25 });
+    io.observe(box);
+  });
+}
+
 export function buildHeroHtml(t, idx, lineup) {
   const standingImgs = (t.standing && t.standing.length) ? t.standing : [];
   const aimImgs = (t.screenshots && t.screenshots.length) ? t.screenshots : [];
@@ -515,6 +574,7 @@ export function buildHeroHtml(t, idx, lineup) {
       ${single(t.precise, "Precise", "Precise lineup")}
       ${single(t.result, "Result", "Result of lineup")}
     </div>` : ""}
+    ${t.clip ? clipHtml(t) : ""}
     ${t.notes ? `<div class="throw-notes hero-notes">${escapeHtml(t.notes)}</div>` : ""}
   `;
 }

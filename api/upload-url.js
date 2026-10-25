@@ -39,7 +39,7 @@ const r2 = require("./_lib/r2");
 const { setCorsHeaders } = require("./_lib/cors");
 const { getAuthUser, isAdmin } = require("./_lib/auth");
 const { checkRateLimit } = require("./_lib/rate-limit");
-const { ALLOWED_EXT, MAX_UPLOAD_BYTES, RANDOM_FILENAME, randomFilename, resolveTarget } = require("./_lib/uploads");
+const { ALLOWED_EXT, MAX_UPLOAD_BYTES, RANDOM_FILENAME, isVideoName, maxBytesFor, randomFilename, resolveTarget } = require("./_lib/uploads");
 
 function supabase() {
   return createClient(
@@ -59,18 +59,18 @@ const FRESH_MS = 24 * 60 * 60 * 1000;
 // Only positive integers up to MAX_UPLOAD_BYTES are accepted — a sanity
 // bound on the presigned URL's declared size, not the real enforcement
 // (that is the save-time HEAD in api/lineups.js, see the top of this file).
-function validContentLength(v) {
-  return Number.isInteger(v) && v > 0 && v <= MAX_UPLOAD_BYTES;
+function validContentLength(v, ext) {
+  return Number.isInteger(v) && v > 0 && v <= maxBytesFor(ext);
 }
 
 // Returns { contentType, contentLength, ext } or { error }.
 function parseFileSpec(spec) {
   const contentType = spec && typeof spec.contentType === "string" ? spec.contentType : "";
   const ext = ALLOWED_EXT[contentType];
-  if (!ext) return { error: `Unsupported image type: ${contentType || "unknown"}` };
+  if (!ext) return { error: `Unsupported file type: ${contentType || "unknown"}` };
   const contentLength = Math.trunc(Number(spec.contentLength));
-  if (!validContentLength(contentLength)) {
-    return { error: `Invalid or missing contentLength (must be > 0 and <= ${MAX_UPLOAD_BYTES} bytes)` };
+  if (!validContentLength(contentLength, ext)) {
+    return { error: `Invalid or missing contentLength (must be > 0 and <= ${maxBytesFor(ext)} bytes)` };
   }
   return { contentType, contentLength, ext };
 }

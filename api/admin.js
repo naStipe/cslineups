@@ -105,6 +105,7 @@ function throwImageUrls(t) {
   (t.screenshots || []).forEach(u => urls.push(u));
   if (t.precise) urls.push(t.precise);
   if (t.result) urls.push(t.result);
+  if (t.clip) urls.push(t.clip);
   return urls;
 }
 
@@ -346,6 +347,7 @@ module.exports = async function handler(req, res) {
           for (const u of (t.standing || [])) { const nu = await copyToPublic(sb, u); nt.standing.push(nu); if (nu !== u) orphans.push(u); }
           if (t.precise) { const nu = await copyToPublic(sb, t.precise); nt.precise = nu; if (nu !== t.precise) orphans.push(t.precise); }
           if (t.result) { const nu = await copyToPublic(sb, t.result); nt.result = nu; if (nu !== t.result) orphans.push(t.result); }
+          if (t.clip) { const nu = await copyToPublic(sb, t.clip); nt.clip = nu; if (nu !== t.clip) orphans.push(t.clip); }
           newThrows.push(nt);
         }
 

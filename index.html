@@ -622,6 +622,16 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
 
     </div>
 
+    <!-- One short clip (mp4 / webm), e.g. to show the jumpthrow timing -->
+    <div class="tm-section">
+      <div class="tm-upload-head">
+        <span class="tm-label">🎬 Clip <span class="tm-optional">optional · mp4 or webm, up to 15 s and 20 MB</span></span>
+        <label class="tm-upload-trigger" for="clipInput" id="clipTrigger">+ Add</label>
+        <input type="file" id="clipInput" accept="video/mp4,video/webm" hidden>
+      </div>
+      <div class="tm-clip" id="clipWrap"></div>
+    </div>
+
     <!-- Technique -->
     <div class="tm-section">
       <div class="tm-selects">
