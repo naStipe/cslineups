@@ -2608,6 +2608,7 @@ kbd{
 .name-hint{margin:6px 0 0;font-size:11.5px;line-height:1.5;color:var(--text-faint);}
 .name-hint.is-warn{color:var(--signal);}
 .name-suggestions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.name-suggestions[hidden]{display:none;}
 .name-suggestions button{
   border:1px solid var(--line);background:var(--void);color:var(--text-dim);border-radius:999px;
   padding:4px 10px;font-size:12px;cursor:pointer;transition:.15s ease;

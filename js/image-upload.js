@@ -605,7 +605,7 @@ export function updateUploadSummary() {
   const failed = items.filter(i => i.status === "error").length;
   const done = items.filter(i => i.status === "done").length;
   let text = "";
-  if (failed) text = `${failed} upload${failed > 1 ? "s" : ""} failed. Retry or remove ${failed > 1 ? "them" : "it"}.`;
+  if (failed) text = `${failed} upload${failed > 1 ? "s" : ""} failed`; // the thumb has the retry button
   else if (items.length && done < items.length) text = `Uploading ${done + 1} of ${items.length}…`;
   else if (items.length) text = items.length === 1 ? "Screenshot uploaded" : `All ${items.length} screenshots uploaded`;
   if (tmUploadSummary.textContent !== text) tmUploadSummary.textContent = text;
