@@ -7,6 +7,9 @@
 // array of { id, label, file } entries. `file` is always the first (top)
 // entry's image; the level switch (js/level-switch.js) swaps mapImage.src
 // between them. Omit for single-level maps.
+// localStorage key for the last map opened (read by admin.html's back link).
+export const LAST_MAP_KEY = "lineupr.lastMap";
+
 export const MAPS = [
   { id: "dust2",    name: "Dust II",   file: "maps/dust2.webp",         logo: "maps/dust2-logo.jpg",    cheatsheet: [] },
   { id: "mirage",   name: "Mirage",    file: "maps/mirage.webp",        logo: "maps/mirage-logo.jpg",   cheatsheet: [

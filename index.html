@@ -403,10 +403,12 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
       </div>
       <h3 id="detailTitle">Lineup</h3>
       <div class="throw-list" id="throwList"></div>
-      <button class="ghost-btn" id="addThrowBtn">+ Add throw position</button>
-      <button class="ghost-btn hidden" id="submitLineupBtn">★ Submit to public map</button>
-      <p class="submit-note hidden" id="submitLineupNote"></p>
-      <button class="ghost-btn danger" id="deleteLineupBtn">Delete this lineup</button>
+      <div class="detail-actions">
+        <button class="ghost-btn" id="addThrowBtn">+ Add throw position</button>
+        <button class="ghost-btn hidden" id="submitLineupBtn">★ Submit to public map</button>
+        <button class="ghost-btn danger" id="deleteLineupBtn">Delete this lineup</button>
+        <p class="submit-note hidden" id="submitLineupNote"></p>
+      </div>
     </div>
   </div>
 

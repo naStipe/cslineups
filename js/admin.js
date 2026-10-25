@@ -6,7 +6,7 @@
 // happens server-side in /api/admin under the service key; this file only
 // talks to that endpoint plus Supabase auth for the session token.
 
-import { MAPS, MOVEMENT_LABELS, RANGE_LABELS, TYPES } from "./constants.js";
+import { LAST_MAP_KEY, MAPS, MOVEMENT_LABELS, RANGE_LABELS, TYPES } from "./constants.js";
 import { escapeHtml } from "./html-utils.js";
 import { mountTurnstile } from "./turnstile.js";
 
@@ -19,6 +19,12 @@ const els = {};
  "adminEmailInput", "adminPasswordInput", "adminSigninBtn", "adminGoogleBtn", "adminTurnstile",
  "adminDenied", "adminMain", "adminHint", "adminQueue",
  "adminLightbox", "adminLightboxImg", "adminLightboxClose"].forEach(id => { els[id] = el(id); });
+
+// "Back to site" returns to whichever map was open last, not the chooser.
+try {
+  const lastMap = localStorage.getItem(LAST_MAP_KEY);
+  if (MAP_NAMES[lastMap]) el("backToSite").href = `/?map=${lastMap}`;
+} catch {}
 
 let sb = null;
 let status = "unreviewed";

@@ -2386,7 +2386,17 @@ html::-webkit-scrollbar-track,body::-webkit-scrollbar-track{background:var(--voi
 }
 
 /* Public-map submission note under the detail panel's submit button */
-.submit-note{ margin:6px 0 10px; font-size:12px; color:var(--text-dim); }
+/* Lineup actions footer: one spaced row under the variants, separated by a
+   hairline. Delete sits apart on the right; the note wraps to its own line. */
+.detail-actions{
+  display:flex; flex-wrap:wrap; align-items:center; gap:10px;
+  margin-top:22px; padding-top:20px; border-top:1px solid var(--line);
+}
+.detail-actions:not(:has(> :not(.hidden))){ display:none; }
+.detail-actions .ghost-btn{ padding:9px 16px; }
+.detail-actions .ghost-btn.danger{ margin-left:auto; }
+.submit-note{ flex-basis:100%; margin:2px 0 0; font-size:12px; color:var(--text-dim); }
+a.ghost-btn{ text-decoration:none; display:inline-block; }
 
 /* Legal line under the sign-in/sign-up form */
 .auth-legal{ margin:10px 0 0; font-size:12px; line-height:1.5; color:var(--text-dim); }

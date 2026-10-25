@@ -2,7 +2,7 @@ import { setAddMode } from "./add-mode.js";
 import { buildSavedThrowKeys, dbGetAll, dbGetMine, dbGetSaved } from "./api.js";
 import { authUser } from "./auth.js";
 import { updateCheatsheet } from "./cheatsheet.js";
-import { MAPS } from "./constants.js";
+import { LAST_MAP_KEY, MAPS } from "./constants.js";
 import { updateLevelSwitch } from "./level-switch.js";
 import { currentMapName, detailPanel, mapFrame, lineupCount, lineupSearchInput, linkSvg, mapImage, markerLayer, officialViewBtn, personalViewBtn } from "./dom.js";
 import { buildLineupList } from "./lineup-list.js";
@@ -14,6 +14,8 @@ import { applyViewModeClass, setViewMode } from "./view-mode.js";
 
 export async function selectMap(id) {
   state.mapId = id;
+  // Remembered so admin.html's "Back to site" returns to this map.
+  try { localStorage.setItem(LAST_MAP_KEY, id); } catch {}
   state.selectedLineupId = null;
   state.lineups = [];
   markerLayer.innerHTML = "";
