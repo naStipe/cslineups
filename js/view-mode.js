@@ -3,6 +3,7 @@ import { authUser } from "./auth.js";
 import { closeDetailPanel } from "./detail-panel.js";
 import { officialViewBtn, personalViewBtn } from "./dom.js";
 import { loadLineups } from "./map-data.js";
+import { saveFilters } from "./sidebar.js";
 import { state } from "./state.js";
 
 // Mirrors the current view onto the <body> so CSS can react to it — notably
@@ -17,6 +18,7 @@ export function applyViewModeClass() {
 export function setViewMode(mode) {
   if (mode === "personal" && !authUser) { openAuthModal("signin"); return; }
   state.viewMode = mode;
+  saveFilters();
   if (officialViewBtn) officialViewBtn.classList.toggle("active", mode === "official");
   if (personalViewBtn) personalViewBtn.classList.toggle("active", mode === "personal");
   applyViewModeClass();

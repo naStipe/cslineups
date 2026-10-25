@@ -281,8 +281,9 @@ export function renderMarkers(animate = true) {
       desiredFanKey = key; fanCluster = cluster; continue;
     }
     const isPinned = cluster.lineups.some(l => l.id === state.selectedLineupId);
-    if (state.selectedLineupId && !isPinned) continue;
-    desiredLandings.set(key, { cluster, isPinned });
+    // While one lineup's throw lines are shown the rest stay on the map,
+    // dimmed, so the user keeps their bearings (and can still switch).
+    desiredLandings.set(key, { cluster, isPinned, dimmed: !!state.selectedLineupId && !isPinned });
     if (isPinned) pinnedCluster = cluster;
   }
 
@@ -307,6 +308,7 @@ export function renderMarkers(animate = true) {
       if (el._leaveTimer) { clearTimeout(el._leaveTimer); el._leaveTimer = null; }
       el.classList.remove("leaving");
       el.classList.toggle("pinned", !!d.isPinned);
+      el.classList.toggle("dimmed", !!d.dimmed);
       if (d.isPinned) pinnedLandingEl = el;
     } else {
       if (el.classList.contains("leaving")) return;  // already fading out
@@ -317,6 +319,7 @@ export function renderMarkers(animate = true) {
   desiredLandings.forEach((d, key) => {
     if (seen.has(key)) return;
     const el = buildLandingMarker(d.cluster, key, d.isPinned, animate);
+    if (d.dimmed) el.classList.add("dimmed");
     markerLayer.appendChild(el);
     if (d.isPinned) pinnedLandingEl = el;
   });
@@ -346,6 +349,7 @@ export function buildLandingMarker(cluster, key, isPinned, animate) {
   landing.className = `marker landing ${colorClass}${isPinned ? " pinned" : ""}${animate ? " enter" : ""}`;
   if (animate) landing.addEventListener("animationend", () => landing.classList.remove("enter"), { once: true });
   landing.dataset.mkey = key;
+  if (count === 1) landing.dataset.lid = cluster.lineups[0].id; // read by the hover preview
   makeKeyboardButton(landing);
   landing.style.left = cluster.x + "%";
   landing.style.top = cluster.y + "%";

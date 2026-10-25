@@ -74,6 +74,13 @@ mapStage.addEventListener("wheel", (e) => {
   zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.2 : 1 / 1.2);
 }, { passive: false });
 
+// Double-click zooms in centred on the cursor (not on markers, and never
+// while placing a lineup, where a click means "put it here").
+mapStage.addEventListener("dblclick", (e) => {
+  if (e.target.closest(".marker, .cluster-fan") || state.addMode || state.pendingThrowFor) return;
+  zoomAt(e.clientX, e.clientY, 2);
+});
+
 mapStage.addEventListener("mousedown", (e) => {
   if (e.button !== 0 || zoom <= 1 || state.addMode || state.pendingThrowFor) return;
   isDragging = true;

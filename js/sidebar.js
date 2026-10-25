@@ -1,6 +1,7 @@
 import { MAPS, TYPES } from "./constants.js";
 import { closeTypeFilter, mapList, mapLoading, mobileMenuBtn, mobileTypeFilterGrid, sidebar, sidebarOverlay, typeFilterBtn, typeFilterBtnLabel, typeFilterModal, typeFilters, typeGrid } from "./dom.js";
 import { switchMap } from "./home-screen.js";
+import { countsByType } from "./lineup-list.js";
 import { renderMarkers } from "./markers.js";
 import { closeModal } from "./modal-utils.js";
 import { state } from "./state.js";
@@ -16,12 +17,41 @@ export function buildSidebar() {
   });
 }
 
+// Active type filters and the official/personal view are remembered per map,
+// so a reload or a trip to another map doesn't reset them.
+const filterKey = (mapId) => `lineupr.filters.${mapId}`;
+
+export function saveFilters() {
+  try {
+    localStorage.setItem(filterKey(state.mapId), JSON.stringify({
+      types: TYPES.filter(t => state.activeFilters.has(t.id)).map(t => t.id),
+      view: state.viewMode,
+    }));
+  } catch {}
+}
+
+// Returns the remembered view ("official" | "personal") or null; applies the
+// type filters directly to state.
+export function restoreFilters(mapId) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(filterKey(mapId)));
+    if (!saved) { state.activeFilters = new Set(TYPES.map(t => t.id)); return null; }
+    const ids = Array.isArray(saved.types) ? saved.types.filter(id => TYPES.some(t => t.id === id)) : [];
+    state.activeFilters = new Set(ids.length ? ids : TYPES.map(t => t.id));
+    return saved.view === "personal" ? "personal" : "official";
+  } catch {
+    state.activeFilters = new Set(TYPES.map(t => t.id));
+    return null;
+  }
+}
+
 export function buildFilters() {
   typeFilters.innerHTML = "";
+  const counts = countsByType();
   TYPES.forEach(t => {
-    const count = state.lineups.filter(l => l.type === t.id).length;
+    const count = counts[t.id] || 0;
     const chip = document.createElement("div");
-    chip.className = "filter-chip" + (state.activeFilters.has(t.id) ? "" : " off");
+    chip.className = "filter-chip" + (state.activeFilters.has(t.id) ? "" : " off") + (count === 0 ? " zero" : "");
     chip.style.setProperty("--chip-color", t.color);
     chip.innerHTML = `<span class="dot" style="background:${t.color}"></span>${t.label}<span class="chip-count">${count}</span>`;
     chip.onclick = () => {
@@ -36,6 +66,7 @@ export function buildFilters() {
 export function toggleTypeFilter(typeId) {
   if (state.activeFilters.has(typeId)) state.activeFilters.delete(typeId);
   else state.activeFilters.add(typeId);
+  saveFilters();
   renderMarkers();
 }
 
@@ -51,8 +82,9 @@ function updateTypeFilterBtnLabel() {
 function buildMobileTypeFilters() {
   if (!mobileTypeFilterGrid) return;
   mobileTypeFilterGrid.innerHTML = "";
+  const counts = countsByType();
   TYPES.forEach(t => {
-    const count = state.lineups.filter(l => l.type === t.id).length;
+    const count = counts[t.id] || 0;
     const active = state.activeFilters.has(t.id);
     const opt = document.createElement("div");
     opt.className = "type-opt" + (active ? " active" : " off");

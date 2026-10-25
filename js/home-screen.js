@@ -1,5 +1,6 @@
 import { setAddMode } from "./add-mode.js";
 import { hideDetailPanel } from "./detail-panel.js";
+import { LAST_MAP_KEY, MAPS } from "./constants.js";
 import { appShell, homeScreen } from "./dom.js";
 import { selectMap } from "./map-data.js";
 import { preloadMapImages } from "./map-preload.js";
@@ -37,3 +38,19 @@ export function goHome() {
   setAddMode(false);
   window.location.href = "/maps";
 }
+
+// "Continue on Dust II" next to the main call to action, from the map the
+// user opened last. Hidden when nothing valid is stored.
+(function addContinueButton() {
+  const actions = document.querySelector(".hero-actions");
+  if (!actions) return;
+  let last = null;
+  try { last = localStorage.getItem(LAST_MAP_KEY); } catch {}
+  const map = MAPS.find(m => m.id === last);
+  if (!map) return;
+  const a = document.createElement("a");
+  a.className = "hero-continue";
+  a.href = `/?map=${map.id}`;
+  a.innerHTML = `<span>Continue on</span> ${map.name}`;
+  actions.prepend(a);
+})();

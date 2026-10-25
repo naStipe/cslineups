@@ -8,7 +8,7 @@ import { currentMapName, detailPanel, mapFrame, lineupCount, lineupSearchInput, 
 import { buildLineupList } from "./lineup-list.js";
 import { renderMarkers, resetRenderedThrowSig } from "./markers.js";
 import { resetZoom } from "./pan-zoom.js";
-import { buildFilters, buildSidebar, showMapLoading } from "./sidebar.js";
+import { buildFilters, buildSidebar, restoreFilters, showMapLoading } from "./sidebar.js";
 import { state } from "./state.js";
 import { applyViewModeClass, setViewMode } from "./view-mode.js";
 import { flushPendingDeletes } from "./undo-delete.js";
@@ -42,6 +42,9 @@ export async function selectMap(id) {
     .then(() => { if (state.mapId === id) playMapIn(); });
   updateLevelSwitch(id);
   updateCheatsheet(id);
+  // Per-map memory of the type filters and the official/personal view.
+  const savedView = restoreFilters(id);
+  if (savedView) state.viewMode = savedView;
   if (!authUser && state.viewMode === "personal") state.viewMode = "official";
   if (officialViewBtn) officialViewBtn.classList.toggle("active", state.viewMode === "official");
   if (personalViewBtn) personalViewBtn.classList.toggle("active", state.viewMode === "personal");

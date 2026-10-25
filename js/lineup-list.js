@@ -17,7 +17,8 @@ import { closeModal } from "./modal-utils.js";
 import { canModifyLineup } from "./permissions.js";
 import { hydrateImages } from "./private-images.js";
 import { startLandingReposition } from "./reposition.js";
-import { buildFilters, closeSidebar } from "./sidebar.js";
+import { emptyState } from "./ui-utils.js";
+import { buildFilters, closeSidebar, saveFilters } from "./sidebar.js";
 import { state } from "./state.js";
 import { toastError } from "./toast.js";
 
@@ -62,6 +63,43 @@ function matchLineups(term) {
     });
 }
 
+// Per-type lineup counts for the current view and search term (what the
+// filter chips show). Ignores the type filters themselves, so a hidden type
+// still reports how many lineups it would bring back.
+export function countsByType() {
+  const term = (lineupSearchInput && lineupSearchInput.value || "").trim().toLowerCase();
+  const counts = {};
+  matchLineups(term).forEach(l => { counts[l.type] = (counts[l.type] || 0) + 1; });
+  return counts;
+}
+
+// Empty-state block shared by the sidebar list and the mobile search popup.
+function listEmptyState(term) {
+  if (state.lineups.length === 0) {
+    if (state.lineupsLoading) return emptyState({ title: "Loading lineups…", compact: true });
+    if (state.viewMode === "personal") {
+      return emptyState({
+        title: "No lineups of your own yet",
+        body: "Press A or use the add button to place your first one.",
+        compact: true,
+      });
+    }
+    return emptyState({ title: "No lineups on this map yet", compact: true });
+  }
+  if (term) {
+    return emptyState({
+      title: "No lineups match your search",
+      compact: true,
+      action: { label: "Clear search", onClick: () => {
+        if (lineupSearchInput) lineupSearchInput.value = "";
+        if (mobileSearchInput) mobileSearchInput.value = "";
+        buildLineupList(); renderMobileSearchResults(); buildFilters();
+      } },
+    });
+  }
+  return null;
+}
+
 // Lineups currently shown on the map (active type filters), in list order —
 // what the dossier's ←/→ shortcut steps through.
 export function orderedVisibleLineups() {
@@ -77,13 +115,18 @@ export function buildLineupList() {
   lineupList.innerHTML = "";
 
   if (matches.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "lineup-list-empty";
-    empty.textContent = state.lineups.length === 0
-      ? (state.lineupsLoading ? "Loading lineups…" : "No lineups on this map.")
-      : "No matches.";
-    lineupList.appendChild(empty);
+    lineupList.appendChild(listEmptyState(term));
     return;
+  }
+
+  // Everything is listed, but the type chips may hide every marker.
+  if (!matches.some(l => state.activeFilters.has(l.type))) {
+    lineupList.appendChild(emptyState({
+      title: "Every type is hidden",
+      body: "The list below is still searchable.",
+      compact: true,
+      action: { label: "Show all types", onClick: () => { clearTypeFilters(); } },
+    }));
   }
 
   matches.forEach(l => {
@@ -255,8 +298,17 @@ export function focusLineup(id) {
   });
 }
 
+function clearTypeFilters() {
+  TYPES.forEach(t => state.activeFilters.add(t.id));
+  saveFilters();
+  buildFilters();
+  buildLineupList();
+  renderMarkers();
+}
+
 if (lineupSearchInput) {
-  lineupSearchInput.addEventListener("input", buildLineupList);
+  // Chip counts follow the search term, so rebuild them with the list.
+  lineupSearchInput.addEventListener("input", () => { buildLineupList(); buildFilters(); });
 }
 
 // ── Mobile search popup ──────────────────────────────────────────────────
@@ -272,12 +324,7 @@ function renderMobileSearchResults() {
   mobileSearchResults.innerHTML = "";
 
   if (matches.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "lineup-list-empty";
-    empty.textContent = state.lineups.length === 0
-      ? (state.lineupsLoading ? "Loading lineups…" : "No lineups on this map.")
-      : "No matches.";
-    mobileSearchResults.appendChild(empty);
+    mobileSearchResults.appendChild(listEmptyState(term));
     return;
   }
 
