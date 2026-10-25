@@ -2685,6 +2685,7 @@ kbd{
   .detail-hero.enter-next > *,.detail-hero.enter-prev > *{animation:none !important;}
   .detail-hero.flash,.detail-strip-thumb.flash{animation:none;box-shadow:0 0 0 3px color-mix(in srgb, var(--signal) 60%, transparent);}
   .pager-dot,#shareLineupBtn{transition:none;}
+}
 
 /* ===== Throw modal & uploads ===== */
 /* Paste hint above the slots. Phones have no Ctrl+V / desktop drag, so it's
