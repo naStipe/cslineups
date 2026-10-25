@@ -10,6 +10,7 @@ import { renderMarkers, resetRenderedThrowSig } from "./markers.js";
 import { resetZoom } from "./pan-zoom.js";
 import { fetchAreas } from "./areas.js";
 import { buildFilters, buildSidebar, refreshAreaUi, restoreFilters, showMapLoading } from "./sidebar.js";
+import { hooks } from "./marker-hooks.js";
 import { state } from "./state.js";
 import { applyViewModeClass, setViewMode } from "./view-mode.js";
 import { flushPendingDeletes } from "./undo-delete.js";
@@ -18,6 +19,7 @@ export async function selectMap(id) {
   state.mapId = id;
   // Remembered so admin.html's "Back to site" returns to this map.
   try { localStorage.setItem(LAST_MAP_KEY, id); } catch {}
+  if (hooks.onMapChange) hooks.onMapChange();
   state.selectedLineupId = null;
   state.lineups = [];
   state.areas = [];
@@ -142,12 +144,14 @@ export async function loadLineups() {
       }
     }
     if (myToken !== loadToken) return;
-    state.lineups = lineups;
+    // An open collection owns state.lineups (see js/collections.js).
+    if (!state.collectionView) state.lineups = lineups;
     state.lineupsLoading = false;
-    lineupCount.textContent = `${lineups.length} lineup${lineups.length === 1 ? "" : "s"}`;
+    lineupCount.textContent = `${state.lineups.length} lineup${state.lineups.length === 1 ? "" : "s"}`;
     buildFilters();
     buildLineupList();
     renderMarkers();
+    if (hooks.afterLoad) hooks.afterLoad();
   } catch (err) {
     if (myToken !== loadToken) return;
     lineupCount.textContent = "load failed";

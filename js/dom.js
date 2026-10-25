@@ -286,3 +286,13 @@ export const deleteMsg = document.getElementById("deleteMsg");
 export const sideFilters = document.getElementById("sideFilters");
 export const lineupSideSlot = document.getElementById("lineupSideSlot");
 export const detailSideSlot = document.getElementById("detailSideSlot");
+
+// Collections (js/collections.js)
+export const collRail = document.getElementById("collRail");
+export const collList = document.getElementById("collList");
+export const collNewBtn = document.getElementById("collNewBtn");
+export const collSelectBtn = document.getElementById("collSelectBtn");
+export const collPanel = document.getElementById("collPanel");
+export const collSelectBar = document.getElementById("collSelectBar");
+export const collPopover = document.getElementById("collPopover");
+export const addToCollBtn = document.getElementById("addToCollBtn");

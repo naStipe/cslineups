@@ -212,6 +212,18 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
     <p class="rail-label">Maps</p>
     <nav class="map-list" id="mapList"></nav>
 
+    <!-- ===== Collections ===== -->
+    <section class="coll-rail" id="collRail" aria-label="Collections">
+      <div class="coll-rail-head">
+        <p class="rail-label">Collections</p>
+        <span class="coll-rail-actions">
+          <button type="button" class="coll-mini-btn" id="collSelectBtn" aria-pressed="false" title="Select several lineups on the map to add them to a collection">Select</button>
+          <button type="button" class="coll-mini-btn" id="collNewBtn">+ New</button>
+        </span>
+      </div>
+      <div class="coll-list" id="collList"></div>
+    </section>
+
     <!-- Lineups on the current map: searchable list that focuses the
          matching marker on the map when clicked. Desktop only — on mobile
          this is replaced by #mobileSearchBtn, which opens the same search
@@ -314,6 +326,14 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
         <svg width="20" height="20" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
 
+      <!-- ===== Collections: view panel, multi-select bar ===== -->
+      <aside class="coll-panel" id="collPanel" hidden aria-label="Collection"></aside>
+      <div class="coll-select-bar" id="collSelectBar" hidden role="region" aria-label="Selected lineups">
+        <span id="collSelectCount" aria-live="polite"></span>
+        <button type="button" class="primary-btn" id="collSelectAdd">Add to collection</button>
+        <button type="button" class="ghost-btn" id="collSelectClear">Clear</button>
+      </div>
+
       <!-- Drag-to-reposition overlay bar (shown only while repositioning a throw) -->
       <div class="reposition-bar" id="repositionBar" hidden>
         <span class="reposition-text" id="repositionText">Drag the <b>throw</b> marker to where you throw from, then save.</span>
@@ -400,6 +420,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
         </div>
         <div class="detail-head-actions">
           <button class="ghost-btn hidden" id="saveLineupBtn">☆ Save to my map</button>
+          <button class="icon-btn" id="addToCollBtn" title="Add to a collection" aria-label="Add to a collection" aria-haspopup="dialog">＋</button>
           <button class="icon-btn" id="shareLineupBtn" title="Copy shareable link" aria-label="Copy shareable link">🔗</button>
           <button class="icon-btn" id="closeDetail" aria-label="Close lineup">✕</button>
         </div>
@@ -646,6 +667,58 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
 
   </div>
 </div>
+
+<!-- ===== Collections: create/edit, share, report, add-to popover ===== -->
+<div class="modal-backdrop" id="collEditModal">
+  <div class="modal coll-modal" role="dialog" aria-modal="true" aria-labelledby="collEditTitle">
+    <h3 id="collEditTitle">New collection</h3>
+    <label class="field-label" for="collNameInput">Name</label>
+    <input type="text" id="collNameInput" maxlength="80" autocomplete="off" placeholder="e.g. B execute, Anti-eco retake…">
+    <label class="field-label" for="collDescInput" style="margin-top:10px;">Description <span class="coll-optional">optional</span></label>
+    <textarea id="collDescInput" rows="3" maxlength="500" placeholder="When to use it, who throws what…"></textarea>
+    <div class="coll-modal-actions">
+      <button type="button" class="ghost-btn" id="collEditCancel" data-esc>Cancel</button>
+      <button type="button" class="primary-btn" id="collEditSave">Create</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="collShareModal">
+  <div class="modal coll-modal" role="dialog" aria-modal="true" aria-labelledby="collShareTitle">
+    <h3 id="collShareTitle">Share collection</h3>
+    <div class="coll-vis" id="collVis" role="radiogroup" aria-label="Who can open this collection"></div>
+    <p class="coll-share-note" id="collShareNote"></p>
+    <div class="coll-link-row" id="collLinkRow">
+      <input type="text" id="collLinkInput" readonly aria-label="Share link">
+      <button type="button" class="ghost-btn" id="collCopyBtn">Copy link</button>
+    </div>
+    <p class="coll-share-note">Viewers only see official lineups. Your own personal lineups stay private and show to them as locked.</p>
+    <div class="coll-modal-actions">
+      <button type="button" class="primary-btn" id="collShareDone" data-esc>Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="collReportModal">
+  <div class="modal coll-modal" role="dialog" aria-modal="true" aria-labelledby="collReportTitle">
+    <h3 id="collReportTitle">Report this collection</h3>
+    <label class="field-label" for="collReportReason">Reason</label>
+    <select id="collReportReason">
+      <option value="abuse">Abusive or unlawful content</option>
+      <option value="copyright">Copyright</option>
+      <option value="spam">Spam</option>
+      <option value="other">Something else</option>
+    </select>
+    <label class="field-label" for="collReportDetails" style="margin-top:10px;">Details <span class="coll-optional">optional</span></label>
+    <textarea id="collReportDetails" rows="3" maxlength="1000"></textarea>
+    <div class="coll-modal-actions">
+      <button type="button" class="ghost-btn" id="collReportCancel" data-esc>Cancel</button>
+      <button type="button" class="primary-btn" id="collReportSend">Send report</button>
+    </div>
+  </div>
+</div>
+
+<div class="coll-popover" id="collPopover" hidden role="dialog" aria-label="Add to collection"></div>
 
 <!-- MODAL: fullscreen image lightbox -->
 <div class="modal-backdrop lightbox-backdrop" id="lightboxModal" role="dialog" aria-modal="true" aria-labelledby="lightboxTitle">

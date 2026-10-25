@@ -9,6 +9,8 @@ const LIMITS = {
   lineup_write: { max: 30, windowSeconds: 3600 },   // create/edit a lineup
   saved_lineup: { max: 120, windowSeconds: 3600 },  // bookmark/unbookmark a throw
   upload:       { max: 60, windowSeconds: 3600 },   // presign an image upload
+  collection_write:  { max: 150, windowSeconds: 3600 }, // any collection / item change
+  collection_report: { max: 10, windowSeconds: 3600 },  // report a shared collection
 };
 
 // Returns true if the call is allowed, false if the caller is over the cap

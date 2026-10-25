@@ -157,6 +157,27 @@ module.exports = async function handler(req, res) {
       return;
     }
 
+    // GET ?collections=1 — shared collections for moderation: every public
+    // one, plus any unlisted/private one that has an open report.
+    if (req.method === "GET" && req.query && req.query.collections) {
+      const [{ data: cols, error }, { data: reports, error: rerr }] = await Promise.all([
+        sb.from("collections").select("*, collection_items(count)").neq("visibility", "private").order("updated_at", { ascending: false }).limit(300),
+        sb.from("collection_reports").select("collection_id, reason, details, created_at").is("resolved_at", null),
+      ]);
+      if (error || rerr) throw new Error((error || rerr).message);
+      const openByCol = {};
+      (reports || []).forEach(r => { (openByCol[r.collection_id] = openByCol[r.collection_id] || []).push(r); });
+      const { data: profs } = await sb.from("profiles").select("id, username, email").in("id", [...new Set((cols || []).map(c => c.owner_id))]);
+      const prof = Object.fromEntries((profs || []).map(p => [p.id, p]));
+      res.status(200).json({ collections: (cols || []).map(c => ({
+        id: c.id, mapId: c.map_id, name: c.name, description: c.description, visibility: c.visibility, slug: c.share_slug,
+        hidden: !!c.moderation_hidden_at, itemCount: c.collection_items && c.collection_items[0] ? c.collection_items[0].count : 0,
+        owner: (prof[c.owner_id] && (prof[c.owner_id].username || prof[c.owner_id].email)) || c.owner_id,
+        updatedAt: c.updated_at, reports: openByCol[c.id] || [],
+      })) });
+      return;
+    }
+
     // GET ?users=1 — account management list: every registered account with
     // how many personal lineups / uploaded screenshots it owns.
     if (req.method === "GET" && req.query && req.query.users) {
@@ -277,6 +298,26 @@ module.exports = async function handler(req, res) {
     if (req.method === "POST") {
       const body = req.body || {};
       const { action, lineupId } = body;
+
+      // Collection moderation: hide / unhide (takes it off every shared
+      // link), delete, or mark its reports as handled.
+      if (typeof action === "string" && action.startsWith("collection-")) {
+        const cid = body.collectionId;
+        if (typeof cid !== "string" || !/^[0-9a-f-]{36}$/i.test(cid)) { res.status(400).json({ error: "Invalid collectionId" }); return; }
+        if (action === "collection-hide") {
+          const { error } = await sb.from("collections").update({ moderation_hidden_at: body.hidden === false ? null : new Date().toISOString() }).eq("id", cid);
+          if (error) throw new Error(error.message);
+        } else if (action === "collection-delete") {
+          const { error } = await sb.from("collections").delete().eq("id", cid);
+          if (error) throw new Error(error.message);
+        } else if (action === "collection-resolve") {
+          const { error } = await sb.from("collection_reports").update({ resolved_at: new Date().toISOString() }).eq("collection_id", cid).is("resolved_at", null);
+          if (error) throw new Error(error.message);
+        } else { res.status(400).json({ error: "Unknown action" }); return; }
+        res.status(200).json({ ok: true });
+        return;
+      }
+
       if (!lineupId) { res.status(400).json({ error: "Missing lineupId" }); return; }
 
       // Publish — promote a user's personal submission to an official lineup:

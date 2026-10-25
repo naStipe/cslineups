@@ -3,6 +3,8 @@ import { initAuth } from "./auth.js";
 import { MAPS, TYPES } from "./constants.js";
 import { closeDetailPanel, hideDetailPanel, openDetail, throwIndexFromParams } from "./detail-panel.js";
 import { appShell, detailPanel, homeBrand, lightboxModal, lightboxNext, lightboxPrev, lineupSearchInput, sidebarBrand } from "./dom.js";
+import "./collections.js"; // side effect only: collections rail, panel, popover
+import { openCollectionBySlug } from "./collections.js";
 import "./marker-preview.js"; // side effect only: hover card on landing markers
 import "./fx.js"; // side effect only: home-screen visual effects
 import "./profile-modal.js"; // side effect only: wires up the profile button + modal
@@ -151,6 +153,8 @@ async function handleDeepLink() {
   history.replaceState({ view: "home" }, "", "/");
   history.pushState({ view: "map", map: mapId }, "", `/?map=${mapId}`);
   await enterMap(mapId);
+  const collectionSlug = params.get("collection");
+  if (collectionSlug) { await openCollectionBySlug(collectionSlug); return; }
   const lineupId = params.get("lineup");
   if (!lineupId) return;
   // The initial auth event can restart the lineup load mid-flight (see

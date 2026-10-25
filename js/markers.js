@@ -3,6 +3,7 @@ import { openDetail } from "./detail-panel.js";
 import { linkSvg, mapStage, markerLayer } from "./dom.js";
 import { syncLineupListSelection } from "./lineup-list.js";
 import { zoom } from "./pan-zoom.js";
+import { hooks } from "./marker-hooks.js";
 import { state } from "./state.js";
 import { lineupVisible } from "./visibility.js";
 
@@ -339,6 +340,7 @@ export function renderMarkers(animate = true) {
 
   // Keep the sidebar lineup list's highlight in step with map selection.
   syncLineupListSelection();
+  if (hooks.afterRender) hooks.afterRender();
 }
 
 export function buildLandingMarker(cluster, key, isPinned, animate) {
@@ -350,6 +352,7 @@ export function buildLandingMarker(cluster, key, isPinned, animate) {
   landing.className = `marker landing ${colorClass}${isPinned ? " pinned" : ""}${animate ? " enter" : ""}`;
   if (animate) landing.addEventListener("animationend", () => landing.classList.remove("enter"), { once: true });
   landing.dataset.mkey = key;
+  landing.dataset.lids = cluster.lineups.map(l => l.id).join(",");  // read by multi-select
   if (count === 1) landing.dataset.lid = cluster.lineups[0].id; // read by the hover preview
   makeKeyboardButton(landing);
   landing.style.left = cluster.x + "%";
@@ -381,8 +384,10 @@ export function buildLandingMarker(cluster, key, isPinned, animate) {
   }
 
   landing.setAttribute("aria-label", count > 1 ? `${count} lineups here` : (cluster.lineups[0].name || "Lineup") + " — " + landing.title);
+  if (hooks.badge) hooks.badge(landing, cluster);
   landing.onclick = (e) => {
     e.stopPropagation();
+    if (hooks.intercept && hooks.intercept(e, cluster.lineups)) return;
     if (count > 1) {
       state.openClusterKey = key;
       renderMarkers();

@@ -9,6 +9,7 @@ export let state = {
   savedThrowKeys: new Set(), // `${lineupId}::${throwId}` for every individual throw position the user has bookmarked
   activeFilters: new Set(TYPES.map(t => t.id)),
   sideFilter: "all",     // "all" | "t" | "ct" (lineups with side "any" always pass)
+  collectionView: null,  // { id } while a collection is open (js/collections.js owns state.lineups then)
   areas: [],             // map_areas rows for the current map (see js/areas.js)
   areaFilter: null,      // slug of the selected map area, or null
   pendingSide: "any",
