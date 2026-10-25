@@ -69,15 +69,26 @@ export async function renderLightbox() {
   lbResetZoom();
   const myToken = ++renderToken;
   const raw = lightboxState.images[lightboxState.index];
-  lightboxImage.src = "";
-  const src = await resolveImageSrc(raw);
-  if (myToken !== renderToken) return; // a newer render superseded this one
-  lightboxImage.style.width = "";
-  lightboxImage.onload = fitSmallImage;
-  lightboxImage.src = src;
+  // Skeleton (16:9 placeholder) while the image resolves and downloads; a
+  // quiet "Image unavailable" panel instead of a broken-image icon if it fails.
+  const settle = (ok) => {
+    if (myToken !== renderToken) return;
+    lightboxModal.classList.remove("lb-loading");
+    lightboxModal.classList.toggle("lb-error", !ok);
+  };
+  lightboxModal.classList.add("lb-loading");
+  lightboxModal.classList.remove("lb-error");
+  lightboxImage.removeAttribute("src");
   const multi = lightboxState.images.length > 1;
   lightboxPrev.style.display = multi ? "" : "none";
   lightboxNext.style.display = multi ? "" : "none";
+  const src = await resolveImageSrc(raw);
+  if (myToken !== renderToken) return; // a newer render superseded this one
+  lightboxImage.style.width = "";
+  lightboxImage.onload = () => { fitSmallImage(); settle(true); };
+  lightboxImage.onerror = () => settle(false);
+  if (!src) settle(false);
+  else lightboxImage.src = src;
   lightboxCaption.textContent = multi
     ? `${lightboxState.caption} — ${lightboxState.index + 1} / ${lightboxState.images.length}`
     : lightboxState.caption;
