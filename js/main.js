@@ -1,15 +1,16 @@
-import { setAddMode } from "./add-mode.js";
+import { setAddMode, startAddFlow } from "./add-mode.js";
 import { initAuth } from "./auth.js";
-import { MAPS } from "./constants.js";
+import { MAPS, TYPES } from "./constants.js";
 import { closeDetailPanel, hideDetailPanel, openDetail } from "./detail-panel.js";
-import { appShell, detailPanel, homeBrand, lightboxModal, lightboxNext, lightboxPrev, sidebarBrand } from "./dom.js";
+import { appShell, detailPanel, homeBrand, lightboxModal, lightboxNext, lightboxPrev, lineupSearchInput, sidebarBrand } from "./dom.js";
 import "./fx.js"; // side effect only: home-screen visual effects
 import "./profile-modal.js"; // side effect only: wires up the profile button + modal
 import { enterMap, goHome } from "./home-screen.js";
-import { focusLineup } from "./lineup-list.js";
+import { focusLineup, openMobileSearch, orderedVisibleLineups } from "./lineup-list.js";
 import { renderMarkers } from "./markers.js";
 import { resetZoom } from "./pan-zoom.js";
-import { buildFilters, buildSidebar, closeSidebar } from "./sidebar.js";
+import { registerLayer, registerShortcut, setShortcutSuspender } from "./shortcuts.js";
+import { buildFilters, buildSidebar, closeSidebar, toggleTypeFilter } from "./sidebar.js";
 import { state } from "./state.js";
 
 // The map view is its own history entry above the chooser, so going home from
@@ -40,32 +41,79 @@ window.addEventListener("popstate", () => {
   enterMap(id);
 });
 
-document.addEventListener("keydown", (e) => {
-  // While repositioning, the reposition overlay owns the keyboard (its own
-  // Escape = cancel). Don't let the global shortcuts below also fire.
-  if (state.reposition) return;
+// ── Keyboard: every global shortcut goes through js/shortcuts.js ──────────
+// Escape peels back one layer at a time (highest priority first); the other
+// keys are plain shortcuts, ignored while typing or while a modal is open.
+const inMap = () => !appShell.hidden;
+const lightboxOpen = () => lightboxModal.classList.contains("show");
+const dossierOpen = () => detailPanel.classList.contains("open");
 
-  const tag = e.target.tagName;
-  const typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+// While repositioning, the reposition overlay owns the keyboard (its own
+// Escape = cancel), so suspend every global shortcut.
+setShortcutSuspender(() => state.reposition);
 
-  if (e.key === "Escape") {
-    if (lightboxModal.classList.contains("show")) { lightboxModal.classList.remove("show"); return; }
-    if (detailPanel.classList.contains("open")) { closeDetailPanel(); return; }
-    if (document.querySelector(".modal-backdrop.show")) {
-      document.querySelectorAll(".modal-backdrop.show").forEach(m => m.classList.remove("show"));
-      setAddMode(false); return;
-    }
-    if (state.openClusterKey) { state.openClusterKey = null; renderMarkers(); return; }
-    if (state.selectedLineupId) { state.selectedLineupId = null; renderMarkers(); return; }
-    if (state.addMode) { setAddMode(false); return; }
-  }
-
-  if (!typing) {
-    if (e.key === "z" || e.key === "Z") resetZoom();
-    if (e.key === "ArrowLeft"  && lightboxModal.classList.contains("show")) lightboxPrev.onclick();
-    if (e.key === "ArrowRight" && lightboxModal.classList.contains("show")) lightboxNext.onclick();
-  }
+registerLayer({ priority: 90, isOpen: lightboxOpen, close: () => lightboxModal.classList.remove("show") });
+// Topmost open modal. A modal can name its own dismiss control with
+// [data-esc] (e.g. the throw modal's Cancel, which may ask about unsaved
+// changes first); otherwise it is simply hidden and any add flow is reset.
+registerLayer({
+  priority: 80,
+  isOpen: () => !!document.querySelector(".modal-backdrop.show"),
+  close: () => {
+    const open = [...document.querySelectorAll(".modal-backdrop.show")];
+    const top = open[open.length - 1];
+    const dismiss = top.querySelector("[data-esc]");
+    if (dismiss) { dismiss.click(); return; }
+    top.classList.remove("show");
+    if (!document.querySelector(".modal-backdrop.show")) setAddMode(false);
+  },
 });
+registerLayer({ priority: 70, isOpen: dossierOpen, close: closeDetailPanel });
+registerLayer({ priority: 60, isOpen: () => !!state.openClusterKey, close: () => { state.openClusterKey = null; renderMarkers(); } });
+registerLayer({ priority: 50, isOpen: () => !!state.selectedLineupId, close: () => { state.selectedLineupId = null; renderMarkers(); } });
+registerLayer({ priority: 40, isOpen: () => state.addMode || !!state.pendingThrowFor, close: () => { setAddMode(false); state.pendingThrowFor = null; } });
+
+const TYPE_PLURALS = { smoke: "smokes", flash: "flashes", fire: "molotovs", he: "HE grenades", decoy: "decoys" };
+TYPES.forEach((t, i) => {
+  registerShortcut({
+    keys: [String(i + 1)], label: String(i + 1), description: `Show / hide ${TYPE_PLURALS[t.id] || t.label}`, group: "Map",
+    when: inMap, handler: () => { toggleTypeFilter(t.id); buildFilters(); },
+  });
+});
+registerShortcut({
+  keys: ["/"], label: "/", description: "Search lineups", group: "Map", when: inMap,
+  handler: () => {
+    // The sidebar search is hidden at phone width; use the search popup there.
+    if (lineupSearchInput && lineupSearchInput.getClientRects().length) { lineupSearchInput.focus(); lineupSearchInput.select(); }
+    else openMobileSearch();
+  },
+});
+registerShortcut({
+  keys: ["a", "A"], label: "A", description: "Add a lineup / cancel adding", group: "Map", when: inMap,
+  handler: () => { if (state.addMode) { setAddMode(false); state.pendingThrowFor = null; } else startAddFlow(); },
+});
+registerShortcut({ keys: ["z", "Z"], label: "Z", description: "Reset zoom", group: "Map", when: inMap, handler: resetZoom });
+
+registerShortcut({
+  keys: ["ArrowLeft"], label: "←", description: "Previous image (lightbox) / previous lineup (dossier)", group: "Lineups",
+  priority: 10, allowInModal: true, when: lightboxOpen, handler: () => lightboxPrev.onclick(),
+});
+registerShortcut({
+  keys: ["ArrowRight"], label: "→", description: "Next image (lightbox) / next lineup (dossier)", group: "Lineups",
+  priority: 10, allowInModal: true, when: lightboxOpen, handler: () => lightboxNext.onclick(),
+});
+registerShortcut({ keys: ["ArrowLeft"], label: "←", group: "Lineups", when: dossierOpen, handler: () => stepLineup(-1) });
+registerShortcut({ keys: ["ArrowRight"], label: "→", group: "Lineups", when: dossierOpen, handler: () => stepLineup(1) });
+
+// ←/→ in the dossier: walk the lineups currently visible on the map, in the
+// same order as the sidebar list, wrapping around at either end.
+function stepLineup(dir) {
+  const list = orderedVisibleLineups();
+  if (!list.length) return;
+  const i = list.findIndex(l => l.id === state.selectedLineupId);
+  const next = list[(i + dir + list.length) % list.length];
+  if (next && next.id !== state.selectedLineupId) openDetail(next.id, 0);
+}
 
 export async function loadConfig() {
   for (let attempt = 0; attempt < 3; attempt++) {

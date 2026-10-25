@@ -19,6 +19,7 @@ import { hydrateImages } from "./private-images.js";
 import { startLandingReposition } from "./reposition.js";
 import { buildFilters, closeSidebar } from "./sidebar.js";
 import { state } from "./state.js";
+import { toastError } from "./toast.js";
 
 // Which lineup's inline detail is currently expanded (survives map-selection
 // re-renders; reset whenever the list itself is rebuilt).
@@ -59,6 +60,12 @@ function matchLineups(term) {
       if (ta !== tb) return ta - tb;
       return displayName(a).localeCompare(displayName(b));
     });
+}
+
+// Lineups currently shown on the map (active type filters), in list order —
+// what the dossier's ←/→ shortcut steps through.
+export function orderedVisibleLineups() {
+  return matchLineups("").filter(l => state.activeFilters.has(l.type));
 }
 
 export function buildLineupList() {
@@ -193,7 +200,7 @@ function renderInlineDetail(container, l) {
         try {
           await dbPut(l, l.isOfficial);
         } catch (err) {
-          alert("Could not save the landing position: " + (err && err.message ? err.message : err));
+          toastError("Could not save the landing position: " + (err && err.message ? err.message : err));
         }
       },
     });

@@ -1,6 +1,7 @@
 import { openAuthModal } from "./auth-modal.js";
 import { authUser, isAdmin } from "./auth.js";
 import { state } from "./state.js";
+import { toast } from "./toast.js";
 
 export function canModifyLineup(lineup) {
   if (!authUser || !lineup) return false;
@@ -11,7 +12,7 @@ export function canModifyLineup(lineup) {
 export function requireCanCreate() {
   if (!authUser) { openAuthModal("signin"); return false; }
   if (state.viewMode === "official" && !isAdmin()) {
-    alert('Only admins can add official lineups. Switch to "My Map" to add your own.');
+    toast('Only admins can add official lineups. Switch to "My Map" to add your own.');
     return false;
   }
   return true;
@@ -20,7 +21,7 @@ export function requireCanCreate() {
 export function requireLineupEditable(lineup) {
   if (!authUser) { openAuthModal("signin"); return false; }
   if (!canModifyLineup(lineup)) {
-    alert(lineup && lineup.isOfficial
+    toast(lineup && lineup.isOfficial
       ? "Only admins can edit official lineups."
       : "You can only edit your own lineups.");
     return false;

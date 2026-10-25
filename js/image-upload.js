@@ -3,6 +3,7 @@ import { preciseInput, preciseThumbWrap, resultInput, resultThumbWrap, screensho
 import { escapeHtml } from "./html-utils.js";
 import { hydrateImages } from "./private-images.js";
 import { pendingThrowDraft } from "./throw-modal.js";
+import { toast } from "./toast.js";
 
 export const MAX_SCREENSHOTS = 5;
 
@@ -207,7 +208,7 @@ function moveImage(fromCat, fromIdx, toCat, toIdx) {
   const toMeta = CATS[toCat];
   if (toMeta.kind === "array" && fromCat !== toCat && pendingThrowDraft[toCat].length >= toMeta.max) {
     insertImage(fromCat, moving, fromIdx); // no room at destination — put it back
-    alert(`${toMeta.label} already has the max of ${toMeta.max} images.`);
+    toast(`${toMeta.label} already has the max of ${toMeta.max} images.`);
   } else if (toMeta.kind === "single") {
     const bumped = pendingThrowDraft[toCat];
     pendingThrowDraft[toCat] = moving;

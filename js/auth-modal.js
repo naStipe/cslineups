@@ -1,4 +1,5 @@
 import { isUsernameAvailable, resetPasswordForEmail, signInWithGoogle, signInWithPassword, signOut, signUpWithPassword } from "./auth.js";
+import { toastError } from "./toast.js";
 import { authEmailInput, authError, authForgotLink, authForgotWrap, authGoogleBtn, authModal, authModalTitle, authPasswordConfirmField, authPasswordConfirmInput, authPasswordField, authPasswordInput, authSubmitBtn, authSwitchLink, authSwitchText, authTurnstile, authUsernameField, authUsernameInput, cancelAuth, signInBtn, signOutBtn } from "./dom.js";
 import { closeModal, watchDialog } from "./modal-utils.js";
 import { mountTurnstile } from "./turnstile.js";
@@ -174,7 +175,7 @@ async function submitAuth() {
 }
 
 authGoogleBtn.onclick = async () => {
-  try { await signInWithGoogle(); } catch (err) { alert((err && err.message) || "Google sign-in failed."); }
+  try { await signInWithGoogle(); } catch (err) { toastError((err && err.message) || "Google sign-in failed."); }
 };
 
 signInBtn.onclick = () => openAuthModal("signin");

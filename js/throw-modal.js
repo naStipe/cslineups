@@ -9,6 +9,9 @@ import { getCssVarColor, typeColor } from "./markers.js";
 import { closeModal } from "./modal-utils.js";
 import { requireCanCreate, requireLineupEditable } from "./permissions.js";
 import { startReposition } from "./reposition.js";
+import { confirmDialog } from "./confirm-dialog.js";
+import { toast, toastError } from "./toast.js";
+import { setBusy } from "./ui-utils.js";
 import { state, uid } from "./state.js";
 
 export let pendingThrowDraft = null; // {x,y,screenshot,...} being built before save
@@ -112,11 +115,15 @@ saveThrow.onclick = async () => {
     if (!requireLineupEditable(existingLineup)) return;
   }
   if (pendingThrowDraft.screenshots.length === 0) {
-    if (!confirm("No screenshots attached — save anyway?")) return;
+    const ok = await confirmDialog({
+      title: "Save without screenshots?",
+      body: "No throw screenshots are attached. You can add them later by editing this throw position.",
+      confirmLabel: "Save anyway",
+    });
+    if (!ok) return;
   }
 
-  saveThrow.disabled = true;
-  saveThrow.textContent = "Uploading images…";
+  setBusy(saveThrow, true, "Uploading images…");
 
   try {
     const draft = pendingThrowDraft;
@@ -147,7 +154,7 @@ saveThrow.onclick = async () => {
       draft.result ? uploadDataUrl(draft.result, isOfficial) : Promise.resolve(null),
     ]);
 
-    saveThrow.textContent = "Saving…";
+    setBusy(saveThrow, true, "Saving…");
 
     const throwEntryBase = {
       pos: draft.throwPos,
@@ -199,15 +206,15 @@ saveThrow.onclick = async () => {
 
     // If we were editing an existing throw, reopen the dossier so changes are visible immediately
     if (wasEditing) openDetail(reopenId);
+    toast(wasEditing ? "Throw position updated" : "Lineup saved");
   } catch (err) {
     console.error(err);
-    alert(
+    toastError(
       err && err.message === "SIGN_IN_REQUIRED" ? "Please sign in first." :
       err && err.message === "FORBIDDEN"        ? "You don't have permission to do that." :
       "Could not save: " + (err && err.message ? err.message : err)
     );
   } finally {
-    saveThrow.disabled = false;
-    saveThrow.textContent = "Save throw position";
+    setBusy(saveThrow, false);
   }
 };

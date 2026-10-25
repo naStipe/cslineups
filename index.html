@@ -520,7 +520,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
     <div class="type-grid" id="typeGrid"></div>
     <label class="field-label" style="margin-top:8px;">Name this position <span style="color:var(--text-faint);font-size:10px;">optional</span></label>
     <input type="text" id="lineupNameInput" placeholder="e.g. CT Spawn, Mid Box, Window…" autocomplete="off">
-    <button class="ghost-btn" id="cancelType">Cancel</button>
+    <button class="ghost-btn" id="cancelType" data-esc>Cancel</button>
   </div>
 </div>
 
@@ -542,7 +542,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
         </div>
         <button type="button" class="tm-reposition-btn" id="repositionOnMapBtn">⤢ Reposition on map</button>
       </div>
-      <button class="icon-btn" id="cancelThrow">✕</button>
+      <button class="icon-btn" id="cancelThrow" data-esc aria-label="Close">✕</button>
     </div>
 
     <div class="tm-body">

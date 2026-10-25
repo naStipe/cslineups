@@ -11,6 +11,7 @@ import { resetZoom } from "./pan-zoom.js";
 import { buildFilters, buildSidebar, showMapLoading } from "./sidebar.js";
 import { state } from "./state.js";
 import { applyViewModeClass, setViewMode } from "./view-mode.js";
+import { flushPendingDeletes } from "./undo-delete.js";
 
 export async function selectMap(id) {
   state.mapId = id;
@@ -112,6 +113,10 @@ export async function loadLineups() {
   state.lineupsLoading = true;
   showMapLoading(true);
   try {
+    // A delete still inside its undo window hasn't reached the server yet;
+    // send it now so this fetch can't bring the item back.
+    await flushPendingDeletes();
+    if (myToken !== loadToken) return;
     let lineups;
     if (state.viewMode === "personal") {
       const [mine, saved] = await Promise.all([dbGetMine(), dbGetSaved()]);

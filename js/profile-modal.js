@@ -11,6 +11,8 @@ import {
   profileUsernameInput, saveUsernameBtn, usernameMsg,
 } from "./dom.js";
 import { closeModal } from "./modal-utils.js";
+import { confirmDialog } from "./confirm-dialog.js";
+import { setBusy } from "./ui-utils.js";
 
 function displayName() {
   return (authProfile && authProfile.username) || (authUser && authUser.email) || "";
@@ -74,8 +76,8 @@ saveUsernameBtn.onclick = async () => {
   if (!username) { setMsg(usernameMsg, "Username can't be empty.", true); return; }
   if (username === current) { setMsg(usernameMsg, "That's already your username.", false); return; }
 
-  saveUsernameBtn.disabled = true;
-  setMsg(usernameMsg, "Saving…", false);
+  setBusy(saveUsernameBtn, true, "Saving…");
+  setMsg(usernameMsg, "", false);
   try {
     const res = await fetch("/api/profile", {
       method: "POST",
@@ -91,7 +93,7 @@ saveUsernameBtn.onclick = async () => {
   } catch (e) {
     setMsg(usernameMsg, e.message || "Failed to update username.", true);
   } finally {
-    saveUsernameBtn.disabled = false;
+    setBusy(saveUsernameBtn, false);
   }
 };
 
@@ -103,8 +105,8 @@ changePasswordBtn.onclick = async () => {
   if (pw.length < 8) { setMsg(passwordMsg, "Password must be at least 8 characters.", true); return; }
   if (pw !== pw2) { setMsg(passwordMsg, "The passwords don't match.", true); return; }
 
-  changePasswordBtn.disabled = true;
-  setMsg(passwordMsg, "Updating…", false);
+  setBusy(changePasswordBtn, true, "Updating…");
+  setMsg(passwordMsg, "", false);
   try {
     const sb = getAuthClient();
     const { error } = await sb.auth.updateUser({ password: pw });
@@ -115,18 +117,25 @@ changePasswordBtn.onclick = async () => {
   } catch (e) {
     setMsg(passwordMsg, e.message || "Failed to change password.", true);
   } finally {
-    changePasswordBtn.disabled = false;
+    setBusy(changePasswordBtn, false);
   }
 };
 
 // ---- Delete account ---------------------------------------------------------
 
 deleteAccountBtn.onclick = async () => {
-  if (!confirm("Delete your account?\n\nYour personal lineups, bookmarks and screenshots will be permanently removed. This cannot be undone.")) return;
-  const check = prompt('Type "DELETE" to confirm:');
-  if (check !== "DELETE") { setMsg(deleteMsg, "Deletion cancelled.", false); return; }
+  // Truly unrecoverable, so a real confirmation (with a typed word) rather
+  // than the undo toast used for lineup deletes.
+  const ok = await confirmDialog({
+    title: "Delete your account?",
+    body: "Your personal lineups, bookmarks and screenshots will be permanently removed. This cannot be undone.",
+    confirmLabel: "Delete account",
+    danger: true,
+    requireText: "DELETE",
+  });
+  if (!ok) return;
 
-  deleteAccountBtn.disabled = true;
+  setBusy(deleteAccountBtn, true, "Deleting…");
   setMsg(deleteMsg, "Deleting your account…", false);
   try {
     const res = await fetch("/api/profile", { method: "DELETE", headers: await authHeaders() });
@@ -136,6 +145,6 @@ deleteAccountBtn.onclick = async () => {
     window.location.href = "/";
   } catch (e) {
     setMsg(deleteMsg, e.message || "Failed to delete the account.", true);
-    deleteAccountBtn.disabled = false;
+    setBusy(deleteAccountBtn, false);
   }
 };

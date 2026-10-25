@@ -33,7 +33,7 @@ export function buildFilters() {
   buildMobileTypeFilters();
 }
 
-function toggleTypeFilter(typeId) {
+export function toggleTypeFilter(typeId) {
   if (state.activeFilters.has(typeId)) state.activeFilters.delete(typeId);
   else state.activeFilters.add(typeId);
   renderMarkers();

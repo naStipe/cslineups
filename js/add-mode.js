@@ -46,7 +46,7 @@ export function setAddMode(on) {
   if (!on) { hideAddFlow(); clearAddPreview(); }
 }
 
-function startAddFlow() {
+export function startAddFlow() {
   if (!requireCanCreate()) return;
   setAddMode(true);
   openTypeModal((typeId) => {

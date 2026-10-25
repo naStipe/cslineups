@@ -2418,3 +2418,116 @@ a.ghost-btn{ text-decoration:none; display:inline-block; }
 .admin-account-uploads.has-uploads{ color:var(--signal); }
 .admin-account-body{ padding:4px 16px 16px; display:flex; flex-direction:column; gap:14px; color:var(--text-dim); font-size:12px; }
 @media (max-width:720px){ .admin-account-head{ grid-template-columns:1fr; gap:6px; } }
+
+/* =========================================================================
+   FOUNDATION PRIMITIVES (js/toast.js, confirm-dialog.js, shortcuts.js,
+   ui-utils.js, time-utils.js). Shared building blocks for every feature:
+   flat surfaces, existing tokens, short fades only.
+   ========================================================================= */
+
+/* ---- Keyboard focus: visible ring for keyboard users, none on click ---- */
+:where(a, button, [role="button"], [tabindex], summary, .filter-chip, .map-item, .type-opt):focus-visible{
+  outline:2px solid var(--signal);outline-offset:2px;
+}
+:where(a, button, [role="button"], [tabindex], .filter-chip, .map-item, .type-opt):focus:not(:focus-visible){outline:none;}
+/* The search fields drop their own outline; ring the wrapper instead. */
+.lineup-search:focus-within,.mobile-search-head:focus-within{border-color:var(--signal);}
+.detail-name-input:focus-visible{outline:none;border-bottom-color:var(--signal);}
+
+/* ---- Toasts ---- */
+.toast-host{
+  position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom, 0px));transform:translateX(-50%);
+  z-index:400;display:flex;flex-direction:column-reverse;align-items:center;gap:8px;
+  width:max-content;max-width:calc(100vw - 32px);pointer-events:none;
+}
+.toast{
+  pointer-events:auto;display:flex;align-items:center;gap:12px;
+  background:var(--panel-2);border:1px solid var(--line);border-radius:999px;
+  color:var(--text);font-size:13px;line-height:1.35;padding:8px 8px 8px 18px;min-height:44px;
+  box-shadow:0 12px 32px rgba(0,0,0,.45);max-width:100%;
+  animation:toastIn .2s ease both;transition:opacity .2s ease, transform .2s ease;
+}
+.toast.out{opacity:0;transform:translateY(6px);}
+.toast-error{border-color:color-mix(in srgb, var(--fire) 55%, var(--line));}
+.toast-error .toast-text::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--fire);margin-right:9px;vertical-align:1px;}
+.toast-text{min-width:0;overflow-wrap:anywhere;}
+.toast-action{
+  background:none;border:1px solid var(--signal-dim);color:var(--signal);border-radius:999px;
+  font-family:var(--font-mono);font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;
+  padding:5px 12px;cursor:pointer;flex-shrink:0;transition:background .15s ease, border-color .15s ease;
+}
+.toast-action:hover{background:color-mix(in srgb, var(--signal) 12%, transparent);border-color:var(--signal);}
+.toast-close{
+  background:none;border:none;color:var(--text-faint);cursor:pointer;font-size:12px;
+  width:28px;height:28px;border-radius:50%;flex-shrink:0;transition:color .15s ease, background .15s ease;
+}
+.toast-close:hover{color:var(--text);background:var(--panel);}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+@media (max-width:768px){
+  /* Clear the FAB (56px + 16px) and sit over the bottom sheet's lower edge. */
+  .toast-host{bottom:calc(84px + env(safe-area-inset-bottom, 0px));}
+  .toast{font-size:13.5px;}
+  .toast-action,.toast-close{min-height:36px;}
+}
+
+/* ---- Confirm dialog ---- */
+.confirm-backdrop{z-index:300;}
+.confirm-modal{width:min(420px, calc(100vw - 32px));gap:12px;}
+.confirm-modal:focus{outline:none;}
+.confirm-body{display:flex;flex-direction:column;gap:8px;}
+.confirm-body p{margin:0;font-size:13.5px;line-height:1.6;color:var(--text-dim);}
+.confirm-input input{margin-top:4px;}
+.confirm-modal .modal-actions{margin-top:6px;}
+.primary-btn.danger{background:var(--fire);color:#1f0b06;box-shadow:0 2px 14px rgba(255,106,69,.25);}
+.primary-btn:disabled{opacity:.5;cursor:not-allowed;}
+.primary-btn:disabled::before{display:none;}
+
+/* ---- Busy buttons ---- */
+.is-busy{cursor:progress !important;justify-content:center;}
+.busy-spinner{
+  display:inline-block;width:12px;height:12px;flex-shrink:0;border-radius:50%;
+  border:2px solid currentColor;border-right-color:transparent;opacity:.85;
+  animation:busySpin .7s linear infinite;vertical-align:-2px;
+}
+.busy-label{margin-left:8px;}
+.primary-btn .busy-label{margin-left:0;}
+@keyframes busySpin{to{transform:rotate(360deg);}}
+
+/* ---- Skeleton placeholder: flat block with a slow opacity pulse ---- */
+.skeleton{
+  background:var(--panel-2);border-radius:8px;
+  animation:skeletonPulse 1.4s ease-in-out infinite;
+}
+@keyframes skeletonPulse{0%,100%{opacity:1;}50%{opacity:.55;}}
+
+/* ---- Empty state ---- */
+.empty-state{
+  display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;
+  padding:28px 20px;color:var(--text-dim);
+}
+.empty-state.compact{padding:16px 10px;}
+.empty-state-title{margin:0;color:var(--text);font-size:14px;font-weight:600;}
+.empty-state.compact .empty-state-title{font-size:13px;}
+.empty-state-body{margin:0;font-size:12.5px;line-height:1.55;max-width:34ch;}
+.empty-state-action{margin-top:8px;}
+
+/* ---- Keyboard shortcut help ---- */
+.shortcut-help{width:min(460px, calc(100vw - 32px));gap:14px;}
+.shortcut-help-head{display:flex;align-items:center;justify-content:space-between;}
+.shortcut-help-head .icon-btn{border:none;}
+.shortcut-help-body{display:flex;flex-direction:column;gap:14px;}
+.shortcut-help-body .rail-label{margin:0 0 6px;}
+.shortcut-help dl{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:0;align-items:center;}
+.shortcut-help dt{display:flex;gap:4px;}
+.shortcut-help dd{margin:0;font-size:13px;color:var(--text-dim);}
+kbd{
+  display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 7px;
+  background:var(--panel-2);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;
+  font-family:var(--font-mono);font-size:11.5px;color:var(--text);
+}
+
+@media (prefers-reduced-motion:reduce){
+  .toast,.toast.out{animation:none;transition:none;}
+  .skeleton{animation:none;}
+  .busy-spinner{animation-duration:1.6s;}
+}

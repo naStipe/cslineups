@@ -1,5 +1,5 @@
 import { setAddMode, showAddFlow } from "./add-mode.js";
-import { dbDelete, dbPut, dbSaveLineup, dbSubmitLineup, dbUnsaveLineup, throwKey } from "./api.js";
+import { API_URL, SAVED_URL, dbPut, dbSaveLineup, dbSubmitLineup, throwKey } from "./api.js";
 import { authUser } from "./auth.js";
 import { MOVEMENT_LABELS, RANGE_LABELS, TYPES } from "./constants.js";
 import { addThrowBtn, closeDetail, deleteLineupBtn, detailNameInput, detailOwnerBadge, detailPanel, detailTitle, detailType, saveLineupBtn, shareLineupBtn, submitLineupBtn, submitLineupNote, throwList, typeModal } from "./dom.js";
@@ -14,6 +14,9 @@ import { state } from "./state.js";
 import { hydrateImages, resolveImageSrc } from "./private-images.js";
 import { escapeHtml } from "./html-utils.js";
 import { openThrowModal } from "./throw-modal.js";
+import { confirmDialog } from "./confirm-dialog.js";
+import { toast, toastError } from "./toast.js";
+import { deferDelete } from "./undo-delete.js";
 
 export let selectedThrowIdx = 0;
 
@@ -82,8 +85,9 @@ export function renderDetail(lineup) {
         await navigator.clipboard.writeText(url);
         shareLineupBtn.textContent = "✓";
         setTimeout(() => { shareLineupBtn.textContent = "🔗"; }, 1200);
+        toast("Link copied");
       } catch {
-        prompt("Copy this link:", url);
+        toast(`Copy this link: ${url}`, { duration: 10000 });
       }
     };
   }
@@ -93,9 +97,18 @@ export function renderDetail(lineup) {
   detailNameInput.disabled = !editable;
   detailNameInput.onchange = async () => {
     if (!editable) { detailNameInput.value = lineup.name || ""; return; }
+    const prev = lineup.name || "";
     lineup.name = detailNameInput.value.trim();
-    await dbPut(lineup, lineup.isOfficial);
     refreshLocal();
+    try {
+      await dbPut(lineup, lineup.isOfficial);
+      toast(lineup.name ? "Name saved" : "Name cleared");
+    } catch (err) {
+      lineup.name = prev;
+      if (detailNameInput.value.trim() === lineup.name || document.activeElement !== detailNameInput) detailNameInput.value = prev;
+      refreshLocal();
+      toastError("Couldn't save the name. Please try again.");
+    }
   };
   throwList.innerHTML = "";
 
@@ -136,7 +149,7 @@ export function renderDetail(lineup) {
             try {
               await dbPut(lineup, lineup.isOfficial); // persist in the background
             } catch (err) {
-              alert("Could not save the new position: " + (err && err.message ? err.message : err));
+              toastError("Could not save the new position: " + (err && err.message ? err.message : err));
             }
           } else {
             openDetail(lineup.id, throwIdx);
@@ -144,18 +157,13 @@ export function renderDetail(lineup) {
         },
       });
     };
-    heroRemoveBtn.onclick = async () => {
-      lineup.throws = lineup.throws.filter(x => x.id !== active.id);
-      if (lineup.throws.length === 0) {
-        await dbDelete(lineup.id);
-        state.lineups = state.lineups.filter(l => l.id !== lineup.id);
-        closeDetailPanel();
-      } else {
-        await dbPut(lineup, lineup.isOfficial);
-        upsertLocalLineup(lineup);
-      }
-      refreshLocal();
-      if (state.selectedLineupId) openDetail(state.selectedLineupId, Math.max(0, selectedThrowIdx - 1));
+    heroRemoveBtn.onclick = () => {
+      // Removing the last variant removes the whole lineup.
+      if (lineup.throws.length <= 1) { deleteLineupDeferred(lineup); return; }
+      removeThrowDeferred(lineup, active, selectedThrowIdx, {
+        message: "Variant removed",
+        request: { method: "POST", url: API_URL, body: () => ({ ...lineup, isOfficial: !!lineup.isOfficial }) },
+      });
     };
   } else {
     heroEditBtn.style.display = "none";
@@ -184,7 +192,7 @@ export function renderDetail(lineup) {
         }
         renderDetail(lineup);
       } catch (err) {
-        alert((err && err.message) || "Something went wrong.");
+        toastError((err && err.message) || "Something went wrong.");
       } finally {
         heroSaveBtn.disabled = false;
       }
@@ -193,26 +201,15 @@ export function renderDetail(lineup) {
     heroSaveBtn.style.display = "";
     heroSaveBtn.textContent = "✕ Remove from my map";
     heroSaveBtn.classList.remove("saved");
-    heroSaveBtn.onclick = async () => {
-      if (!confirm("Remove this throw position from your personal map?")) return;
-      heroSaveBtn.disabled = true;
-      try {
-        await dbUnsaveLineup(lineup.id, active.id);
-        state.savedThrowKeys.delete(throwKey(lineup.id, active.id));
-        lineup.throws = lineup.throws.filter(x => x.id !== active.id);
-        if (lineup.throws.length === 0) {
-          state.lineups = state.lineups.filter(l => l.id !== lineup.id);
-          closeDetailPanel();
-          refreshLocal();
-        } else {
-          upsertLocalLineup(lineup);
-          refreshLocal();
-          openDetail(lineup.id, Math.max(0, selectedThrowIdx - 1));
-        }
-      } catch (err) {
-        alert((err && err.message) || "Something went wrong.");
-        heroSaveBtn.disabled = false;
-      }
+    heroSaveBtn.onclick = () => {
+      const key = throwKey(lineup.id, active.id);
+      removeThrowDeferred(lineup, active, selectedThrowIdx, {
+        message: "Removed from your map",
+        key: `saved:${key}`,
+        onApply: () => state.savedThrowKeys.delete(key),
+        onRestore: () => state.savedThrowKeys.add(key),
+        request: { method: "DELETE", url: `${SAVED_URL}?lineupId=${encodeURIComponent(lineup.id)}&throwId=${encodeURIComponent(active.id)}` },
+      });
     };
   } else {
     heroSaveBtn.style.display = "none";
@@ -415,30 +412,91 @@ function renderSubmitControls(lineup, editable) {
   submitLineupBtn.textContent = submitted ? "Withdraw public-map submission" : "★ Submit to public map";
   submitLineupNote.textContent = submitted ? "Submitted for review. An admin may publish it on the public map." : "";
   submitLineupBtn.onclick = async () => {
-    if (!submitted && !confirm(SUBMIT_CONSENT)) return;
+    if (!submitted) {
+      // First paragraph is the question, the rest is the consent text.
+      const [title, ...rest] = SUBMIT_CONSENT.split("\n\n");
+      const ok = await confirmDialog({ title, body: rest.join("\n\n"), confirmLabel: "Submit" });
+      if (!ok) return;
+    }
     submitLineupBtn.disabled = true;
     try {
       const { submittedAt } = await dbSubmitLineup(lineup.id, !submitted);
       lineup.submittedAt = submittedAt;
       renderSubmitControls(lineup, editable);
+      toast(submittedAt ? "Submitted for review" : "Submission withdrawn");
     } catch (e) {
-      alert("Couldn't update the submission. Please try again.");
+      toastError("Couldn't update the submission. Please try again.");
     } finally {
       submitLineupBtn.disabled = false;
     }
   };
 }
 
-deleteLineupBtn.onclick = async () => {
+deleteLineupBtn.onclick = () => {
   if (!state.selectedLineupId) return;
   const lineup = state.lineups.find(l => l.id === state.selectedLineupId);
   if (!lineup) return;
   if (!requireLineupEditable(lineup)) return;
-  if (!confirm("Delete this entire lineup, including all throw positions?")) return;
-  const delId = state.selectedLineupId;
-  await dbDelete(delId);
-  state.lineups = state.lineups.filter(l => l.id !== delId);
-  closeDetailPanel();
-  refreshLocal();
+  deleteLineupDeferred(lineup);
 };
+
+// Undo-able whole-lineup delete (see js/undo-delete.js): gone from the map at
+// once, "Deleted · Undo" for a few seconds, then the real DELETE goes out.
+// Restore only puts it back if the user is still looking at the same map and
+// view — otherwise the next load shows the truth anyway.
+export function deleteLineupDeferred(lineup) {
+  const ctx = { mapId: state.mapId, viewMode: state.viewMode };
+  let idx = -1;
+  const label = lineup.name ? `“${lineup.name}”` : "Lineup";
+  deferDelete({
+    key: `lineup:${lineup.id}`,
+    message: `${label} deleted`,
+    apply: () => {
+      idx = state.lineups.indexOf(lineup);
+      state.lineups = state.lineups.filter(l => l.id !== lineup.id);
+      if (state.selectedLineupId === lineup.id) closeDetailPanel();
+      refreshLocal();
+    },
+    restore: () => {
+      if (state.mapId !== ctx.mapId || state.viewMode !== ctx.viewMode) return;
+      if (state.lineups.some(l => l.id === lineup.id)) return;
+      state.lineups.splice(idx < 0 ? state.lineups.length : Math.min(idx, state.lineups.length), 0, lineup);
+      refreshLocal();
+    },
+    request: { method: "DELETE", url: `${API_URL}?id=${encodeURIComponent(lineup.id)}` },
+  });
+}
+
+// Undo-able removal of one variant (throw position) from a lineup. The
+// request is whatever persists the removal: re-saving the lineup for an owned
+// one, or deleting the bookmark for a saved official one.
+function removeThrowDeferred(lineup, t, throwIdx, { message, request, key, onApply, onRestore }) {
+  const ctx = { mapId: state.mapId, viewMode: state.viewMode };
+  deferDelete({
+    key: key || `lineup:${lineup.id}`,
+    message,
+    apply: () => {
+      lineup.throws = lineup.throws.filter(x => x.id !== t.id);
+      if (onApply) onApply();
+      if (lineup.throws.length === 0) {
+        // A bookmarked lineup with no saved variants left disappears from My Map.
+        state.lineups = state.lineups.filter(l => l.id !== lineup.id);
+        if (state.selectedLineupId === lineup.id) closeDetailPanel();
+      } else {
+        upsertLocalLineup(lineup);
+        if (state.selectedLineupId === lineup.id && detailPanel.classList.contains("open")) openDetail(lineup.id, Math.max(0, throwIdx - 1));
+      }
+      refreshLocal();
+    },
+    restore: () => {
+      if (onRestore) onRestore();
+      if (!lineup.throws.some(x => x.id === t.id)) lineup.throws.splice(Math.min(throwIdx, lineup.throws.length), 0, t);
+      if (state.mapId !== ctx.mapId || state.viewMode !== ctx.viewMode) return;
+      if (!state.lineups.some(l => l.id === lineup.id)) state.lineups.push(lineup);
+      refreshLocal();
+      if (state.selectedLineupId === lineup.id && detailPanel.classList.contains("open")) openDetail(lineup.id, throwIdx);
+    },
+    request,
+  });
+}
 

@@ -7,6 +7,8 @@
 // talks to that endpoint plus Supabase auth for the session token.
 
 import { LAST_MAP_KEY, MAPS, MOVEMENT_LABELS, RANGE_LABELS, TYPES } from "./constants.js";
+import { confirmDialog } from "./confirm-dialog.js";
+import { toastError } from "./toast.js";
 import { escapeHtml } from "./html-utils.js";
 import { mountTurnstile } from "./turnstile.js";
 
@@ -315,8 +317,10 @@ function setCardReviewed(card, lineupId, reviewed) {
   oldBtn.replaceWith(btn);
 }
 
-function rejectImage(lineupId, url, figure, card) {
-  if (!confirm("Reject this screenshot? It will be permanently deleted.")) return;
+async function rejectImage(lineupId, url, figure, card) {
+  // Deletes a user's file for good, so this keeps a real confirmation.
+  const ok = await confirmDialog({ title: "Reject this screenshot?", body: "It will be permanently deleted.", confirmLabel: "Reject", danger: true });
+  if (!ok) return;
   const restoreFigure = detach(figure);
   // If that was the last screenshot on the whole lineup, the card has nothing
   // left to moderate — drop it too (and be ready to restore it on failure).
@@ -326,7 +330,7 @@ function rejectImage(lineupId, url, figure, card) {
     if (restoreCard) restoreCard();
     restoreFigure();
     refreshCounts();
-    alert(`Failed to reject: ${e.message}`);
+    toastError(`Failed to reject: ${e.message}`);
   });
 }
 
@@ -344,26 +348,32 @@ function markReviewed(lineupId, action, card) {
   }
   sendAction("POST", "", { action, lineupId }).catch(e => {
     restore();
-    alert(`Failed: ${e.message}`);
+    toastError(`Failed: ${e.message}`);
   });
 }
 
-function deleteLineup(lineupId, card) {
-  if (!confirm("Delete this entire lineup and all its screenshots? This cannot be undone.")) return;
+async function deleteLineup(lineupId, card) {
+  const ok = await confirmDialog({ title: "Delete this lineup?", body: "The entire lineup and all its screenshots are deleted. This cannot be undone.", confirmLabel: "Delete lineup", danger: true });
+  if (!ok) return;
   const restore = detach(card);
   refreshCounts();
   sendAction("DELETE", `?lineupId=${encodeURIComponent(lineupId)}`).catch(e => {
     restore();
     refreshCounts();
-    alert(`Failed to delete: ${e.message}`);
+    toastError(`Failed to delete: ${e.message}`);
   });
 }
 
 // Publishing copies every screenshot to the public bucket server-side, so it
 // takes a moment — show a busy state and only remove the card on success,
 // rather than optimistically (a failure would otherwise flash it out and back).
-function publishLineup(lineupId, card) {
-  if (!confirm("Publish this lineup and its screenshots to the official public map?\n\nIt becomes visible to everyone, the submitter's private copy is converted, and it leaves your review queue.")) return;
+async function publishLineup(lineupId, card) {
+  const ok = await confirmDialog({
+    title: "Publish to the official map?",
+    body: "This lineup and its screenshots become visible to everyone, the submitter's private copy is converted, and it leaves your review queue.",
+    confirmLabel: "Publish",
+  });
+  if (!ok) return;
   const buttons = [...card.querySelectorAll(".admin-card-actions button")];
   const publishBtn = card.querySelector('[data-action="publish"]');
   const label = publishBtn ? publishBtn.textContent : "";
@@ -376,7 +386,7 @@ function publishLineup(lineupId, card) {
       card.classList.remove("is-busy");
       buttons.forEach(b => { b.disabled = false; });
       if (publishBtn) publishBtn.textContent = label;
-      alert(`Failed to publish: ${e.message}`);
+      toastError(`Failed to publish: ${e.message}`);
     });
 }
 
