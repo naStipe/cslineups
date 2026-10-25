@@ -3,6 +3,7 @@ import { initAuth } from "./auth.js";
 import { MAPS, TYPES } from "./constants.js";
 import { closeDetailPanel, hideDetailPanel, openDetail, throwIndexFromParams } from "./detail-panel.js";
 import { appShell, detailPanel, homeBrand, lightboxModal, lightboxNext, lightboxPrev, lineupSearchInput, sidebarBrand } from "./dom.js";
+import "./offline.js"; // side effect only: service worker, offline banner
 import "./collections.js"; // side effect only: collections rail, panel, popover
 import { openCollectionBySlug } from "./collections.js";
 import "./marker-preview.js"; // side effect only: hover card on landing markers
@@ -172,7 +173,8 @@ async function handleDeepLink() {
 }
 
 loadConfig().then(async () => {
-  await initAuth();
+  // Offline (or with a broken auth backend) the public map must still open.
+  try { await initAuth(); } catch (e) { console.warn("auth init failed:", e); }
   handleDeepLink();
 });
 

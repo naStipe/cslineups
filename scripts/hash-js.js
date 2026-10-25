@@ -43,4 +43,12 @@ for (const [htmlFile, entry] of [
   fs.writeFileSync(htmlPath, updated);
 }
 
+// The service worker lives at the site root (not under js/) so its scope
+// covers the whole app; stamp it with this build so each deploy ships a new
+// worker and the old caches are dropped on activate.
+const swPath = path.join(root, "sw.js");
+const sw = fs.readFileSync(swPath, "utf8");
+if (!sw.includes("__BUILD_ID__")) throw new Error("hash-js: sw.js has no __BUILD_ID__ placeholder");
+fs.writeFileSync(swPath, sw.split("__BUILD_ID__").join(hash));
+
 console.log(`hash-js: versioned js/ as js/${hash}/ (${files.length} files)`);

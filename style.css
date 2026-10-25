@@ -3049,3 +3049,16 @@ body.in-collection .side-filters,body.in-collection .area-label{display:none;}
 .clip-controls .ghost-btn{padding:6px 12px;font-size:12px;}
 .clip-controls .ghost-btn.active{border-color:var(--signal);color:var(--signal);}
 @media (max-width:768px){ .clip-controls .ghost-btn{min-height:44px;} .tm-clip-video{width:96px;} }
+
+/* ===== Offline ===== */
+.offline-banner{
+  position:fixed;z-index:90;left:50%;top:10px;transform:translate(-50%,-8px);opacity:0;pointer-events:none;
+  background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--fire);border-radius:6px;
+  padding:7px 14px;font-family:var(--font-mono);font-size:11.5px;color:var(--text);
+  transition:opacity .2s ease,transform .2s ease;
+}
+.offline-banner.show{opacity:1;transform:translate(-50%,0);}
+body.is-offline #addModeBtn,body.is-offline #fabAddBtn,body.is-offline #addThrowBtn,body.is-offline #deleteLineupBtn,
+body.is-offline #collNewBtn,body.is-offline #collSelectBtn,body.is-offline #addToCollBtn,
+body.is-offline .edit-btn,body.is-offline .remove-btn{opacity:.45;cursor:not-allowed;}
+@media (prefers-reduced-motion:reduce){ .offline-banner{transition:none;} }
