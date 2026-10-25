@@ -17,11 +17,29 @@
 // Supabase Storage's bucket settings used to give us is now just this
 // contentLength check below plus the client-side check in
 // js/image-upload.js — both bypassable by a determined attacker hitting
-// this endpoint directly, same caveat as the MIME check below.
+// this endpoint directly, same caveat as the MIME check below. The real
+// size guarantee is the HEAD of the stored object: it used to be a separate
+// "confirm" call after every PUT (one more serverless invocation + Supabase
+// auth round trip per image); it now happens once per lineup save in
+// api/lineups.js (see verifyNewImages in api/_lib/uploads.js), so a
+// too-large object can never end up referenced by a saved lineup. The
+// confirm action is kept below for browsers still running the old script.
+//
+// Actions (POST body):
+//  - { isOfficial, contentType, contentLength }        → one presigned PUT
+//    (original shape, kept for compatibility)
+//  - { isOfficial, files: [{ contentType, contentLength }, ...] } → N PUTs
+//    in one round trip ({ uploads: [{ url, publicUrl, filename }] })
+//  - { action: "delete", isOfficial, filenames: [...] } → best-effort cleanup
+//    of uploads the caller just made but didn't save (image removed, throw
+//    modal discarded). See deleteUploads for the guards.
+//  - { action: "confirm", isOfficial, filename }        → legacy size check
 const { createClient } = require("@supabase/supabase-js");
 const r2 = require("./_lib/r2");
 const { setCorsHeaders } = require("./_lib/cors");
+const { getAuthUser, isAdmin } = require("./_lib/auth");
 const { checkRateLimit } = require("./_lib/rate-limit");
+const { ALLOWED_EXT, MAX_UPLOAD_BYTES, RANDOM_FILENAME, randomFilename, resolveTarget } = require("./_lib/uploads");
 
 function supabase() {
   return createClient(
@@ -31,102 +49,131 @@ function supabase() {
   );
 }
 
-async function getAuthUser(req, sb) {
-  const header = req.headers["authorization"] || req.headers["Authorization"];
-  if (!header || !header.startsWith("Bearer ")) return null;
-  const token = header.slice(7).trim();
-  if (!token) return null;
-  const { data, error } = await sb.auth.getUser(token);
-  if (error || !data || !data.user) return null;
-  return data.user;
-}
+// Most images one throw position can hold (3 standing + 5 aim + precise +
+// result); a batch presign or delete never needs more.
+const MAX_BATCH = 10;
 
-async function isAdmin(sb, userId) {
-  if (!userId) return false;
-  const { data, error } = await sb.from("profiles").select("is_admin").eq("id", userId).maybeSingle();
-  if (error || !data) return false;
-  return !!data.is_admin;
-}
-
-// Same allow-list as js/image-upload.js — enforced again here since the
-// client-side check is just a courtesy; this is the real gate now that
-// Storage-bucket-level MIME restrictions are gone.
-const ALLOWED_EXT = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-  "image/gif": "gif",
-};
-
-// Enforced again server-side (the client-side check in js/image-upload.js
-// is just a courtesy) — this is the cap actually applied by the confirm
-// step below, since a presigned PUT can't enforce it by signature.
-const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
-
-function randomFilename(ext) {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-}
+// How old an upload may be and still be deleted by the "delete" action.
+const FRESH_MS = 24 * 60 * 60 * 1000;
 
 // Only positive integers up to MAX_UPLOAD_BYTES are accepted — a sanity
 // bound on the presigned URL's declared size, not the real enforcement
-// (see confirmUpload below for that).
+// (that is the save-time HEAD in api/lineups.js, see the top of this file).
 function validContentLength(v) {
   return Number.isInteger(v) && v > 0 && v <= MAX_UPLOAD_BYTES;
 }
 
-// Resolves the same bucket/key/publicUrl an isOfficial+filename pair would
-// have gotten from presignUpload, so confirmUpload can re-derive them from
-// just what it's told without trusting a client-supplied bucket or key.
-function resolveTarget(isOfficial, userId, filename) {
-  if (isOfficial) {
-    return {
-      bucket: r2.PUBLIC_BUCKET(),
-      key: filename,
-      publicUrl: `${r2.PUBLIC_BASE_URL()}/${filename}`,
-    };
+// Returns { contentType, contentLength, ext } or { error }.
+function parseFileSpec(spec) {
+  const contentType = spec && typeof spec.contentType === "string" ? spec.contentType : "";
+  const ext = ALLOWED_EXT[contentType];
+  if (!ext) return { error: `Unsupported image type: ${contentType || "unknown"}` };
+  const contentLength = Math.trunc(Number(spec.contentLength));
+  if (!validContentLength(contentLength)) {
+    return { error: `Invalid or missing contentLength (must be > 0 and <= ${MAX_UPLOAD_BYTES} bytes)` };
   }
-  return {
-    bucket: r2.PRIVATE_BUCKET(),
-    key: r2.privateKey(userId, filename),
-    publicUrl: `/api/private-image?path=${userId}/${filename}`,
-  };
+  return { contentType, contentLength, ext };
 }
 
 async function presignUpload(req, res, sb, user) {
-  if (!(await checkRateLimit(sb, user.id, "upload"))) {
+  const body = req.body || {};
+  const batch = Array.isArray(body.files);
+  const specs = batch ? body.files : [body];
+  if (!specs.length || specs.length > MAX_BATCH) {
+    res.status(400).json({ error: `Send between 1 and ${MAX_BATCH} files` });
+    return;
+  }
+  const parsed = specs.map(parseFileSpec);
+  const bad = parsed.find(p => p.error);
+  if (bad) { res.status(400).json({ error: bad.error }); return; }
+
+  const isOfficial = body.isOfficial === true;
+  // The rate limit is per presigned file, not per request, so batching
+  // doesn't stretch the hourly cap: one check per file, all in parallel
+  // with each other and with the admin lookup (each is a DB round trip).
+  const [admin, ...allowed] = await Promise.all([
+    isOfficial ? isAdmin(sb, user.id) : Promise.resolve(false),
+    ...parsed.map(() => checkRateLimit(sb, user.id, "upload")),
+  ]);
+  if (allowed.some(ok => !ok)) {
     res.status(429).json({ error: "Too many uploads. Try again in a bit." });
     return;
   }
-
-  const body = req.body || {};
-  const contentType = typeof body.contentType === "string" ? body.contentType : "";
-  const ext = ALLOWED_EXT[contentType];
-  if (!ext) { res.status(400).json({ error: `Unsupported image type: ${contentType || "unknown"}` }); return; }
-
-  const contentLength = Math.trunc(Number(body.contentLength));
-  if (!validContentLength(contentLength)) {
-    res.status(400).json({ error: `Invalid or missing contentLength (must be > 0 and <= ${MAX_UPLOAD_BYTES} bytes)` });
-    return;
-  }
-
-  const isOfficial = body.isOfficial === true;
-  if (isOfficial && !(await isAdmin(sb, user.id))) {
+  if (isOfficial && !admin) {
     res.status(403).json({ error: "Admin access required to upload official screenshots" });
     return;
   }
 
-  const filename = randomFilename(ext);
-  const { bucket, key, publicUrl } = resolveTarget(isOfficial, user.id, filename);
-
-  const url = await r2.presignPut(bucket, key, contentType, contentLength, 300);
-  res.status(200).json({ url, publicUrl, filename });
+  const uploads = await Promise.all(parsed.map(async (p) => {
+    const filename = randomFilename(p.ext);
+    const { bucket, key, publicUrl } = resolveTarget(isOfficial, user.id, filename);
+    const url = await r2.presignPut(bucket, key, p.contentType, p.contentLength, 300);
+    return { url, publicUrl, filename };
+  }));
+  res.status(200).json(batch ? { uploads } : uploads[0]);
 }
 
-// Second step of the upload flow, called by the client right after its PUT
-// to R2 succeeds. A presigned PUT has no signature-level size limit (see
-// the top-of-file comment), so the declared contentLength presignUpload
-// checked could be a lie — this reads the object's *actual* stored size
-// straight from R2 and deletes it if it's over the cap, closing that gap.
+// Best-effort removal of uploads the caller made but never saved (the user
+// removed the image, or discarded the throw modal). Guards, so this can only
+// ever undo the caller's own fresh uploads:
+//  - every filename must match RANDOM_FILENAME (what presignUpload mints)
+//    and its embedded base36 timestamp must be under a day old, so only
+//    fresh uploads qualify, never older objects;
+//  - personal keys are rebuilt inside the caller's own folder
+//    (resolveTarget), never taken from the client;
+//  - public (official) keys need an admin;
+//  - an object referenced by any saved lineup is never deleted: each URL is
+//    looked up in lineups.throws first (jsonb containment, one query per
+//    image field) and skipped if found.
+async function deleteUploads(req, res, sb, user) {
+  const body = req.body || {};
+  const filenames = Array.isArray(body.filenames) ? body.filenames : [];
+  if (!filenames.length || filenames.length > MAX_BATCH || !filenames.every(f => typeof f === "string" && RANDOM_FILENAME.test(f))) {
+    res.status(400).json({ error: "Invalid filenames" });
+    return;
+  }
+  const now = Date.now();
+  if (!filenames.every(f => { const t = parseInt(f.split("-")[0], 36); return t > now - FRESH_MS && t <= now + 60000; })) {
+    res.status(400).json({ error: "Only fresh uploads can be deleted" });
+    return;
+  }
+  const isOfficial = body.isOfficial === true;
+  if (isOfficial && !(await isAdmin(sb, user.id))) {
+    res.status(403).json({ error: "Admin access required" });
+    return;
+  }
+
+  const targets = [...new Set(filenames)].map(f => resolveTarget(isOfficial, user.id, f));
+  const referenced = await Promise.all(targets.map(t => isReferenced(sb, t.publicUrl, isOfficial ? null : user.id)));
+  const doomed = targets.filter((t, i) => !referenced[i]);
+  if (doomed.length) await r2.deleteObjects(doomed[0].bucket, doomed.map(t => t.key));
+  res.status(200).json({ ok: true, deleted: doomed.length, kept: targets.length - doomed.length });
+}
+
+// Is this stored image URL used by a saved lineup? Personal URLs can only be
+// referenced by their owner's lineups (api/lineups.js rejects anyone else's
+// private path), so that lookup is scoped to the owner; public URLs may be
+// referenced by any lineup.
+async function isReferenced(sb, url, ownerId) {
+  const probes = [
+    [{ screenshots: [url] }],
+    [{ standing: [url] }],
+    [{ precise: url }],
+    [{ result: url }],
+  ];
+  const results = await Promise.all(probes.map(async (probe) => {
+    let q = sb.from("lineups").select("id").contains("throws", JSON.stringify(probe)).limit(1);
+    if (ownerId) q = q.eq("owner_id", ownerId);
+    const { data, error } = await q;
+    if (error) throw new Error(error.message); // fail closed: never delete on a lookup error
+    return !!(data && data.length);
+  }));
+  return results.some(Boolean);
+}
+
+// Legacy second step of the old upload flow (one call per image after its
+// PUT). Superseded by the save-time check in api/lineups.js, kept so a
+// browser still running the previous script keeps working until it reloads.
 async function confirmUpload(req, res, sb, user) {
   const body = req.body || {};
   const filename = typeof body.filename === "string" ? body.filename : "";
@@ -146,15 +193,6 @@ async function confirmUpload(req, res, sb, user) {
     res.status(413).json({ error: `That file is too large (max ${MAX_UPLOAD_BYTES / (1024 * 1024)}MB).` });
     return;
   }
-  // Public screenshots get a random, never-reused filename, so they can be
-  // cached forever. Best effort: a failure here must not fail the upload.
-  if (isOfficial) {
-    try {
-      await r2.setCacheControl(bucket, key, meta.contentType || "application/octet-stream", "public, max-age=31536000, immutable");
-    } catch (err) {
-      console.error("setCacheControl failed", key, err);
-    }
-  }
   res.status(200).json({ ok: true });
 }
 
@@ -170,6 +208,7 @@ module.exports = async function handler(req, res) {
 
     const action = req.body && req.body.action;
     if (action === "confirm") await confirmUpload(req, res, sb, user);
+    else if (action === "delete") await deleteUploads(req, res, sb, user);
     else await presignUpload(req, res, sb, user);
   } catch (err) {
     console.error(err);

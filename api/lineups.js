@@ -1,7 +1,9 @@
 const { createClient } = require("@supabase/supabase-js");
 const r2 = require("./_lib/r2");
 const { setCorsHeaders } = require("./_lib/cors");
+const { getAuthUser, isAdmin } = require("./_lib/auth");
 const { checkRateLimit } = require("./_lib/rate-limit");
+const { verifyNewImages, setLongCache } = require("./_lib/uploads");
 
 function supabase() {
   return createClient(
@@ -11,25 +13,7 @@ function supabase() {
   );
 }
 
-// Verifies the bearer token (the logged-in user's Supabase access token) and
-// returns the auth user it belongs to, or null if missing/invalid.
-async function getAuthUser(req, sb) {
-  const header = req.headers["authorization"] || req.headers["Authorization"];
-  if (!header || !header.startsWith("Bearer ")) return null;
-  const token = header.slice(7).trim();
-  if (!token) return null;
-  const { data, error } = await sb.auth.getUser(token);
-  if (error || !data || !data.user) return null;
-  return data.user;
-}
-
-// Looks up whether a user is flagged as an admin in public.profiles.
-async function isAdmin(sb, userId) {
-  if (!userId) return false;
-  const { data, error } = await sb.from("profiles").select("is_admin").eq("id", userId).maybeSingle();
-  if (error || !data) return false;
-  return !!data.is_admin;
-}
+// getAuthUser verifies the bearer token locally (see api/_lib/auth.js).
 
 function mapRow(row) {
   return {
@@ -210,7 +194,14 @@ module.exports = async function handler(req, res) {
     // Every write requires a signed-in user from here on.
     const user = await getAuthUser(req, sb);
     if (!user) { res.status(401).json({ error: "Sign in required" }); return; }
-    const admin = await isAdmin(sb, user.id);
+    // A plain create/edit needs both the admin flag and the rate-limit RPC;
+    // each is a DB round trip, so run them side by side. (Admins skip the
+    // limit below; counting their writes anyway costs nothing.)
+    const plainSave = req.method === "POST" && req.body && !Array.isArray(req.body.records) && req.body.id && req.body.action !== "submit";
+    const [admin, underLimit] = await Promise.all([
+      isAdmin(sb, user.id),
+      plainSave ? checkRateLimit(sb, user.id, "lineup_write") : Promise.resolve(true),
+    ]);
 
     if (req.method === "POST") {
       const body = req.body;
@@ -266,7 +257,7 @@ module.exports = async function handler(req, res) {
 
       // Admins are trusted (already gated by the is_admin check) and can do
       // heavy moderation/editing work, so only rate-limit ordinary users.
-      if (!admin && !(await checkRateLimit(sb, user.id, "lineup_write"))) {
+      if (!admin && !underLimit) {
         res.status(429).json({ error: "Too many changes. Try again in a bit." });
         return;
       }
@@ -283,7 +274,7 @@ module.exports = async function handler(req, res) {
       // status (don't let a client flip a personal lineup into an official
       // one, or vice versa, via upsert) and just re-check permission
       // against what it already is.
-      const { data: existing } = await sb.from("lineups").select("is_official, owner_id").eq("id", body.id).maybeSingle();
+      const { data: existing } = await sb.from("lineups").select("is_official, owner_id, throws").eq("id", body.id).maybeSingle();
 
       let isOfficial, ownerId;
       if (existing) {
@@ -298,12 +289,20 @@ module.exports = async function handler(req, res) {
         ownerId = isOfficial ? null : user.id;
       }
 
-      const { error } = await sb.from("lineups").upsert({
-        id: body.id, map_id: clean.mapId, type: clean.type, name: clean.name,
-        landing: clean.landing, throws: clean.throws,
-        created_at: body.createdAt || Date.now(),
-        is_official: isOfficial, owner_id: ownerId,
-      });
+      // Size cap for newly referenced images (replaces the old per-upload
+      // confirm call, see api/_lib/uploads.js verifyNewImages).
+      const verified = await verifyNewImages(clean.throws, existing ? existing.throws : [], user.id);
+      if (!verified.ok) { res.status(verified.status).json({ error: verified.error }); return; }
+
+      const [{ error }] = await Promise.all([
+        sb.from("lineups").upsert({
+          id: body.id, map_id: clean.mapId, type: clean.type, name: clean.name,
+          landing: clean.landing, throws: clean.throws,
+          created_at: body.createdAt || Date.now(),
+          is_official: isOfficial, owner_id: ownerId,
+        }),
+        setLongCache(verified.newPublic), // best effort, never throws
+      ]);
       if (error) throw new Error(error.message);
       res.status(200).json({ ok: true, isOfficial, ownerId });
       return;
