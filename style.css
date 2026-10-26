@@ -3327,4 +3327,6 @@ body.in-collection .fb-prompt{left:354px;}
   body.in-collection .fb-prompt{left:12px;bottom:calc(52% + 68px + var(--consent-h, 0px));}
   .fb-prompt-x{width:44px;height:44px;top:0;right:0;}
   .fb-prompt-actions button{min-height:44px;}
+  .fb-prompt-actions .primary-btn,.fb-prompt-actions .ghost-btn{flex:1 1 40%;padding-left:8px;padding-right:8px;}
+  .fb-prompt-later{flex:1 1 100%;margin:0;text-align:center;}
 }
