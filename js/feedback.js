@@ -25,8 +25,9 @@ function buildKind() {
   document.getElementById("feedbackKind").replaceChildren(sideSegment(KINDS, kind, (v) => { kind = v; }, { label: "Type of feedback" }));
 }
 
-function open() {
-  kind = "suggestion";
+// Opens the box on a given kind ("suggestion" | "bug"); defaults to suggestion.
+export function openFeedback({ kind: k } = {}) {
+  kind = KINDS.some((x) => x.id === k) ? k : "suggestion";
   buildKind();
   message.value = "";
   website.value = "";
@@ -55,7 +56,7 @@ async function submit() {
 }
 
 watchDialog(modal, "show", () => message);
-if (feedbackBtn) feedbackBtn.onclick = open;
+if (feedbackBtn) feedbackBtn.onclick = () => openFeedback();
 // Icon-only on phones (see style.css): label it there, nowhere else.
 if (feedbackBtn && window.matchMedia) {
   const mq = matchMedia("(max-width:768px)");

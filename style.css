@@ -3106,7 +3106,8 @@ body.is-offline .edit-btn,body.is-offline .remove-btn{opacity:.45;cursor:not-all
 }
 .feedback-btn:hover{color:var(--text);border-color:var(--text-dim);}
 .feedback-btn:focus-visible{outline:2px solid var(--signal);outline-offset:2px;}
-body.in-collection .feedback-btn{display:none;}
+/* The collection panel owns the bottom-left: the button sits beside it (desktop) or above it (phone). */
+body.in-collection .feedback-btn{left:354px;}
 .feedback-count{margin:-4px 0 0;text-align:right;font-family:var(--font-mono);font-size:10px;color:var(--text-faint);}
 .hp-field{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;}
 .tm-suggest{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;color:var(--text-dim);cursor:pointer;}
@@ -3116,7 +3117,7 @@ body.in-collection .feedback-btn{display:none;}
 .fb-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
 .fb-message{margin:4px 0;font-size:13.5px;white-space:pre-wrap;overflow-wrap:anywhere;}
 .fb-item.closed{opacity:.65;}
-@media (max-width:768px){ .feedback-btn{min-height:44px;bottom:84px;} .feedback-btn span{display:none;} .feedback-btn{width:44px;justify-content:center;padding:0;} }
+@media (max-width:768px){ body.in-collection .feedback-btn{left:12px;bottom:calc(52% + 16px + var(--consent-h, 0px));} .feedback-btn{min-height:44px;bottom:84px;} .feedback-btn span{display:none;} .feedback-btn{width:44px;justify-content:center;padding:0;} }
 
 /* ===== Dossier: fixed frame ===== */
 /* The dossier is pinned to the top at a fixed size, so nothing in its header
@@ -3302,3 +3303,28 @@ body.in-collection .detail-variants:empty{display:block;min-height:101px;}
 .tooltip[data-pos="right"] .tooltip-arrow{top:var(--arrow-y,50%);left:-5px;margin-top:-4px;border-top:0;border-right:0;}
 [data-tip]{-webkit-touch-callout:none;}
 @media (prefers-reduced-motion:reduce){ .tooltip{transition:none;transform:none;} }
+
+/* ===== One-time feedback prompt (js/feedback-prompt.js) ===== */
+.fb-prompt{
+  position:absolute;z-index:15;left:12px;bottom:calc(58px + var(--consent-h, 0px));width:min(320px, calc(100% - 24px));
+  background:var(--panel);border:1px solid var(--line);border-top:2px solid var(--signal);border-radius:8px;
+  padding:14px 14px 12px;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:fbPromptIn .25s ease both;
+}
+.fb-prompt[hidden]{display:none;}
+body.in-collection .fb-prompt{left:354px;}
+.fb-prompt-title{margin:0 28px 4px 0;font-size:14px;font-weight:600;color:var(--text);}
+.fb-prompt-body{margin:0 0 10px;font-size:12.5px;line-height:1.45;color:var(--text-dim);}
+.fb-prompt-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+.fb-prompt-later{background:none;border:0;color:var(--text-faint);font:inherit;font-size:12px;padding:6px 4px;cursor:pointer;margin-left:auto;}
+.fb-prompt-later:hover{color:var(--text);}
+.fb-prompt-x{position:absolute;top:6px;right:6px;width:28px;height:28px;background:none;border:0;border-radius:4px;color:var(--text-faint);font-size:13px;cursor:pointer;}
+.fb-prompt-x:hover{color:var(--text);}
+.fb-prompt-later:focus-visible,.fb-prompt-x:focus-visible{outline:2px solid var(--signal);outline-offset:2px;}
+@keyframes fbPromptIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+@media (prefers-reduced-motion:reduce){ .fb-prompt{animation:none;} }
+@media (max-width:768px){
+  .fb-prompt{bottom:calc(136px + var(--consent-h, 0px));}
+  body.in-collection .fb-prompt{left:12px;bottom:calc(52% + 68px + var(--consent-h, 0px));}
+  .fb-prompt-x{width:44px;height:44px;top:0;right:0;}
+  .fb-prompt-actions button{min-height:44px;}
+}

@@ -331,6 +331,18 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
         <span>Feedback</span>
       </button>
 
+      <!-- One-time nudge toward the feedback box (js/feedback-prompt.js) -->
+      <div class="fb-prompt" id="fbPrompt" role="dialog" aria-label="Share feedback" aria-live="polite" hidden>
+        <button type="button" class="fb-prompt-x" id="fbPromptX" aria-label="Dismiss">&#10005;</button>
+        <p class="fb-prompt-title">Missing a feature? Found a bug?</p>
+        <p class="fb-prompt-body">Lineupr is a one-person project, and your feedback directly shapes what gets built next.</p>
+        <div class="fb-prompt-actions">
+          <button type="button" class="primary-btn" id="fbPromptSuggest">Suggest a feature</button>
+          <button type="button" class="ghost-btn" id="fbPromptBug">Report a bug</button>
+          <button type="button" class="fb-prompt-later" id="fbPromptLater">Not now</button>
+        </div>
+      </div>
+
       <!-- ===== Collections: view panel, multi-select bar ===== -->
       <aside class="coll-panel" id="collPanel" hidden aria-label="Collection"></aside>
       <div class="coll-select-bar" id="collSelectBar" hidden role="region" aria-label="Selected lineups">

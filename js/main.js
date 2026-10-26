@@ -5,6 +5,7 @@ import { closeDetailPanel, hideDetailPanel, openDetail, throwIndexFromParams } f
 import { appShell, detailPanel, homeBrand, lightboxModal, lightboxNext, lightboxPrev, lineupSearchInput, sidebarBrand } from "./dom.js";
 import "./tooltip.js"; // side effect only: data-tip tooltips
 import "./feedback.js"; // side effect only: feedback box
+import "./feedback-prompt.js"; // side effect only: one-time "send feedback" nudge
 import "./offline.js"; // side effect only: service worker, offline banner
 import "./collections.js"; // side effect only: collections rail, panel, popover
 import { openCollectionBySlug } from "./collections.js";
