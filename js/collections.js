@@ -669,7 +669,16 @@ function renderDossierBar() {
     if (it.role) chips.append(Object.assign(document.createElement("span"), { className: "coll-chip", textContent: it.role }));
     if (it.timing) chips.append(Object.assign(document.createElement("span"), { className: "coll-chip alt", textContent: it.timing }));
     meta.append(chips);
-    if (it.note) meta.append(Object.assign(document.createElement("p"), { className: "coll-item-note", textContent: it.note, title: it.note }));
+    if (it.note) {
+      // Clamped to two lines; tap / Enter shows the rest as an overlay (a title tooltip doesn't work on touch).
+      const note = Object.assign(document.createElement("p"), { className: "coll-item-note", textContent: it.note, title: it.note, tabIndex: 0 });
+      note.setAttribute("role", "button");
+      note.setAttribute("aria-expanded", "false");
+      const toggle = () => note.setAttribute("aria-expanded", String(meta.classList.toggle("expanded")));
+      note.onclick = toggle;
+      note.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } };
+      meta.append(note);
+    }
     bar.append(meta);
   }
 }

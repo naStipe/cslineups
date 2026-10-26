@@ -3250,3 +3250,21 @@ body:has(.coll-select-bar:not([hidden])) .toast-host{bottom:calc(84px + env(safe
   .coll-actions{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;}
   .coll-actions > *{flex:0 0 auto;}
 }
+
+/* ===== Dossier review fixes ===== */
+.detail-coll-step{white-space:pre;}
+/* Collection step bar: tap the clamped note to read all of it, as an overlay (nothing below moves). */
+.detail-coll-meta{position:relative;overflow:visible;}
+.detail-coll-meta .coll-item-note{cursor:pointer;}
+.detail-coll-meta.expanded .coll-item-note{
+  position:absolute;left:0;right:0;top:0;z-index:6;display:block;max-height:min(40vh, 260px);overflow-y:auto;
+  background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:8px 10px;box-shadow:0 12px 30px rgba(0,0,0,.5);
+}
+/* Single-variant steps keep the pager/strip row's height so the content below doesn't jump. */
+body.in-collection .detail-variants:empty{display:block;min-height:101px;}
+@media (max-width:768px){ body.in-collection .detail-variants:empty{min-height:123px;} }
+/* Short windows (landscape phones): one scroll container for the whole dossier instead of a tiny body slit. */
+@media (max-height:700px){
+  .detail-panel-inner{overflow-y:auto;}
+  .detail-panel-inner > .detail-body{flex:0 0 auto;overflow:visible;}
+}
