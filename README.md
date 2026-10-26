@@ -1,62 +1,66 @@
-# Lineups — personal grenade lineup database
+# Lineupr
 
-A website for storing CS2 grenade lineups on interactive maps, similar to csnades.gg. Click a
-map to drop a "landing spot" marker, then click again to set the "throw from" spot and attach
-a screenshot, throw type, key bind, and notes.
+A CS2 grenade lineup site: interactive maps with landing spots, throw-from spots, screenshots,
+notes and shareable collections.
 
-## How it works
+## Stack
 
-- Static frontend (HTML/CSS/JS, no build step) + one small serverless function.
-- Data (including screenshots) is stored server-side using **Netlify Blobs**, so it's shared
-  across every browser/device that visits your deployed site — not stuck in one browser.
-- The function lives at `netlify/functions/lineups.js` and is called by the frontend at
-  `/.netlify/functions/lineups` (GET to load, POST to save, DELETE to remove).
-- **Export backup** / **Import backup** in the sidebar still work, as a manual JSON download/
-  upload safety net on top of Blobs.
+- **Frontend**: static HTML/CSS/vanilla JS ES modules, no framework. Entry points are
+  `index.html` (home, map app) and `admin.html`; code is in `js/*.js`, styles in `style.css`.
+  `scripts/hash-js.js` is the only build step (Vercel runs it, see `buildCommand` in
+  `vercel.json`): it moves `js/` to a content-hashed folder for long-lived caching.
+- **API**: Vercel serverless functions in `api/*.js` (shared helpers in `api/_lib/`).
+  `vercel.json` also holds headers, redirects and the rewrites for the server-rendered pages
+  (`/maps`, `/<map>`, `/<map>/<type>/<slug>`, `/c/<slug>`, `/sitemap.xml`).
+- **Supabase**: auth (email/password, Google) and Postgres. The browser talks to Supabase only
+  for auth; all data access goes through `api/*`, which uses the service-role key and does its
+  own ownership and visibility checks. Schema changes live in `sql/` as numbered migrations
+  (see `sql/README.md`; new tables have RLS on and no policies).
+- **Cloudflare R2**: screenshot and clip storage. `api/upload-url.js` issues presigned uploads
+  to a public bucket (official content) or a private bucket (personal lineups, served through
+  `api/private-image.js`).
+- **Cloudflare Turnstile** guards sign-up and sign-in forms.
 
-## Run it locally
+## Environment variables
 
-Netlify Blobs and functions need the Netlify CLI to run locally (a plain `http.server` won't
-have the `/netlify/functions` route):
+Names only; set them in the Vercel project (or a local `.env.local`, which is git-ignored).
+
+| Variable | Used for |
+| --- | --- |
+| `SUPABASE_URL` | Supabase project URL (API and `/api/config`) |
+| `SUPABASE_ANON_KEY` | Public anon key, handed to the browser by `/api/config` |
+| `SUPABASE_SERVICE_KEY` | Service-role key, server only |
+| `R2_ENDPOINT` | R2 S3 endpoint |
+| `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | R2 credentials |
+| `R2_PUBLIC_BUCKET`, `R2_PRIVATE_BUCKET` | Bucket names |
+| `R2_PUBLIC_BASE_URL` | Public base URL for the public bucket |
+| `SITE_URL` | Optional. Canonical origin (defaults to the production domain); used for CORS and SEO |
+| `ALLOWED_ORIGINS` | Optional. Extra comma-separated CORS origins (e.g. staging) |
+
+## Run locally
 
 ```bash
-npm install -g netlify-cli
-cd csnades-site
 npm install
-netlify dev
+npm i -g vercel        # once
+vercel link            # once, then `vercel env pull .env.local` to fetch the variables
+vercel dev             # http://localhost:3000 with /api/* and the rewrites working
 ```
 
-This serves the site (usually at `http://localhost:8888`) with the function and blob storage
-working, using a local emulation of Blobs.
+A plain static server serves the pages but not `/api/*`, so nothing would load.
+
+## Dev UI harness
+
+`scripts/ui-harness.js` is a dev-only Playwright harness (not deployed; `vercel.json` redirects
+`/scripts/*`). It serves the repo statically, mocks `/api/**` with sample lineups and a sample
+collection, and prints bounding boxes so layout jumps can be measured. It needs no Supabase or
+R2 access. Usage is in the header of the file, for example:
+
+```bash
+node scripts/ui-harness.js --url "/?map=mirage&collection=demo-set" --viewport 390x844 --selectors ".step-bar"
+```
 
 ## Deploy
 
-Push to GitHub and connect the repo in Netlify (Import an existing project → Deploy with
-GitHub). Leave **Build command** blank and set **Publish directory** to `.`. Netlify Blobs
-needs no extra setup or environment variables — it's automatically available once the site is
-deployed on Netlify. Every `git push` to `main` redeploys automatically, function included.
-
-## Password-protecting edits
-
-The site is viewable by anyone with the link, but adding/editing/deleting lineups requires a
-password — set it once in Netlify:
-
-1. Netlify dashboard → your site → **Site configuration** → **Environment variables** → **Add a variable**.
-2. Key: `EDIT_PASSWORD`, value: whatever password you want.
-3. Redeploy (or it picks it up on the next push/deploy).
-
-In the app, click **🔒 Unlock editing** in the sidebar and enter that password — it's then
-remembered for your browser tab (not saved permanently, so you'll unlock again next visit,
-keeping things reasonably safe on shared computers). Without unlocking, visitors can browse
-every map and lineup but the add/edit/delete controls are blocked, both in the UI and on the
-server side. If you never set `EDIT_PASSWORD`, editing stays open to everyone.
-
-
-
-Netlify Blobs has a generous free-tier size limit (well into the GB range), so screenshots as
-base64 should be fine for personal use. If you outgrow it or want multiple users with logins,
-the natural next step is Supabase (Postgres + file storage) — the function in
-`netlify/functions/lineups.js` is a thin enough layer that swapping the backend later is
-straightforward.
-
-
+Push to the connected branch; Vercel builds with `node scripts/hash-js.js` and publishes the
+repo root as static output with `api/` as functions. Apply new `sql/` migrations to the
+Supabase project before shipping code that needs them.
