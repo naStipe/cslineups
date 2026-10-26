@@ -1,6 +1,7 @@
 import { MAPS } from "./constants.js";
 import { cheatsheetClose, cheatsheetImg, cheatsheetPanel, cheatsheetSubtabs, cheatsheetTabs, cheatsheetTitle } from "./dom.js";
 import { openLightbox } from "./lightbox.js";
+import { setTip } from "./tooltip.js";
 
 const CS_ICON = `<svg class="cs-icon" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
   <circle cx="7"  cy="13" r="4.5" stroke="currentColor" stroke-width="1.5"/>
@@ -36,6 +37,7 @@ function renderTabs() {
     const btn = document.createElement("button");
     btn.className = "cheatsheet-tab";
     btn.innerHTML = `${CS_ICON}${entry.label}`;
+    setTip(btn, `Instant-smoke cheatsheet: ${entry.label}`);
     btn.onclick = () => openEntry(i);
     cheatsheetTabs.appendChild(btn);
   });

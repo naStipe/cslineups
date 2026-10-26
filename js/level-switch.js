@@ -1,6 +1,7 @@
 import { MAPS } from "./constants.js";
 import { levelToggle, mapImage } from "./dom.js";
 import { state } from "./state.js";
+import { setTip } from "./tooltip.js";
 
 // Builds (or hides) the upper/lower radar switch for the current map and
 // resets to the top level. Call whenever the selected map changes.
@@ -20,6 +21,7 @@ export function updateLevelSwitch(mapId) {
     const btn = document.createElement("button");
     btn.className = "level-toggle-btn" + (level.id === state.levelId ? " active" : "");
     btn.textContent = level.label;
+    setTip(btn, `Show the ${level.label.toLowerCase()} level of the map`, { pos: "right" });
     btn.onclick = () => setLevel(mapId, level.id);
     levelToggle.appendChild(btn);
   });

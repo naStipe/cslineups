@@ -19,6 +19,7 @@ import { timeEl } from "./time-utils.js";
 import { resolveImageSrc } from "./private-images.js";
 import { SIDES, normalizeSide, sideLabel, sideSegment } from "./side.js";
 import { toast, toastError } from "./toast.js";
+import { setTip } from "./tooltip.js";
 import { setBusy } from "./ui-utils.js";
 import { deferDelete } from "./undo-delete.js";
 
@@ -138,11 +139,11 @@ export function renderDetail(lineup, opts = {}) {
 
   if (detailOwnerBadge) {
     // Personal lineups show where they stand with the official map.
-    detailOwnerBadge.textContent = lineup.isOfficial ? "Official"
+    setOwnerBadge(lineup.isOfficial ? "Official"
       : !editable ? "Shared lineup"
       : lineup.submittedAt ? "Suggested · awaiting review"
       : lineup.deniedAt ? "Suggestion not accepted"
-      : "My lineup · not approved";
+      : "My lineup · not approved");
     detailOwnerBadge.classList.toggle("badge-official", lineup.isOfficial);
     detailOwnerBadge.classList.toggle("badge-personal", !lineup.isOfficial);
   }
@@ -160,7 +161,7 @@ export function renderDetail(lineup, opts = {}) {
 
   if (shareLineupBtn) {
     const label = multi ? "Copy link to this variant" : "Copy shareable link";
-    shareLineupBtn.title = label;
+    setTip(shareLineupBtn, multi ? "Copy link to this variant" : "Copy link");
     if (!shareLineupBtn.classList.contains("copied")) shareLineupBtn.setAttribute("aria-label", label);
     shareLineupBtn.onclick = () => copyShareLink(lineup);
   }
@@ -230,6 +231,7 @@ export function renderDetail(lineup, opts = {}) {
     // Removing the last variant removes the whole lineup, and says so.
     const last = lineup.throws.length <= 1;
     heroRemoveBtn.textContent = last ? "Delete lineup" : "Remove variant";
+    setTip(heroRemoveBtn, last ? "Delete the whole lineup" : "Remove this variant from the lineup");
     heroRemoveBtn.setAttribute("aria-label", last ? "Delete this lineup" : `Remove variant ${pad2(selectedThrowIdx + 1)}`);
     heroRemoveBtn.onclick = () => {
       if (lineup.throws.length <= 1) { deleteLineupDeferred(lineup); return; }
@@ -263,6 +265,7 @@ export function renderDetail(lineup, opts = {}) {
     const saved = state.savedThrowKeys.has(throwKey(lineup.id, active.id));
     heroSaveBtn.textContent = saved ? "★ Saved" : "☆ Save to my map";
     heroSaveBtn.classList.toggle("saved", saved);
+    setTip(heroSaveBtn, saved ? "Remove from my map" : "Keep this variant on your own map");
     heroSaveBtn.onclick = async () => {
       heroSaveBtn.disabled = true;
       try {
@@ -282,6 +285,7 @@ export function renderDetail(lineup, opts = {}) {
     };
   } else if (isBookmarkedRef) {
     heroSaveBtn.textContent = "✕ Remove from my map";
+    setTip(heroSaveBtn, "Remove it from your map. The original stays");
     heroSaveBtn.classList.remove("saved");
     heroSaveBtn.onclick = () => {
       const key = throwKey(lineup.id, active.id);
@@ -317,7 +321,7 @@ export function renderDetail(lineup, opts = {}) {
       thumb.setAttribute("role", "button");
       thumb.setAttribute("aria-label", `Variant ${pad2(i + 1)}${i === 0 ? " (default)" : ""}`);
       if (isActive) thumb.setAttribute("aria-current", "true");
-      if (editable) thumb.title = "Drag to reorder";
+      if (editable) setTip(thumb, "Drag to reorder");
       const preview = (t.screenshots && t.screenshots[0]) || (t.standing && t.standing[0]) || "";
       thumb.innerHTML = `
         ${preview ? `<span class="strip-thumb-frame img-frame"><img data-real-src="${escapeHtml(preview)}" alt="" draggable="false"></span>` : `<div class="strip-thumb-empty"></div>`}
@@ -353,14 +357,26 @@ export function renderDetail(lineup, opts = {}) {
   }
 }
 
+const OWNER_BADGE_TIPS = {
+  "Official": "Curated by Lineupr",
+  "Shared lineup": "Shared with you by another player",
+  "Suggested · awaiting review": "You suggested this for the official map. An admin will review it",
+  "Suggestion not accepted": "An admin didn't accept this suggestion. Improve it and suggest it again",
+  "My lineup · not approved": "Only you can see this lineup",
+};
+function setOwnerBadge(text) {
+  detailOwnerBadge.textContent = text;
+  setTip(detailOwnerBadge, OWNER_BADGE_TIPS[text] || "", { pos: "bottom" });
+}
+
 function buildPagerHtml(lineup) {
   const n = lineup.throws.length, i = selectedThrowIdx;
   return `
     <div class="variant-pager">
-      <button type="button" class="pager-btn pager-prev" aria-label="Previous variant"${i === 0 ? " disabled" : ""}>‹</button>
+      <button type="button" class="pager-btn pager-prev" aria-label="Previous variant" data-tip="Previous variant"${i === 0 ? " disabled" : ""}>‹</button>
       <div class="pager-dots" aria-hidden="true">${lineup.throws.map((_, j) => `<span class="pager-dot${j === i ? " active" : ""}"></span>`).join("")}</div>
       <span class="pager-count" aria-live="polite">${i + 1} / ${n}</span>
-      <button type="button" class="pager-btn pager-next" aria-label="Next variant"${i === n - 1 ? " disabled" : ""}>›</button>
+      <button type="button" class="pager-btn pager-next" aria-label="Next variant" data-tip="Next variant"${i === n - 1 ? " disabled" : ""}>›</button>
     </div>`;
 }
 
@@ -376,6 +392,7 @@ function renderSide(lineup, editable) {
       const b = document.createElement("span");
       b.className = "side-badge";
       b.textContent = sideLabel(side);
+      setTip(b, side === "t" ? "Used on the Terrorist side" : "Used on the Counter-Terrorist side", { pos: "bottom" });
       detailSideSlot.append(b);
     }
     return;
@@ -454,7 +471,7 @@ async function copyShareLink(lineup) {
   copyResetTimer = setTimeout(() => {
     shareLineupBtn.textContent = "🔗";
     shareLineupBtn.classList.remove("copied");
-    shareLineupBtn.setAttribute("aria-label", shareLineupBtn.title || "Copy shareable link");
+    shareLineupBtn.setAttribute("aria-label", shareLineupBtn.dataset.tip || "Copy shareable link");
   }, 1200);
   toast(lineup.throws.length > 1 ? `Link copied · variant ${pad2(selectedThrowIdx + 1)}` : "Link copied");
 }
@@ -503,7 +520,7 @@ function clipHtml(t) {
       </div>
       <div class="clip-controls">
         <button type="button" class="ghost-btn clip-play" aria-pressed="true">Pause</button>
-        <button type="button" class="ghost-btn clip-speed" aria-pressed="false" title="Half speed, for timing jumpthrows">0.5×</button>
+        <button type="button" class="ghost-btn clip-speed" aria-pressed="false" data-tip="Half speed, for timing jumpthrows">0.5×</button>
       </div>
     </div>`;
 }
@@ -587,8 +604,8 @@ export function buildHeroHtml(t, idx, lineup) {
       </div>
       <div class="throw-card-actions">
         <button type="button" class="save-btn">☆ Save to my map</button>
-        <button type="button" class="default-btn" title="Open this variant first">Make default</button>
-        <button type="button" class="reposition-btn">⤢ Reposition</button>
+        <button type="button" class="default-btn" data-tip="Open this variant first">Make default</button>
+        <button type="button" class="reposition-btn" data-tip="Move the throw-from spot on the map">⤢ Reposition</button>
         <button type="button" class="edit-btn">Edit</button>
         <button type="button" class="remove-btn">Remove variant</button>
       </div>
@@ -654,7 +671,7 @@ export function renderDetailType(lineup, editable) {
   detailType.style.color = "#0a0d0e";
   detailType.style.background = getCssVarColor(typeInfo.color);
   detailType.style.cursor = editable ? "pointer" : "default";
-  detailType.title = editable ? "Click to change nade type" : "";
+  setTip(detailType, editable ? "Change nade type" : "", { pos: "bottom" });
   detailType.onclick = () => {
     if (!editable) return;
     openTypeModalForEdit(lineup);
@@ -730,7 +747,7 @@ function renderSubmitControls(lineup, editable) {
       const { submittedAt } = await dbSubmitLineup(lineup.id, !submitted);
       lineup.submittedAt = submittedAt;
       if (submittedAt) lineup.deniedAt = null;
-      detailOwnerBadge.textContent = submittedAt ? "Suggested · awaiting review" : "My lineup · not approved";
+      setOwnerBadge(submittedAt ? "Suggested · awaiting review" : "My lineup · not approved");
       renderSubmitControls(lineup, editable);
       toast(submittedAt ? "Suggested for the official map" : "Suggestion withdrawn");
     } catch (e) {

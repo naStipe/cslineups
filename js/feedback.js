@@ -8,6 +8,7 @@ import { closeModal, watchDialog } from "./modal-utils.js";
 import { sideSegment } from "./side.js";
 import { state } from "./state.js";
 import { toast, toastError } from "./toast.js";
+import { setTip } from "./tooltip.js";
 import { setBusy } from "./ui-utils.js";
 
 const modal = document.getElementById("feedbackModal");
@@ -55,6 +56,16 @@ async function submit() {
 
 watchDialog(modal, "show", () => message);
 if (feedbackBtn) feedbackBtn.onclick = open;
+// Icon-only on phones (see style.css): label it there, nowhere else.
+if (feedbackBtn && window.matchMedia) {
+  const mq = matchMedia("(max-width:768px)");
+  const sync = () => {
+    if (mq.matches) { feedbackBtn.setAttribute("aria-label", "Send feedback"); setTip(feedbackBtn, "Send feedback", { pos: "left" }); }
+    else { feedbackBtn.removeAttribute("aria-label"); setTip(feedbackBtn, ""); }
+  };
+  sync();
+  mq.addEventListener("change", sync);
+}
 document.getElementById("feedbackCancel").onclick = () => closeModal(modal);
 send.onclick = submit;
 message.addEventListener("input", () => { count.textContent = `${message.value.length} / 2000`; });

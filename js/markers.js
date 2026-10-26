@@ -6,6 +6,7 @@ import { zoom } from "./pan-zoom.js";
 import { hooks } from "./marker-hooks.js";
 import { state } from "./state.js";
 import { lineupVisible } from "./visibility.js";
+import { setTip } from "./tooltip.js";
 
 export function typeColor(typeId) {
   return TYPES.find(t => t.id === typeId)?.color || "#fff";
@@ -412,7 +413,7 @@ export function buildThrows(openLineup, landingEl, animate) {
     if (animate) tp.addEventListener("animationend", () => tp.classList.remove("enter"), { once: true });
     tp.style.left = t.pos.x + "%";
     tp.style.top = t.pos.y + "%";
-    tp.title = "Click to open this lineup";
+    setTip(tp, "Open this lineup");
     makeKeyboardButton(tp);
     tp.setAttribute("aria-label", `Open ${openLineup.name || "lineup"}, throw position ${throwIdx + 1}`);
     tp.onclick = (e) => { e.stopPropagation(); openDetail(openLineup.id, throwIdx); };

@@ -32,6 +32,7 @@ import { hooks } from "./marker-hooks.js";
 import { closeModal, watchDialog } from "./modal-utils.js";
 import { resetZoom, revealPercentPoints, zoom as mapZoom } from "./pan-zoom.js";
 import { registerLayer, registerShortcut } from "./shortcuts.js";
+import { setTip } from "./tooltip.js";
 import { buildFilters } from "./sidebar.js";
 import { state } from "./state.js";
 import { toast, toastError } from "./toast.js";
@@ -444,7 +445,7 @@ hooks.afterRender = () => {
       dot.className = "coll-throw-dot" + (current ? " current" : "");
       dot.style.left = th.pos.x + "%"; dot.style.top = th.pos.y + "%";
       dot.textContent = String(i + 1);
-      dot.title = `Step ${i + 1}: ${it.lineup.name || "Unnamed position"}`;
+      setTip(dot, `Step ${i + 1}: ${it.lineup.name || "Unnamed position"}`);
       dot.onclick = (e) => { e.stopPropagation(); goStep(i); };
       markerLayer.appendChild(dot);
     });
@@ -650,12 +651,13 @@ function renderDossierBar() {
   const tName = Object.assign(document.createElement("span"), { className: "detail-coll-name", textContent: view.data.name });
   const tStep = Object.assign(document.createElement("span"), { className: "detail-coll-step", textContent: ` · Step ${view.step + 1} of ${view.data.items.length}` });
   t.append(tName, tStep);
-  t.title = t.textContent;
+  setTip(t, t.textContent, { pos: "bottom" });
   info.append(t);
   const nav = document.createElement("div");
   nav.className = "detail-coll-nav";
   const prev = Object.assign(document.createElement("button"), { type: "button", className: "ghost-btn", textContent: "‹ Prev" });
   const next = Object.assign(document.createElement("button"), { type: "button", className: "primary-btn", textContent: "Next ›" });
+  setTip(prev, "Previous step", { key: "←" }); setTip(next, "Next step", { key: "→" });
   prev.onclick = prevStep; next.onclick = nextStep;
   if (okItems().length < 2) { prev.disabled = true; next.disabled = true; }
   nav.append(prev, next);
@@ -671,7 +673,8 @@ function renderDossierBar() {
     meta.append(chips);
     if (it.note) {
       // Clamped to two lines; tap / Enter shows the rest as an overlay (a title tooltip doesn't work on touch).
-      const note = Object.assign(document.createElement("p"), { className: "coll-item-note", textContent: it.note, title: it.note, tabIndex: 0 });
+      const note = Object.assign(document.createElement("p"), { className: "coll-item-note", textContent: it.note, tabIndex: 0 });
+      setTip(note, it.note, { pos: "bottom" });
       note.setAttribute("role", "button");
       note.setAttribute("aria-expanded", "false");
       const toggle = () => note.setAttribute("aria-expanded", String(meta.classList.toggle("expanded")));
@@ -708,6 +711,7 @@ function renderPanel() {
     `${mapName(data.mapId)} · ${data.items.length} lineup${data.items.length === 1 ? "" : "s"}` +
     (owner ? ` · ${VIS[data.visibility].label}` : data.ownerName ? ` · by ${data.ownerName}` : "");
   head.querySelector(".coll-exit").onclick = exitCollection;
+  setTip(head.querySelector(".coll-exit"), "Leave this collection", { key: "Esc", pos: "bottom" });
   top.append(head);
 
   if (data.description) {
@@ -720,18 +724,18 @@ function renderPanel() {
   // Actions
   const actions = document.createElement("div");
   actions.className = "coll-actions";
-  const btn = (label, fn, cls = "ghost-btn") => {
+  const btn = (label, fn, cls = "ghost-btn", tip) => {
     const b = document.createElement("button");
-    b.type = "button"; b.className = cls; b.textContent = label; b.onclick = fn; actions.append(b); return b;
+    b.type = "button"; b.className = cls; b.textContent = label; b.onclick = fn; if (tip) setTip(b, tip, { pos: "bottom" }); actions.append(b); return b;
   };
   if (owner) {
-    btn(view.picking ? "Adding lineups…" : "＋ Add lineups", startPicking, "primary-btn").disabled = !!view.picking;
+    btn(view.picking ? "Adding lineups…" : "＋ Add lineups", startPicking, "primary-btn", "Click lineups on the map to add them").disabled = !!view.picking;
     btn("Edit", () => openEditModal({ collection: data }));
-    btn("Share", openShareModal);
-    btn("Duplicate", duplicateCollection);
+    btn("Share", openShareModal, "ghost-btn", "Get a link or change who can see it");
+    btn("Duplicate", duplicateCollection, "ghost-btn", "Make an editable copy");
     btn("Delete", deleteOpenCollection);
   } else {
-    btn("Save a copy", saveCopy, "primary-btn");
+    btn("Save a copy", saveCopy, "primary-btn", "Add this collection to your own collections");
     if (authUser && data.visibility !== "private") btn("Report", () => $("collReportModal").classList.add("show"));
   }
   top.append(actions);
@@ -743,6 +747,7 @@ function renderPanel() {
     step.className = "coll-step";
     step.innerHTML = `<button type="button" class="ghost-btn" aria-label="Previous step">‹ Prev</button><span class="coll-step-count" aria-live="polite"></span><button type="button" class="primary-btn" aria-label="Next step">Next ›</button>`;
     const [prev, , next] = step.children;
+    setTip(prev, "Previous step", { key: "←", pos: "bottom" }); setTip(next, "Next step", { key: "→", pos: "bottom" });
     step.querySelector(".coll-step-count").textContent = `Step ${view.step + 1} of ${data.items.length}`;
     prev.onclick = prevStep; next.onclick = nextStep;
     if (okCount === 1) { prev.disabled = true; next.disabled = true; }
@@ -800,19 +805,19 @@ function renderItem(it, i, owner) {
 
   const tools = document.createElement("span");
   tools.className = "coll-item-tools";
-  const mk = (label, aria, fn, disabled) => {
+  const mk = (label, aria, fn, disabled, tip) => {
     const b = document.createElement("button");
-    b.type = "button"; b.className = "icon-btn"; b.textContent = label; b.setAttribute("aria-label", aria); b.title = aria; b.onclick = fn; b.disabled = !!disabled;
+    b.type = "button"; b.className = "icon-btn"; b.textContent = label; b.setAttribute("aria-label", aria); setTip(b, tip || aria); b.onclick = fn; b.disabled = !!disabled;
     return b;
   };
-  if (it.status === "ok") tools.append(mk("↗", `Open ${name}`, () => goStep(i, { open: true })));
+  if (it.status === "ok") tools.append(mk("↗", `Open ${name}`, () => goStep(i, { open: true }), false, "Open lineup"));
   // Someone else's lineup (official, or shared by its owner): bookmark it.
-  if (it.status === "ok" && !(authUser && it.lineup.ownerId === authUser.id)) tools.append(mk("☆", `Save ${name} to my map`, () => saveItemToMap(it)));
+  if (it.status === "ok" && !(authUser && it.lineup.ownerId === authUser.id)) tools.append(mk("☆", `Save ${name} to my map`, () => saveItemToMap(it), false, "Save to my map"));
   if (owner) {
     tools.append(
-      mk("↑", `Move ${name} up`, () => moveItem(i, -1), i === 0),
-      mk("↓", `Move ${name} down`, () => moveItem(i, 1), i === view.data.items.length - 1),
-      mk("✕", `Remove ${name}`, () => removeItemUndoable(it)),
+      mk("↑", `Move ${name} up`, () => moveItem(i, -1), i === 0, "Move up"),
+      mk("↓", `Move ${name} down`, () => moveItem(i, 1), i === view.data.items.length - 1, "Move down"),
+      mk("✕", `Remove ${name}`, () => removeItemUndoable(it), false, "Remove from collection"),
     );
   }
   row.append(tools);

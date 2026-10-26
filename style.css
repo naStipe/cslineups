@@ -3268,3 +3268,37 @@ body.in-collection .detail-variants:empty{display:block;min-height:101px;}
   .detail-panel-inner{overflow-y:auto;}
   .detail-panel-inner > .detail-body{flex:0 0 auto;overflow:visible;}
 }
+
+/* ===== Shared tooltip (js/tooltip.js): any [data-tip] element ===== */
+.tooltip{
+  position:fixed;left:0;top:0;z-index:10000;max-width:260px;width:max-content;
+  display:flex;align-items:center;gap:8px;
+  padding:6px 10px;border-radius:6px;
+  background:var(--panel);border:1px solid var(--line);color:var(--text);
+  font:500 12px/1.4 var(--font-body);letter-spacing:.01em;
+  box-shadow:0 6px 20px rgba(0,0,0,.5);
+  pointer-events:none;opacity:0;transform:scale(.96);
+  transition:opacity .12s ease,transform .12s ease;
+  visibility:hidden;
+}
+.tooltip.tooltip-show{opacity:1;transform:none;visibility:visible;}
+.tooltip[data-pos="top"]{transform-origin:var(--arrow-x,50%) 100%;}
+.tooltip[data-pos="bottom"]{transform-origin:var(--arrow-x,50%) 0;}
+.tooltip[data-pos="left"]{transform-origin:100% var(--arrow-y,50%);}
+.tooltip[data-pos="right"]{transform-origin:0 var(--arrow-y,50%);}
+.tooltip-key{
+  font:600 10.5px/1 var(--font-mono);color:var(--signal);
+  padding:3px 5px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;background:var(--hull);
+  flex:none;
+}
+.tooltip-key[hidden]{display:none;}
+.tooltip-arrow{
+  position:absolute;width:8px;height:8px;background:var(--panel);
+  border:1px solid var(--line);transform:rotate(45deg);
+}
+.tooltip[data-pos="top"] .tooltip-arrow{left:var(--arrow-x,50%);bottom:-5px;margin-left:-4px;border-top:0;border-left:0;}
+.tooltip[data-pos="bottom"] .tooltip-arrow{left:var(--arrow-x,50%);top:-5px;margin-left:-4px;border-bottom:0;border-right:0;}
+.tooltip[data-pos="left"] .tooltip-arrow{top:var(--arrow-y,50%);right:-5px;margin-top:-4px;border-bottom:0;border-left:0;}
+.tooltip[data-pos="right"] .tooltip-arrow{top:var(--arrow-y,50%);left:-5px;margin-top:-4px;border-top:0;border-right:0;}
+[data-tip]{-webkit-touch-callout:none;}
+@media (prefers-reduced-motion:reduce){ .tooltip{transition:none;transform:none;} }

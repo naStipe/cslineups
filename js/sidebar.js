@@ -8,6 +8,9 @@ import { resetZoom, zoomToBox } from "./pan-zoom.js";
 import { SIDE_FILTERS, sideSegment } from "./side.js";
 import { closeModal } from "./modal-utils.js";
 import { state } from "./state.js";
+import { setTip } from "./tooltip.js";
+
+const TYPE_PLURALS = { smoke: "smokes", flash: "flashes", fire: "molotovs", he: "HE grenades", decoy: "decoys" };
 
 export function buildSidebar() {
   mapList.innerHTML = "";
@@ -62,6 +65,7 @@ export function buildFilters() {
     const chip = document.createElement("div");
     chip.className = "filter-chip" + (state.activeFilters.has(t.id) ? "" : " off") + (count === 0 ? " zero" : "");
     chip.style.setProperty("--chip-color", t.color);
+    setTip(chip, `Show / hide ${TYPE_PLURALS[t.id] || t.label}`, { key: String(TYPES.indexOf(t) + 1), pos: "bottom" });
     chip.innerHTML = `<span class="dot" style="background:${t.color}"></span>${t.label}<span class="chip-count">${count}</span>`;
     chip.onclick = () => {
       toggleTypeFilter(t.id);
@@ -76,12 +80,16 @@ export function buildFilters() {
 // T / CT segment and the area dropdown, in the topbar and (mobile) the filter popup.
 function filterControls() {
   const frag = document.createDocumentFragment();
-  frag.append(sideSegment(SIDE_FILTERS, state.sideFilter, setSideFilter, { label: "Filter by side" }));
+  const seg = sideSegment(SIDE_FILTERS, state.sideFilter, setSideFilter, { label: "Filter by side" });
+  const SIDE_TIPS = { all: "Show lineups for both sides", t: "Only lineups used on T side", ct: "Only lineups used on CT side" };
+  seg.querySelectorAll(".side-seg-btn").forEach(b => setTip(b, SIDE_TIPS[b.dataset.side], { pos: "bottom" }));
+  frag.append(seg);
   const opts = areaOptions();
   if (opts.length) {
     const sel = document.createElement("select");
     sel.className = "area-select";
     sel.setAttribute("aria-label", "Filter by area");
+    setTip(sel, "Show one area of the map", { pos: "bottom" });
     sel.innerHTML = `<option value="">All areas</option>` + opts.map(o => `<option value="${o.slug}">${o.name}</option>`).join("");
     sel.value = state.areaFilter && opts.some(o => o.slug === state.areaFilter) ? state.areaFilter : "";
     sel.onchange = () => setAreaFilter(sel.value || null);

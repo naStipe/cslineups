@@ -195,7 +195,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
   <!-- SIDEBAR -->
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
   <aside class="sidebar" id="sidebar">
-    <div class="brand" id="sidebarBrand">
+    <div class="brand" id="sidebarBrand" data-tip="Back to all maps" data-tip-pos="right">
       <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="28" height="28">
         <circle cx="20" cy="20" r="17" stroke="#ffa53e" stroke-width="2.2"/>
         <circle cx="20" cy="20" r="9"  stroke="#ffa53e" stroke-width="1" opacity="0.3"/>
@@ -217,8 +217,8 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
       <div class="coll-rail-head">
         <p class="rail-label">Collections</p>
         <span class="coll-rail-actions">
-          <button type="button" class="coll-mini-btn" id="collSelectBtn" aria-pressed="false" title="Select several lineups on the map to add them to a collection">Select</button>
-          <button type="button" class="coll-mini-btn" id="collNewBtn">+ New</button>
+          <button type="button" class="coll-mini-btn" id="collSelectBtn" aria-pressed="false" data-tip="Pick several lineups on the map" data-tip-pos="bottom">Select</button>
+          <button type="button" class="coll-mini-btn" id="collNewBtn" data-tip="New collection" data-tip-key="C" data-tip-pos="bottom">+ New</button>
         </span>
       </div>
       <div class="coll-list" id="collList"></div>
@@ -256,7 +256,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
           <button id="signInBtn" class="ghost-btn">Sign in</button>
         </div>
         <div class="auth-signed-in">
-          <button class="profile-btn" id="profileBtn" title="Open your profile">
+          <button class="profile-btn" id="profileBtn" data-tip="Open your profile" data-tip-pos="right">
             <span class="profile-avatar" id="profileAvatar"></span>
             <span class="auth-email" id="authEmailLabel"></span>
             <svg class="profile-chevron" width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M3 1.5L6.5 5L3 8.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -279,8 +279,8 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
         <h2 class="topbar-map-name" id="currentMapName">DUST II</h2>
         <span class="count-pill" id="lineupCount">0 lineups</span>
         <div class="view-toggle" id="viewToggle">
-          <button class="view-toggle-btn active" id="officialViewBtn" data-view="official">Official</button>
-          <button class="view-toggle-btn hidden" id="personalViewBtn" data-view="personal">My Map</button>
+          <button class="view-toggle-btn active" id="officialViewBtn" data-view="official" data-tip="Lineups curated by Lineupr" data-tip-pos="bottom">Official</button>
+          <button class="view-toggle-btn hidden" id="personalViewBtn" data-view="personal" data-tip="Your own and saved lineups" data-tip-pos="bottom">My Map</button>
         </div>
       </div>
 
@@ -289,13 +289,13 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
       <!-- Mobile-only: the type chip row doesn't fit/scroll comfortably at
            phone width, so it's replaced by this button + a popup list of
            toggles (see #typeFilterModal below). Desktop keeps the row above. -->
-      <button type="button" class="type-filter-btn" id="typeFilterBtn">
+      <button type="button" class="type-filter-btn" id="typeFilterBtn" data-tip="Choose which nade types to show">
         <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M1.5 2h11L8.5 7.2V12l-3-1.5V7.2L1.5 2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
         <span id="typeFilterBtnLabel">Types</span>
       </button>
 
       <div class="topbar-right">
-        <button id="addModeBtn" class="primary-btn">
+        <button id="addModeBtn" class="primary-btn" data-tip="Add a lineup" data-tip-key="A" data-tip-pos="bottom">
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
           Add lineup
         </button>
@@ -313,16 +313,16 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
       <div class="level-toggle hidden" id="levelToggle"></div>
       <p class="hint" id="addHint">Click anywhere on the map to drop the landing spot.</p>
       <div class="zoom-controls">
-        <button class="zoom-btn" id="zoomIn">+</button>
-        <button class="zoom-btn" id="zoomReset" title="Reset zoom">⌂</button>
-        <button class="zoom-btn" id="zoomOut">−</button>
+        <button class="zoom-btn" id="zoomIn" aria-label="Zoom in" data-tip="Zoom in" data-tip-pos="left">+</button>
+        <button class="zoom-btn" id="zoomReset" aria-label="Reset zoom" data-tip="Reset zoom" data-tip-key="Z" data-tip-pos="left">⌂</button>
+        <button class="zoom-btn" id="zoomOut" aria-label="Zoom out" data-tip="Zoom out" data-tip-pos="left">−</button>
       </div>
 
       <!-- Mobile-only floating action button for "Add lineup" — topbar-right
            (which holds #addModeBtn) is hidden on mobile, so this is the
            reachable entry point on phones. Shares add-mode logic with
            #addModeBtn via js/add-mode.js. -->
-      <button class="fab-add-btn" id="fabAddBtn" aria-label="Add lineup">
+      <button class="fab-add-btn" id="fabAddBtn" aria-label="Add lineup" data-tip="Add a lineup" data-tip-pos="left">
         <svg width="20" height="20" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
 
@@ -372,7 +372,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
               </svg>
               <span class="cheatsheet-title" id="cheatsheetTitle">Instant smokes</span>
             </div>
-            <button class="icon-btn" id="cheatsheetClose">✕</button>
+            <button class="icon-btn" id="cheatsheetClose" aria-label="Close cheatsheet" data-tip="Close cheatsheet">✕</button>
           </div>
           <!-- Only populated (and shown) when a map has more than one
                cheatsheet entry, so you can switch spots without closing. -->
@@ -427,9 +427,9 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
         </div>
         <div class="detail-head-actions">
           <button class="ghost-btn hidden" id="saveLineupBtn">☆ Save to my map</button>
-          <button class="icon-btn" id="addToCollBtn" title="Add to a collection" aria-label="Add to a collection" aria-haspopup="dialog">＋</button>
-          <button class="icon-btn" id="shareLineupBtn" title="Copy shareable link" aria-label="Copy shareable link">🔗</button>
-          <button class="icon-btn" id="closeDetail" aria-label="Close lineup">✕</button>
+          <button class="icon-btn" id="addToCollBtn" data-tip="Add to a collection" aria-label="Add to a collection" aria-haspopup="dialog">＋</button>
+          <button class="icon-btn" id="shareLineupBtn" data-tip="Copy link" aria-label="Copy shareable link">🔗</button>
+          <button class="icon-btn" id="closeDetail" aria-label="Close lineup" data-tip="Close" data-tip-key="Esc">✕</button>
         </div>
       </div>
       <h3 id="detailTitle">Lineup</h3>
@@ -454,7 +454,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
   <div class="modal type-filter-modal">
     <div class="type-filter-head">
       <h3>Lineup types</h3>
-      <button type="button" class="icon-btn" id="closeTypeFilter">✕</button>
+      <button type="button" class="icon-btn" id="closeTypeFilter" aria-label="Close" data-tip="Close" data-tip-key="Esc">✕</button>
     </div>
     <div class="type-grid" id="mobileTypeFilterGrid"></div>
   </div>
@@ -469,7 +469,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
         <line x1="9.3" y1="9.3" x2="12.5" y2="12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
       </svg>
       <input type="search" id="mobileSearchInput" placeholder="Search lineups…" autocomplete="off" aria-label="Search lineups on this map">
-      <button type="button" class="icon-btn" id="closeMobileSearch">✕</button>
+      <button type="button" class="icon-btn" id="closeMobileSearch" aria-label="Close search" data-tip="Close" data-tip-key="Esc">✕</button>
     </div>
     <nav class="mobile-search-results" id="mobileSearchResults"></nav>
   </div>
@@ -517,7 +517,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
         <p class="profile-admin-stat" id="profileAccountCount" hidden></p>
         <a class="ghost-btn profile-admin-link" id="profileAccountsLink" href="/admin.html?view=accounts" hidden>Account management</a>
       </div>
-      <button class="icon-btn" id="closeProfile">✕</button>
+      <button class="icon-btn" id="closeProfile" aria-label="Close profile" data-tip="Close" data-tip-key="Esc">✕</button>
     </div>
 
     <div class="profile-section">
@@ -579,9 +579,9 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
           <div class="tm-preview-dot tm-preview-landing" id="tmPreviewLanding"></div>
           <div class="tm-preview-dot tm-preview-throw" id="tmPreviewThrow"></div>
         </div>
-        <button type="button" class="tm-reposition-btn" id="repositionOnMapBtn">⤢ Reposition on map</button>
+        <button type="button" class="tm-reposition-btn" id="repositionOnMapBtn" data-tip="Move the throw-from spot on the map">⤢ Reposition on map</button>
       </div>
-      <button class="icon-btn" id="cancelThrow" data-esc aria-label="Close">✕</button>
+      <button class="icon-btn" id="cancelThrow" data-esc aria-label="Close" data-tip="Close" data-tip-key="Esc">✕</button>
     </div>
 
     <div class="tm-body">
@@ -612,7 +612,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
 
         <div class="tm-upload-col">
           <div class="tm-upload-head">
-            <span class="tm-label">🔍 Precise <span class="tm-optional">optional</span></span>
+            <span class="tm-label" data-tip="A zoomed-in shot of the exact pixel to aim at">🔍 Precise <span class="tm-optional">optional</span></span>
             <label class="tm-upload-trigger" for="preciseInput">+ Add</label>
             <input type="file" id="preciseInput" accept="image/*" hidden>
           </div>
@@ -621,7 +621,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
 
         <div class="tm-upload-col">
           <div class="tm-upload-head">
-            <span class="tm-label">🖼️ Result <span class="tm-optional">optional</span></span>
+            <span class="tm-label" data-tip="What the nade looks like when it lands">🖼️ Result <span class="tm-optional">optional</span></span>
             <label class="tm-upload-trigger" for="resultInput">+ Add</label>
             <input type="file" id="resultInput" accept="image/*" hidden>
           </div>
@@ -645,7 +645,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
     <div class="tm-section">
       <div class="tm-selects">
         <div class="tm-select-group">
-          <label class="tm-label">Throw range</label>
+          <label class="tm-label" for="throwRangeSelect" data-tip="How hard you throw: full, mid or close">Throw range</label>
           <select id="throwRangeSelect" class="tm-select">
             <option value="throw">Throw (full)</option>
             <option value="mid-throw">Mid-throw</option>
@@ -653,7 +653,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
           </select>
         </div>
         <div class="tm-select-group">
-          <label class="tm-label">Movement</label>
+          <label class="tm-label" for="movementSelect" data-tip="How you move while you throw">Movement</label>
           <select id="movementSelect" class="tm-select">
             <option value="none">None / standing</option>
             <option value="jumpthrow">Jumpthrow</option>
