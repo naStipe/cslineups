@@ -3236,8 +3236,8 @@ body:has(.coll-select-bar:not([hidden])) .toast-host{bottom:calc(84px + env(safe
    slide up and down as screenshots were added or removed; a fixed height pins
    it while .tm-body scrolls. */
 .throw-modal{height:min(760px, calc(86vh - var(--consent-h, 0px)));}
-.coll-popover{max-height:calc(100vh - 16px);overflow-y:auto;}
-@media (max-width:768px){ .throw-modal{height:calc(92vh - var(--consent-h, 0px));} }
+.coll-popover{max-height:calc(100vh - 16px);max-height:calc(100dvh - 16px);overflow-y:auto;}
+@media (max-width:768px){ .throw-modal{height:calc(92vh - var(--consent-h, 0px));height:calc(92dvh - var(--consent-h, 0px));} }
 
 /* Phones: the panel has little height, so keep its fixed block compact
    (one scrolling row of actions, 2-line description) and let that block

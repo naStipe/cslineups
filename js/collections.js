@@ -191,6 +191,13 @@ async function openPopover(anchor, ctx) {
   if (first) first.focus({ preventScroll: true });
 }
 
+// Re-renders can make the popover taller; keep its bottom on screen.
+function clampPopover() {
+  if (collPopover.hidden) return;
+  const top = Math.min(parseFloat(collPopover.style.top) || 8, window.innerHeight - collPopover.offsetHeight - 8);
+  collPopover.style.top = Math.max(8, top) + "px";
+}
+
 function renderPopover() {
   const { lineupIds, throwId, throws } = popCtx;
   const single = lineupIds.length === 1;
@@ -280,6 +287,7 @@ function renderPopover() {
     } catch (err) { toastError(err.message); setBusy(btn, false); }
   };
   collPopover.append(foot);
+  clampPopover();
 }
 
 async function savePopover() {
