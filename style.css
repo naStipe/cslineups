@@ -2967,6 +2967,11 @@ body.in-collection .fab-add-btn{display:none;}
   background:var(--panel);border:1px solid var(--line);border-radius:8px;font-size:12.5px;
 }
 .coll-select-bar[hidden]{display:none;}
+/* left:50% caps the shrink-to-fit width at half the map, which wrapped the hint
+   and the button over two lines (70px tall) and let the toast overlap the bar. */
+.coll-select-bar{width:max-content;max-width:calc(100% - 32px);}
+.coll-select-bar > span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.coll-select-bar .primary-btn,.coll-select-bar .ghost-btn{flex-shrink:0;white-space:nowrap;}
 
 /* Add-to popover */
 .coll-popover{
@@ -3041,7 +3046,8 @@ body.in-collection .fab-add-btn{display:none;}
   .coll-panel{left:8px;right:8px;top:auto;bottom:8px;width:auto;max-height:46%;}
   .coll-item-tools .icon-btn{width:44px;height:44px;}
   .coll-item-main,.coll-actions .ghost-btn,.coll-actions .primary-btn,.coll-step .ghost-btn,.coll-step .primary-btn{min-height:44px;}
-  .coll-select-bar{bottom:76px;width:calc(100% - 24px);justify-content:space-between;}
+  .coll-select-bar{bottom:76px;width:calc(100% - 24px);max-width:none;justify-content:space-between;}
+  .coll-select-bar > span{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;}
   .coll-popover{left:8px !important;right:8px;width:auto;}
   .coll-fields{grid-template-columns:1fr;}
 }
