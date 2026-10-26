@@ -561,6 +561,14 @@ function revealStep(it, tIdx) {
   revealPercentPoints(pts, collPanel.getBoundingClientRect());
   if (before <= 1 && mapZoom > 1) autoZoomed = true;
 }
+// "Step X of N" counts only playable steps (the ones Prev / Next land on);
+// locked or missing items stay in the numbered list but not in the counter.
+const stepLabel = () => {
+  const items = view.data.items;
+  const total = okItems().length;
+  const pos = items.slice(0, view.step + 1).filter(i => i.status === "ok").length;
+  return `Step ${Math.max(1, pos)} of ${total}`;
+};
 const nextStep = () => goStep(view.step + 1);
 const prevStep = () => goStep(view.step - 1);
 
@@ -649,7 +657,7 @@ function renderDossierBar() {
   info.className = "detail-coll-info";
   const t = document.createElement("strong");
   const tName = Object.assign(document.createElement("span"), { className: "detail-coll-name", textContent: view.data.name });
-  const tStep = Object.assign(document.createElement("span"), { className: "detail-coll-step", textContent: ` · Step ${view.step + 1} of ${view.data.items.length}` });
+  const tStep = Object.assign(document.createElement("span"), { className: "detail-coll-step", textContent: ` · ${stepLabel()}` });
   t.append(tName, tStep);
   setTip(t, t.textContent, { pos: "bottom" });
   info.append(t);
@@ -748,7 +756,7 @@ function renderPanel() {
     step.innerHTML = `<button type="button" class="ghost-btn" aria-label="Previous step">‹ Prev</button><span class="coll-step-count" aria-live="polite"></span><button type="button" class="primary-btn" aria-label="Next step">Next ›</button>`;
     const [prev, , next] = step.children;
     setTip(prev, "Previous step", { key: "←", pos: "bottom" }); setTip(next, "Next step", { key: "→", pos: "bottom" });
-    step.querySelector(".coll-step-count").textContent = `Step ${view.step + 1} of ${data.items.length}`;
+    step.querySelector(".coll-step-count").textContent = stepLabel();
     prev.onclick = prevStep; next.onclick = nextStep;
     if (okCount === 1) { prev.disabled = true; next.disabled = true; }
     top.append(step);

@@ -38,7 +38,7 @@ function blocked() {
     || !!state.pendingLanding || !isOnline() || document.hidden || (appShell && appShell.hasAttribute("hidden"));
 }
 
-function hide() { shown = false; card.hidden = true; }
+function hide() { shown = false; suspended = false; card.hidden = true; }
 
 function show() {
   shown = true;
@@ -47,9 +47,20 @@ function show() {
   saveAccount();
 }
 
+// A shown card steps aside while something else takes over the bottom of the
+// screen (select bar, add flow, cookie banner, ...) and returns once it's calm
+// again. Dismissing it (✕ / Not now / Esc) clears `shown`, so it never returns then.
+let suspended = false;
+function tickShown() {
+  if (blocked()) { card.hidden = true; suspended = true; calm = 0; return; }
+  if (!suspended) return;
+  if (++calm >= 2) { card.hidden = false; suspended = false; }
+}
+
 function tick() {
+  if (shown) { tickShown(); return; }
   // Wait for the session restore (so a signed-in user's account flag is known); if auth never comes up, carry on anyway.
-  if (shown || (!authReady && Date.now() - t0 < 15000)) return;
+  if (!authReady && Date.now() - t0 < 15000) return;
   if (seenAccount()) { setLocal(); return; }
   if (seenLocal()) { saveAccount(); return; } // signed in later: carry the flag to the account
   if (opened.size < NEEDED) return;

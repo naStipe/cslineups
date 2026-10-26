@@ -149,6 +149,8 @@ export async function initAuth() {
 
   sb.auth.onAuthStateChange(async (_event, session) => {
     authUser = session ? session.user : null;
+    // Metadata-only change (e.g. the feedback prompt's seen flag): nothing to reload.
+    if (_event === "USER_UPDATED") return;
     await refreshProfile();
     applyAuthState();
     // Personal view depends entirely on being signed in — bounce back to
