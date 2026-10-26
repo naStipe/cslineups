@@ -33,7 +33,7 @@ import { closeModal, watchDialog } from "./modal-utils.js";
 import { resetZoom, revealPercentPoints, zoom as mapZoom } from "./pan-zoom.js";
 import { registerLayer, registerShortcut } from "./shortcuts.js";
 import { setTip } from "./tooltip.js";
-import { buildFilters } from "./sidebar.js";
+import { buildFilters, closeSidebar } from "./sidebar.js";
 import { state } from "./state.js";
 import { toast, toastError } from "./toast.js";
 import { deferDelete } from "./undo-delete.js";
@@ -98,7 +98,7 @@ function renderRail() {
     b.innerHTML = `<span class="coll-row-name"></span><span class="coll-row-meta"></span>`;
     b.querySelector(".coll-row-name").textContent = c.name;
     b.querySelector(".coll-row-meta").textContent = `${c.itemCount} · ${VIS[c.visibility].label}`;
-    b.onclick = () => openCollection({ id: c.id });
+    b.onclick = () => { closeSidebar(); openCollection({ id: c.id }); }; // phones: get the drawer off the map and the panel
     collList.append(b);
   });
 }
@@ -381,7 +381,7 @@ function endSelecting() {
 
 if (collSelectBtn) collSelectBtn.onclick = () => {
   if (!authUser) { openAuthModal("signin"); return; }
-  if (selectMode) endSelecting(); else setSelectMode(true);
+  if (selectMode) endSelecting(); else { closeSidebar(); setSelectMode(true); } // phones: the drawer would cover the map you pick from
 };
 $("collSelectClear").onclick = endSelecting;
 $("collSelectAdd").onclick = (e) => (picking() ? commitPicking() : openPopover(e.currentTarget, { lineupIds: [...selection] }));
