@@ -3116,3 +3116,71 @@ body.in-collection .feedback-btn{display:none;}
 .fb-message{margin:4px 0;font-size:13.5px;white-space:pre-wrap;overflow-wrap:anywhere;}
 .fb-item.closed{opacity:.65;}
 @media (max-width:768px){ .feedback-btn{min-height:44px;bottom:84px;} .feedback-btn span{display:none;} .feedback-btn{width:44px;justify-content:center;padding:0;} }
+
+/* ===== Dossier: fixed frame ===== */
+/* The dossier is pinned to the top at a fixed size, so nothing in its header
+   (step bar, title row, ✕ / ＋ / 🔗, pager, variant strip) changes position
+   when the content under it does: only .detail-body scrolls. Declared last
+   so it wins over the earlier .detail-panel / .detail-panel-inner rules. */
+.detail-panel{align-items:flex-start;padding:30px;}
+.detail-panel-inner{
+  height:min(860px, calc(100vh - 60px));height:min(860px, calc(100dvh - 60px));
+  max-height:none;overflow:hidden;display:flex;flex-direction:column;
+}
+.detail-panel-inner > *{flex-shrink:0;}
+.detail-panel-inner > .detail-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;}
+.detail-head{min-height:72px;}
+#detailTitle{margin:10px 0 12px;padding-bottom:10px;}
+.detail-variants:empty{display:none;}
+.detail-variants{padding-bottom:12px;}
+.detail-variants .detail-strip{flex-wrap:nowrap;overflow-x:auto;padding:4px 0;}
+.detail-variants .strip-hint{margin:2px 0 0;}
+.detail-body .detail-actions{margin-top:18px;}
+
+/* Step bar: a fixed-height title row (Prev / Next pinned right, never
+   wrapping) plus a reserved row for the role / timing chips and the note. */
+.detail-coll-bar{display:block;padding:8px 12px;}
+.detail-coll-main{display:flex;align-items:center;justify-content:space-between;gap:12px;height:40px;}
+.detail-coll-main .detail-coll-info{flex:1 1 auto;flex-wrap:nowrap;min-width:0;}
+.detail-coll-main .detail-coll-info strong{display:flex;min-width:0;white-space:nowrap;}
+.detail-coll-name{overflow:hidden;text-overflow:ellipsis;min-width:0;}
+.detail-coll-step{flex:0 0 auto;}
+.detail-coll-nav{flex:0 0 auto;flex-wrap:nowrap;}
+.detail-coll-nav .ghost-btn,.detail-coll-nav .primary-btn{white-space:nowrap;}
+.detail-coll-meta{display:flex;align-items:flex-start;gap:8px;height:38px;margin-top:4px;overflow:hidden;}
+.detail-coll-meta .detail-coll-chips{flex:0 0 auto;}
+.detail-coll-meta .coll-item-note{
+  margin:0;flex:1 1 auto;min-width:0;line-height:1.35;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;
+}
+
+/* Hero screenshots: a 2-column grid of 16:9 frames, one image per cell. */
+.hero-galleries{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;}
+.hero-galleries .tc-carousel{border-right:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft);}
+.hero-galleries .tc-carousel:nth-child(2n){border-right:none;}
+.hero-galleries .tc-carousel:nth-last-child(-n+2):nth-child(odd):last-child,
+.hero-galleries .tc-carousel:last-child{border-bottom:none;}
+.hero-galleries .tc-carousel:nth-last-child(2):nth-child(odd){border-bottom:none;}
+
+@media (max-width:768px){
+  .detail-panel{align-items:flex-end;padding:0;}
+  .detail-panel-inner{height:88vh;height:88dvh;padding:0 16px;}
+  .sheet-handle{position:relative;top:auto;flex:0 0 auto;margin:0 -16px 4px;}
+  .detail-panel-inner > .detail-body{padding-bottom:18px;}
+  .detail-head{min-height:0;}
+  #detailTitle{margin:6px 0 8px;padding-bottom:6px;}
+  .detail-variants{padding-bottom:8px;}
+  .detail-variants .variant-pager{border-bottom:none;}
+  .detail-variants .detail-strip-thumb{width:68px;}
+  .detail-coll-bar{padding:6px 10px;margin-bottom:6px;}
+  .detail-coll-main{height:48px;}
+  .detail-coll-meta{height:36px;}
+  .hero-galleries{grid-template-columns:minmax(0,1fr);}
+  .hero-galleries .tc-carousel{border-right:none;}
+  .hero-galleries .tc-carousel:last-child{border-bottom:none;}
+}
+@media (max-width:480px){
+  .detail-panel-inner{padding:0 12px;}
+  .sheet-handle{margin:0 -12px 4px;}
+}
+.detail-variants .detail-strip-thumb:hover{transform:none;}

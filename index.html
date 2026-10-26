@@ -410,10 +410,10 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
   <!-- EXPANDED LINEUP PANEL -->
   <div class="detail-panel" id="detailPanel">
     <div class="detail-panel-inner" role="dialog" aria-modal="true" aria-labelledby="detailDialogTitle">
+      <div class="sheet-handle" aria-hidden="true"></div>
       <!-- Shown while a collection is open: where we are in the strategy (js/collections.js) -->
       <div class="detail-coll-bar" id="detailCollBar" hidden></div>
       <h2 class="sr-only" id="detailDialogTitle">Lineup</h2>
-      <div class="sheet-handle" aria-hidden="true"></div>
       <div class="detail-head">
         <div>
           <p class="dossier-eyebrow">Dossier</p>
@@ -433,12 +433,16 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
         </div>
       </div>
       <h3 id="detailTitle">Lineup</h3>
-      <div class="throw-list" id="throwList"></div>
-      <div class="detail-actions">
-        <button class="ghost-btn" id="addThrowBtn">+ Add throw position</button>
-        <button class="ghost-btn hidden" id="submitLineupBtn">★ Submit to public map</button>
-        <button class="ghost-btn danger" id="deleteLineupBtn">Delete this lineup</button>
-        <p class="submit-note hidden" id="submitLineupNote"></p>
+      <!-- Pager + variant strip: part of the fixed header so they never move with the hero's content -->
+      <div class="detail-variants" id="detailVariants"></div>
+      <div class="detail-body" id="detailBody">
+        <div class="throw-list" id="throwList"></div>
+        <div class="detail-actions">
+          <button class="ghost-btn" id="addThrowBtn">+ Add throw position</button>
+          <button class="ghost-btn hidden" id="submitLineupBtn">★ Submit to public map</button>
+          <button class="ghost-btn danger" id="deleteLineupBtn">Delete this lineup</button>
+          <p class="submit-note hidden" id="submitLineupNote"></p>
+        </div>
       </div>
     </div>
   </div>

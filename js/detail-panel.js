@@ -25,6 +25,8 @@ import { deferDelete } from "./undo-delete.js";
 export let selectedThrowIdx = 0;
 
 const detailNameNudge = document.getElementById("detailNameNudge");
+const detailVariants = document.getElementById("detailVariants");
+const detailBody = document.getElementById("detailBody");
 const sheet = detailPanel.querySelector(".detail-panel-inner");
 const sheetHandle = detailPanel.querySelector(".sheet-handle");
 const pad2 = (n) => String(n).padStart(2, "0");
@@ -42,6 +44,7 @@ export function openDetail(lineupId, throwIdx, opts = {}) {
   if (!keep) selectedThrowIdx = throwIdx !== undefined ? throwIdx : 0;
   selectedThrowIdx = clampIdx(lineup, selectedThrowIdx);
   renderDetail(lineup, { highlight: !!opts.highlight });
+  if (!keep) detailBody.scrollTop = 0;
   detailPanel.classList.add("open");
   renderMarkers();
   syncLineupUrl(lineup);
@@ -90,6 +93,7 @@ function selectVariant(lineup, idx, { dir = 0, focusThumb = false } = {}) {
   if (idx === selectedThrowIdx && !focusThumb) return;
   selectedThrowIdx = idx;
   renderDetail(lineup, { dir });
+  detailBody.scrollTop = 0;
   syncLineupUrl(lineup);
   if (focusThumb) focusActiveThumb();
 }
@@ -165,6 +169,7 @@ export function renderDetail(lineup, opts = {}) {
   renderSide(lineup, editable);
 
   throwList.innerHTML = "";
+  detailVariants.replaceChildren();
 
   if (!lineup.throws.length) return;
 
@@ -175,10 +180,11 @@ export function renderDetail(lineup, opts = {}) {
   const hero = document.createElement("div");
   hero.className = "detail-hero";
   if (opts.dir) hero.classList.add(opts.dir > 0 ? "enter-next" : "enter-prev");
-  hero.innerHTML = (multi ? buildPagerHtml(lineup) : "") + buildHeroHtml(active, selectedThrowIdx, lineup);
+  hero.innerHTML = buildHeroHtml(active, selectedThrowIdx, lineup);
   if (multi) {
-    hero.querySelector(".pager-prev").onclick = () => stepVariant(-1);
-    hero.querySelector(".pager-next").onclick = () => stepVariant(1);
+    detailVariants.insertAdjacentHTML("beforeend", buildPagerHtml(lineup));
+    detailVariants.querySelector(".pager-prev").onclick = () => stepVariant(-1);
+    detailVariants.querySelector(".pager-next").onclick = () => stepVariant(1);
   }
   // Per-variant time, only where the variant carries one (older throws don't).
   const vt = hero.querySelector(".variant-time");
@@ -329,13 +335,13 @@ export function renderDetail(lineup, opts = {}) {
       if (isActive) activeThumb = thumb;
       strip.appendChild(thumb);
     });
-    throwList.appendChild(strip);
+    detailVariants.appendChild(strip);
     if (editable) {
       const hint = document.createElement("p");
       hint.className = "strip-hint";
       const touch = window.matchMedia("(hover: none)").matches;
       hint.textContent = `${touch ? "Long-press and drag" : "Drag"} to reorder · the first variant opens by default`;
-      throwList.appendChild(hint);
+      detailVariants.appendChild(hint);
     }
     loadFrameImages(strip);
   }

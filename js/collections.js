@@ -621,17 +621,19 @@ function renderDossierBar() {
   if (!view || !it || it.status !== "ok") { bar.hidden = true; bar.replaceChildren(); return; }
   bar.hidden = false;
   bar.replaceChildren();
+  // Row 1 (fixed height): title left, Prev / Next pinned right. Row 2: role /
+  // timing chips and the note, clamped, with its space reserved whenever any
+  // step in this collection has one, so the buttons never move between steps.
+  const main = document.createElement("div");
+  main.className = "detail-coll-main";
   const info = document.createElement("div");
   info.className = "detail-coll-info";
   const t = document.createElement("strong");
-  t.textContent = `${view.data.name} · Step ${view.step + 1} of ${view.data.items.length}`;
+  const tName = Object.assign(document.createElement("span"), { className: "detail-coll-name", textContent: view.data.name });
+  const tStep = Object.assign(document.createElement("span"), { className: "detail-coll-step", textContent: ` · Step ${view.step + 1} of ${view.data.items.length}` });
+  t.append(tName, tStep);
+  t.title = t.textContent;
   info.append(t);
-  const chips = document.createElement("span");
-  chips.className = "detail-coll-chips";
-  if (it.role) chips.append(Object.assign(document.createElement("span"), { className: "coll-chip", textContent: it.role }));
-  if (it.timing) chips.append(Object.assign(document.createElement("span"), { className: "coll-chip alt", textContent: it.timing }));
-  info.append(chips);
-  if (it.note) info.append(Object.assign(document.createElement("p"), { className: "coll-item-note", textContent: it.note }));
   const nav = document.createElement("div");
   nav.className = "detail-coll-nav";
   const prev = Object.assign(document.createElement("button"), { type: "button", className: "ghost-btn", textContent: "‹ Prev" });
@@ -639,7 +641,19 @@ function renderDossierBar() {
   prev.onclick = prevStep; next.onclick = nextStep;
   if (okItems().length < 2) { prev.disabled = true; next.disabled = true; }
   nav.append(prev, next);
-  bar.append(info, nav);
+  main.append(info, nav);
+  bar.append(main);
+  if (view.data.items.some(i => i.role || i.timing || i.note)) {
+    const meta = document.createElement("div");
+    meta.className = "detail-coll-meta";
+    const chips = document.createElement("span");
+    chips.className = "detail-coll-chips";
+    if (it.role) chips.append(Object.assign(document.createElement("span"), { className: "coll-chip", textContent: it.role }));
+    if (it.timing) chips.append(Object.assign(document.createElement("span"), { className: "coll-chip alt", textContent: it.timing }));
+    meta.append(chips);
+    if (it.note) meta.append(Object.assign(document.createElement("p"), { className: "coll-item-note", textContent: it.note, title: it.note }));
+    bar.append(meta);
+  }
 }
 
 // ----------------------------------------------------------------- panel ---

@@ -24,7 +24,7 @@ const VIEWPORTS = {
 const IMG = n => `/maps/hero/${["mirage", "dust2", "inferno", "nuke", "ancient", "anubis"][n % 6]}.webp`;
 const LONG_NOTE = "Stand on the box corner, align the crosshair with the antenna tip, jump-throw with a short run-up and keep W held for the whole motion. If the smoke lands short, check that you are not clipping the railing; the tick-rate matters here so do it on a clean 64 tick server first and only then in matchmaking. ".repeat(3);
 const mk = (id, name, extra) => ({ id, mapId: "mirage", type: "smoke", name, side: "T", landing: { x: 0.5, y: 0.5 }, isOfficial: true, createdAt: "2026-01-01T00:00:00Z", throws: [], ...extra });
-const th = (id, x, y, shots, extra) => ({ id, pos: { x, y }, range: "full", movement: "jump", standing: [], screenshots: shots, notes: "", ...extra });
+const th = (id, x, y, shots, extra) => ({ id, pos: { x, y }, range: "throw", movement: "jumpthrow", standing: [], screenshots: shots, notes: "", ...extra });
 const LINEUPS = [
   mk("lu-1", "A Ramp smoke", {
     landing: { x: 0.62, y: 0.55 },
@@ -39,7 +39,7 @@ const LINEUPS = [
     throws: [th("t1", 0.20, 0.60, [IMG(1), IMG(2)], { notes: "Two images." })],
   }),
   mk("lu-3", "Top mid flash", { type: "flash", landing: { x: 0.50, y: 0.30 }, throws: [th("t1", 0.25, 0.45, [IMG(3)], { notes: "" })] }),
-  mk("lu-4", "Jungle molotov", { type: "molotov", landing: { x: 0.70, y: 0.35 }, throws: [th("t1", 0.55, 0.65, [IMG(4), IMG(5), IMG(0)], { notes: "Three images." })] }),
+  mk("lu-4", "Jungle molotov", { type: "fire", landing: { x: 0.70, y: 0.35 }, throws: [th("t1", 0.55, 0.65, [IMG(4), IMG(5), IMG(0)], { notes: "Three images." })] }),
 ];
 const COLLECTION = {
   id: "col-1", slug: "demo-set", mapId: "mirage", name: "Demo A-site execute", description: "Sample collection for the UI harness.",
