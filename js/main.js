@@ -77,7 +77,8 @@ registerLayer({
 });
 registerLayer({ priority: 70, isOpen: dossierOpen, close: closeDetailPanel });
 registerLayer({ priority: 60, isOpen: () => !!state.openClusterKey, close: () => { state.openClusterKey = null; renderMarkers(); } });
-registerLayer({ priority: 50, isOpen: () => !!state.selectedLineupId, close: () => { state.selectedLineupId = null; renderMarkers(); } });
+// (Esc during "add throw position" cancels that flow via the layer below, not just the outline.)
+registerLayer({ priority: 50, isOpen: () => !!state.selectedLineupId && !state.pendingThrowFor, close: () => { state.selectedLineupId = null; renderMarkers(); } });
 registerLayer({ priority: 40, isOpen: () => state.addMode || !!state.pendingThrowFor, close: () => { setAddMode(false); state.pendingThrowFor = null; } });
 
 const TYPE_PLURALS = { smoke: "smokes", flash: "flashes", fire: "molotovs", he: "HE grenades", decoy: "decoys" };
