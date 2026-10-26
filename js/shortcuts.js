@@ -59,7 +59,9 @@ document.addEventListener("keydown", (e) => {
     return;
   }
 
-  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  // AltGr (needed for [ ] on German, Nordic... layouts) reports as AltGraph, or as Ctrl+Alt on Windows: not a modifier chord.
+  const altGr = (e.getModifierState && e.getModifierState("AltGraph")) || (e.ctrlKey && e.altKey);
+  if (e.metaKey || (!altGr && (e.ctrlKey || e.altKey))) return;
   if (isTyping(e.target)) return;
   const inModal = modalOpen();
   for (const s of shortcuts) {

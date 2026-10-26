@@ -111,8 +111,8 @@ registerShortcut({
 });
 registerShortcut({ keys: ["ArrowLeft"], label: "←", description: "Previous lineup (wraps around)", group: "Lineups", when: dossierOpen, handler: () => stepLineup(-1) });
 registerShortcut({ keys: ["ArrowRight"], label: "→", description: "Next lineup (wraps around)", group: "Lineups", when: dossierOpen, handler: () => stepLineup(1) });
-registerShortcut({ keys: ["["], label: "[", description: "Previous variant of this lineup", group: "Lineups", when: dossierOpen, handler: () => stepVariant(-1) });
-registerShortcut({ keys: ["]"], label: "]", description: "Next variant of this lineup", group: "Lineups", when: dossierOpen, handler: () => stepVariant(1) });
+registerShortcut({ keys: ["[", ","], label: "[", description: "Previous variant of this lineup (also ,)", group: "Lineups", when: dossierOpen, handler: () => stepVariant(-1) });
+registerShortcut({ keys: ["]", "."], label: "]", description: "Next variant of this lineup (also .)", group: "Lineups", when: dossierOpen, handler: () => stepVariant(1) });
 
 // ←/→ in the dossier: walk the lineups currently visible on the map, in the
 // same order as the sidebar list, wrapping around at either end.
