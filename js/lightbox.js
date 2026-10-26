@@ -5,7 +5,7 @@ import { watchDialog } from "./modal-utils.js";
 
 watchDialog(lightboxModal, "show", () => lightboxClose);
 
-export let lightboxState = { images: [], index: 0, caption: "" };
+export let lightboxState = { images: [], index: 0, caption: "", captions: [] };
 
 export let lbZoom = 1, lbPanX = 0, lbPanY = 0;
 
@@ -44,10 +44,13 @@ export function lbZoomAt(clientX, clientY, factor) {
   lbApplyTransform();
 }
 
+// `images` are URLs, or { src, caption } when each image names its own section
+// (the dossier browses Stand / Aim / Precise / Result as one sequence).
 export function openLightbox(images, index, caption) {
-  const valid = (images || []).filter(Boolean);
-  if (!valid.length) return;
-  lightboxState = { images: valid, index, caption: caption || "" };
+  const entries = (images || []).map(x => (x && typeof x === "object") ? x : { src: x }).filter(x => x.src);
+  if (!entries.length) return;
+  index = Math.max(0, Math.min(Number.isInteger(index) ? index : 0, entries.length - 1));
+  lightboxState = { images: entries.map(x => x.src), index, caption: caption || "", captions: entries.map(x => x.caption || "") };
   lbResetZoom();
   renderLightbox();
   lightboxModal.classList.add("show");
@@ -89,9 +92,11 @@ export async function renderLightbox() {
   lightboxImage.onerror = () => settle(false);
   if (!src) settle(false);
   else lightboxImage.src = src;
+  const cap = lightboxState.captions[lightboxState.index] || lightboxState.caption;
+  const sep = lightboxState.captions[lightboxState.index] ? " · " : " — ";
   lightboxCaption.textContent = multi
-    ? `${lightboxState.caption} — ${lightboxState.index + 1} / ${lightboxState.images.length}`
-    : lightboxState.caption;
+    ? `${cap}${sep}${lightboxState.index + 1} / ${lightboxState.images.length}`
+    : cap;
 }
 
 lightboxPrev.onclick = () => {

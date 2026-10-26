@@ -636,7 +636,21 @@ export function wireCarousels(container, t) {
     const imgs = img.dataset.imgs ? JSON.parse(img.dataset.imgs) : [img.dataset.realSrc];
     const dots = carousel.querySelectorAll(".tc-dot");
     let cur = 0;
-    const openLb = () => openLightbox(imgs, cur, img.alt);
+    // Open on the clicked shot, but let the viewer browse the whole variant in
+    // reading order (Stand, Aim, Precise, Result), each captioned by section.
+    const openLb = () => {
+      const all = [];
+      let start = 0;
+      container.querySelectorAll(".tc-carousel").forEach(c => {
+        const ci = c.querySelector(".tc-carousel-img");
+        if (!ci) return;
+        const list = ci.dataset.imgs ? JSON.parse(ci.dataset.imgs) : [ci.dataset.realSrc];
+        const label = c.querySelector(".tc-carousel-label")?.textContent || ci.alt;
+        if (c === carousel) start = all.length + cur;
+        list.forEach(src => all.push({ src, caption: label }));
+      });
+      openLightbox(all, start, img.alt);
+    };
     const go = (n) => {
       cur = (n + imgs.length) % imgs.length;
       if (inner._inlineZoom) inner._inlineZoom.reset();
