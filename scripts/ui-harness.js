@@ -88,7 +88,7 @@ async function mockApi(context, overrides = {}) {
 }
 
 // Opens a fresh page at `url` (path + query) for the named viewport.
-async function launch({ viewport = "1366x768", url = "/?map=mirage", overrides, reducedMotion = "no-preference", consent = "denied" } = {}) {
+async function launch({ viewport = "1366x768", url = "/?map=mirage", overrides, setup, reducedMotion = "no-preference", consent = "denied" } = {}) {
   const { chromium } = require("playwright");
   const server = await serve();
   const base = `http://127.0.0.1:${server.address().port}`;
@@ -96,6 +96,7 @@ async function launch({ viewport = "1366x768", url = "/?map=mirage", overrides, 
   const context = await browser.newContext({ ...VIEWPORTS[viewport], reducedMotion, serviceWorkers: "block" });
   if (consent) await context.addInitScript(v => { try { localStorage.setItem("lineupr_consent", v); } catch {} }, consent);
   await mockApi(context, overrides);
+  if (setup) await setup(context); // extra routes / init scripts (e.g. a stubbed Supabase for admin.html)
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", e => errors.push(String(e)));

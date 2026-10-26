@@ -3215,3 +3215,38 @@ body:has(.coll-select-bar:not([hidden])) .toast-host{bottom:calc(84px + env(safe
   body:has(.coll-select-bar:not([hidden])) .toast-host{bottom:calc(158px + env(safe-area-inset-bottom, 0px) + var(--consent-h, 0px));}
   .modal{max-height:calc(92vh - var(--consent-h, 0px));}
 }
+
+/* ===== Admin queue: actions at the top of each card ===== */
+/* Cards differ wildly in height, so with the buttons at the bottom the next
+   card's Approve / Deny landed anywhere after a click. At the top of the card
+   they take the removed card's place under the cursor; on desktop they also
+   stay pinned while a tall card is scrolled. */
+.admin-card{display:flex;flex-direction:column;}
+.admin-card-head{order:-2;}
+.admin-card-actions{
+  order:-1;margin:-2px 0 14px;padding:0 0 14px;border-top:none;border-bottom:1px solid var(--line-soft);
+}
+@media (min-width:769px){
+  .admin-card-actions{position:sticky;top:0;z-index:3;background:var(--panel);padding-top:8px;margin-top:-10px;}
+}
+.primary-btn.admin-publish{color:#221305;}
+
+/* ===== Fixed-size throw modal, bounded popover ===== */
+/* The throw modal is vertically centred, so its footer (Cancel / Save) used to
+   slide up and down as screenshots were added or removed; a fixed height pins
+   it while .tm-body scrolls. */
+.throw-modal{height:min(760px, calc(86vh - var(--consent-h, 0px)));}
+.coll-popover{max-height:calc(100vh - 16px);overflow-y:auto;}
+@media (max-width:768px){ .throw-modal{height:calc(92vh - var(--consent-h, 0px));} }
+
+/* Phones: the panel has little height, so keep its fixed block compact
+   (one scrolling row of actions, 2-line description) and let that block
+   scroll as a last resort rather than clip the step list. */
+@media (max-width:768px){
+  .coll-panel{max-height:52%;}
+  .coll-panel-top{overflow-y:auto;max-height:calc(100% - 72px);}
+  .coll-panel > .coll-items{min-height:64px;}
+  .coll-panel-top .coll-desc{-webkit-line-clamp:2;line-clamp:2;}
+  .coll-actions{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;}
+  .coll-actions > *{flex:0 0 auto;}
+}

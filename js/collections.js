@@ -30,7 +30,7 @@ import { focusLineup } from "./lineup-list.js";
 import { loadLineups, refreshLocal } from "./map-data.js";
 import { hooks } from "./marker-hooks.js";
 import { closeModal, watchDialog } from "./modal-utils.js";
-import { resetZoom, revealPercentPoints } from "./pan-zoom.js";
+import { resetZoom, revealPercentPoints, zoom as mapZoom } from "./pan-zoom.js";
 import { registerLayer, registerShortcut } from "./shortcuts.js";
 import { buildFilters } from "./sidebar.js";
 import { state } from "./state.js";
@@ -504,6 +504,7 @@ function leaveViewState() {
   collPanel.replaceChildren();
   state.collectionView = null;
   view = null;
+  if (autoZoomed) { autoZoomed = false; resetZoom(); }
 }
 
 export async function exitCollection() {
@@ -542,11 +543,14 @@ function goStep(i, { open = false } = {}) {
   else { state.openClusterKey = null; focusLineup(it.lineupId); revealStep(it, tIdx); }
   renderPanel();
 }
+let autoZoomed = false; // the map was zoomed by revealStep (not the user): undo it on exit
 // Keep the focused step's landing marker and throw spot out from under the panel.
 function revealStep(it, tIdx) {
   if (collPanel.hidden) return;
   const pts = [it.lineup.landing, it.lineup.throws[tIdx] && it.lineup.throws[tIdx].pos].filter(p => p && isFinite(p.x) && isFinite(p.y));
+  const before = mapZoom;
   revealPercentPoints(pts, collPanel.getBoundingClientRect());
+  if (before <= 1 && mapZoom > 1) autoZoomed = true;
 }
 const nextStep = () => goStep(view.step + 1);
 const prevStep = () => goStep(view.step - 1);
