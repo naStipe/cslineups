@@ -709,7 +709,8 @@ export function openTypeModalForEdit(lineup) {
       toast("Nade type updated");
     } catch (err) {
       lineup.type = prev;
-      renderDetailType(lineup, true);
+      // The user may have moved on to another lineup while the save was in flight.
+      if (state.selectedLineupId === lineup.id) renderDetailType(lineup, true);
       refreshLocal();
       toastError("Couldn't save the nade type. Please try again.");
     }

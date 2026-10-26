@@ -12,8 +12,8 @@ notes and shareable collections.
 - **API**: Vercel serverless functions in `api/*.js` (shared helpers in `api/_lib/`).
   `vercel.json` also holds headers, redirects and the rewrites for the server-rendered pages
   (`/maps`, `/<map>`, `/<map>/<type>/<slug>`, `/c/<slug>`, `/sitemap.xml`).
-- **Supabase**: auth (email/password, Google) and Postgres. The browser talks to Supabase only
-  for auth; all data access goes through `api/*`, which uses the service-role key and does its
+- **Supabase**: auth (email/password, Google) and Postgres. The browser talks to Supabase for auth
+  (and to read its own `profiles` row); all other data access goes through `api/*`, which uses the service-role key and does its
   own ownership and visibility checks. Schema changes live in `sql/` as numbered migrations
   (see `sql/README.md`; new tables have RLS on and no policies).
 - **Cloudflare R2**: screenshot and clip storage. `api/upload-url.js` issues presigned uploads

@@ -3338,3 +3338,6 @@ body.in-collection .fb-prompt{left:354px;}
    the T / CT / All segments are only 26px tall. */
 .icon-btn{flex-shrink:0;}
 @media (pointer:coarse){ .side-seg-btn{min-height:36px;} .tm-reposition-btn{min-height:32px;} }
+
+/* Toasts from the feedback modal on the home screen (modal 600, home screen 500) must show above both. */
+.toast-host{z-index:650;}
