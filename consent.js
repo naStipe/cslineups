@@ -71,7 +71,12 @@
       // Accept and Decline are deliberately styled identically: rejecting
       // has to be as easy and as visible as accepting (Traficom guidance).
 
-      "#consentBanner button:hover{opacity:.85;}";
+      "#consentBanner button:hover{opacity:.85;}" +
+      // Phones: a compact two-row banner (text, then two full-width 44px
+      // buttons); the optional "no ads" sentence is dropped to save a line.
+      "@media (max-width:768px){#consentBanner{padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));gap:8px;font-size:12px;line-height:1.4;}" +
+      "#consentBanner p{flex-basis:100%;}#consentBanner .cb-extra{display:none;}" +
+      "#consentBanner .cb-actions{width:100%;}#consentBanner button{flex:1;min-height:44px;padding:8px 12px;}}";
     document.head.appendChild(style);
 
     var el = document.createElement("div");
@@ -80,7 +85,7 @@
     el.setAttribute("aria-label", "Cookie consent");
     el.innerHTML =
       "<p>May we use Google Analytics cookies to measure how the site is used? " +
-      "Google (USA) receives pseudonymous usage data only if you accept. No ads, no data selling. " +
+      "Google (USA) receives pseudonymous usage data only if you accept. <span class=\"cb-extra\">No ads, no data selling.</span> " +
       '<a href="/cookies.html">Cookie policy</a> · <a href="/privacy.html">Privacy</a></p>' +
       '<div class="cb-actions">' +
       '<button type="button" class="cb-decline">Decline</button>' +
@@ -88,14 +93,29 @@
       "</div>";
     document.body.appendChild(el);
 
+    // Publish the banner's height as --consent-h so the dossier, collection
+    // panel, modals, toasts and the select bar keep clear of it (style.css).
+    var root = document.documentElement;
+    function publishHeight() { root.style.setProperty("--consent-h", el.offsetHeight + "px"); }
+    function dismiss() {
+      if (ro) ro.disconnect();
+      window.removeEventListener("resize", publishHeight);
+      root.style.removeProperty("--consent-h");
+      el.remove();
+    }
+    var ro = window.ResizeObserver ? new ResizeObserver(publishHeight) : null;
+    if (ro) ro.observe(el);
+    window.addEventListener("resize", publishHeight);
+    publishHeight();
+
     el.querySelector(".cb-accept").addEventListener("click", function () {
       store("granted");
       loadGA();
-      el.remove();
+      dismiss();
     });
     el.querySelector(".cb-decline").addEventListener("click", function () {
       store("denied");
-      el.remove();
+      dismiss();
     });
   }
 

@@ -62,6 +62,38 @@ export function zoomToBox({ cx, cy, w, h }) {
   applyTransform();
 }
 
+// Brings map points (percent coordinates, like the markers') into the part of
+// the stage that `covered` (the client rect of an overlay such as the
+// collection panel) doesn't hide. Pans only, except at zoom 1 where panning is
+// locked: there it zooms in a little first. Does nothing if they're clear.
+export function revealPercentPoints(points, covered) {
+  if (!points.length || !covered) return;
+  const sr = mapStage.getBoundingClientRect();
+  const fw = mapFrame.offsetWidth, fh = mapFrame.offsetHeight;
+  const margin = 44;
+  const free = { l: sr.left + margin, t: sr.top + margin, r: sr.right - margin, b: sr.bottom - margin };
+  if (window.matchMedia("(max-width: 768px)").matches) free.b = Math.min(free.b, covered.top - 12);
+  else free.l = Math.max(free.l, covered.right + 12);
+  if (free.r - free.l < 80 || free.b - free.t < 80) return;
+  const box = () => {
+    const xs = points.map(p => sr.left + sr.width / 2 + panX + ((p.x - 50) / 100) * fw * zoom);
+    const ys = points.map(p => sr.top + sr.height / 2 + panY + ((p.y - 50) / 100) * fh * zoom);
+    return { l: Math.min(...xs), r: Math.max(...xs), t: Math.min(...ys), b: Math.max(...ys) };
+  };
+  const shiftFor = (lo, hi, fLo, fHi) => (hi - lo > fHi - fLo) ? (fLo + fHi) / 2 - (lo + hi) / 2 : lo < fLo ? fLo - lo : hi > fHi ? fHi - hi : 0;
+  let b = box();
+  if (!shiftFor(b.l, b.r, free.l, free.r) && !shiftFor(b.t, b.b, free.t, free.b)) return;
+  if (zoom <= 1) { zoom = 1.6; panX = 0; panY = 0; b = box(); }
+  panX += shiftFor(b.l, b.r, free.l, free.r);
+  panY += shiftFor(b.t, b.b, free.t, free.b);
+  const glide = !(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+  if (glide) {
+    mapFrame.style.transition = "transform .28s ease";
+    setTimeout(() => { mapFrame.style.transition = ""; }, 320);
+  }
+  applyTransform();
+}
+
 export function zoomAt(clientX, clientY, factor) {
   const newZoom = Math.min(Math.max(zoom * factor, 1), MAX_ZOOM);
   if (newZoom === zoom) return;

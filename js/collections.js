@@ -30,7 +30,7 @@ import { focusLineup } from "./lineup-list.js";
 import { loadLineups, refreshLocal } from "./map-data.js";
 import { hooks } from "./marker-hooks.js";
 import { closeModal, watchDialog } from "./modal-utils.js";
-import { resetZoom } from "./pan-zoom.js";
+import { resetZoom, revealPercentPoints } from "./pan-zoom.js";
 import { registerLayer, registerShortcut } from "./shortcuts.js";
 import { buildFilters } from "./sidebar.js";
 import { state } from "./state.js";
@@ -539,8 +539,14 @@ function goStep(i, { open = false } = {}) {
   const it = items[idx];
   const tIdx = Math.max(0, it.lineup.throws.findIndex(t => t.id === it.throwId));
   if (open || detailPanel.classList.contains("open")) openDetail(it.lineupId, tIdx);
-  else { state.openClusterKey = null; focusLineup(it.lineupId); }
+  else { state.openClusterKey = null; focusLineup(it.lineupId); revealStep(it, tIdx); }
   renderPanel();
+}
+// Keep the focused step's landing marker and throw spot out from under the panel.
+function revealStep(it, tIdx) {
+  if (collPanel.hidden) return;
+  const pts = [it.lineup.landing, it.lineup.throws[tIdx] && it.lineup.throws[tIdx].pos].filter(p => p && isFinite(p.x) && isFinite(p.y));
+  revealPercentPoints(pts, collPanel.getBoundingClientRect());
 }
 const nextStep = () => goStep(view.step + 1);
 const prevStep = () => goStep(view.step - 1);
@@ -662,8 +668,14 @@ function renderPanel() {
   renderDossierBar();
   const { data } = view;
   const owner = isOwner();
+  const prevScroll = collPanel.querySelector(".coll-items")?.scrollTop || 0;
   collPanel.hidden = false;
   collPanel.replaceChildren();
+  // Everything above the step list sits in a fixed block so Prev / Next keep
+  // their place; only the list scrolls.
+  const top = document.createElement("div");
+  top.className = "coll-panel-top";
+  collPanel.append(top);
 
   const head = document.createElement("div");
   head.className = "coll-panel-head";
@@ -675,13 +687,13 @@ function renderPanel() {
     `${mapName(data.mapId)} · ${data.items.length} lineup${data.items.length === 1 ? "" : "s"}` +
     (owner ? ` · ${VIS[data.visibility].label}` : data.ownerName ? ` · by ${data.ownerName}` : "");
   head.querySelector(".coll-exit").onclick = exitCollection;
-  collPanel.append(head);
+  top.append(head);
 
   if (data.description) {
     const p = document.createElement("p");
     p.className = "coll-desc";
     p.textContent = data.description;
-    collPanel.append(p);
+    top.append(p);
   }
 
   // Actions
@@ -701,7 +713,7 @@ function renderPanel() {
     btn("Save a copy", saveCopy, "primary-btn");
     if (authUser && data.visibility !== "private") btn("Report", () => $("collReportModal").classList.add("show"));
   }
-  collPanel.append(actions);
+  top.append(actions);
 
   // Step-through
   const okCount = okItems().length;
@@ -713,7 +725,7 @@ function renderPanel() {
     step.querySelector(".coll-step-count").textContent = `Step ${view.step + 1} of ${data.items.length}`;
     prev.onclick = prevStep; next.onclick = nextStep;
     if (okCount === 1) { prev.disabled = true; next.disabled = true; }
-    collPanel.append(step);
+    top.append(step);
   }
 
   // Items
@@ -730,6 +742,13 @@ function renderPanel() {
   }
   data.items.forEach((it, i) => list.append(renderItem(it, i, owner)));
   collPanel.append(list);
+  // Keep the scroll position across re-renders, and the current step in view.
+  list.scrollTop = prevScroll;
+  const cur = list.querySelector(".coll-item.current");
+  if (cur) {
+    if (cur.offsetTop < list.scrollTop) list.scrollTop = cur.offsetTop;
+    else if (cur.offsetTop + cur.offsetHeight > list.scrollTop + list.clientHeight) list.scrollTop = cur.offsetTop + cur.offsetHeight - list.clientHeight;
+  }
 
   if (!owner) {
     const note = document.createElement("p");

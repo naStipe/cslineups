@@ -2369,7 +2369,8 @@ html::-webkit-scrollbar-track,body::-webkit-scrollbar-track{background:var(--voi
   .count-pill{flex:none;min-width:78px;text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums;}
   .view-toggle{flex:none;}
   .topbar-right{width:150px;justify-content:flex-end;}
-  .filters{justify-content:center;}
+  /* "safe": when the chips overflow, start at the left edge (plain center clips the first chip, unreachable by scrolling). The inline padding keeps the first/last chip clear of the edge fade. */
+  .filters{justify-content:center;justify-content:safe center;padding-inline:14px;}
   .filter-chip{flex:none;}
   .filter-chip .chip-count{min-width:22px;text-align:center;font-variant-numeric:tabular-nums;}
 }
@@ -3184,3 +3185,33 @@ body.in-collection .feedback-btn{display:none;}
   .sheet-handle{margin:0 -12px 4px;}
 }
 .detail-variants .detail-strip-thumb:hover{transform:none;}
+
+/* ===== Collection panel: fixed top block, scrolling list ===== */
+/* Head, actions and Prev / Next sit in .coll-panel-top and never move while
+   stepping or toggling "Adding lineups…"; only the step list scrolls. */
+.coll-panel{overflow:hidden;gap:10px;}
+.coll-panel-top{flex:0 0 auto;display:flex;flex-direction:column;gap:10px;}
+.coll-panel > .coll-items{flex:1 1 auto;min-height:96px;overflow-y:auto;position:relative;overscroll-behavior:contain;}
+.coll-panel > .coll-foot-note{flex:0 0 auto;}
+.coll-panel-top .coll-desc{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;overflow:hidden;}
+.coll-actions .primary-btn:first-child{min-width:144px;}
+
+/* ===== Keep clear of the cookie banner (--consent-h is set by consent.js) ===== */
+.detail-panel-inner{height:min(860px, calc(100vh - 60px - var(--consent-h, 0px)));height:min(860px, calc(100dvh - 60px - var(--consent-h, 0px)));}
+.coll-panel{max-height:calc(100% - 24px - var(--consent-h, 0px));}
+.coll-select-bar{bottom:calc(20px + var(--consent-h, 0px));}
+.toast-host{bottom:calc(24px + env(safe-area-inset-bottom, 0px) + var(--consent-h, 0px));}
+.modal{max-height:calc(86vh - var(--consent-h, 0px));}
+.modal-backdrop{padding-bottom:var(--consent-h, 0px);}
+/* A toast never sits on the multi-select bar ("Add to collection" / "Done"). */
+body:has(.coll-select-bar:not([hidden])) .toast-host{bottom:calc(84px + env(safe-area-inset-bottom, 0px) + var(--consent-h, 0px));}
+@media (max-width:768px){
+  .detail-panel{padding-bottom:var(--consent-h, 0px);}
+  .detail-panel-inner{height:min(88vh, calc(100vh - 24px - var(--consent-h, 0px)));height:min(88dvh, calc(100dvh - 24px - var(--consent-h, 0px)));}
+  .coll-panel{bottom:calc(8px + var(--consent-h, 0px));max-height:46%;}
+  .coll-select-bar{bottom:calc(76px + var(--consent-h, 0px));}
+  .fab-add-btn{bottom:calc(16px + env(safe-area-inset-bottom, 0px) + var(--consent-h, 0px));}
+  .toast-host{bottom:calc(84px + env(safe-area-inset-bottom, 0px) + var(--consent-h, 0px));}
+  body:has(.coll-select-bar:not([hidden])) .toast-host{bottom:calc(158px + env(safe-area-inset-bottom, 0px) + var(--consent-h, 0px));}
+  .modal{max-height:calc(92vh - var(--consent-h, 0px));}
+}
