@@ -893,13 +893,14 @@ function itemFields(it) {
 async function moveItemTo(from, to) {
   const items = view.data.items;
   const prev = [...items];
+  const prevStep = view.step;
   const [moved] = items.splice(from, 1);
   items.splice(to, 0, moved);
   view.step = items.findIndex(x => x.id === prev[view.step]?.id);
   if (view.step < 0) view.step = 0;
   renderPanel(); refreshLocal();
   try { await reorderItems(view.data.id, items.map(x => x.id)); }
-  catch (e) { view.data.items = prev; renderPanel(); refreshLocal(); toastError("Couldn't save the new order. " + e.message); }
+  catch (e) { view.data.items = prev; view.step = prevStep; renderPanel(); refreshLocal(); toastError("Couldn't save the new order. " + e.message); }
 }
 const moveItem = (i, d) => moveItemTo(i, i + d);
 
