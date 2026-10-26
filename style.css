@@ -3333,3 +3333,8 @@ body.in-collection .fb-prompt{left:354px;}
 
 /* The feedback box also opens from the home page, whose full-screen layer (z-index 500) would otherwise cover it. */
 #feedbackModal{z-index:600;}
+
+/* Modal controls stay tappable: the throw modal's ✕ was squeezed to 26px wide by its header, and
+   the T / CT / All segments are only 26px tall. */
+.icon-btn{flex-shrink:0;}
+@media (pointer:coarse){ .side-seg-btn{min-height:36px;} .tm-reposition-btn{min-height:32px;} }
