@@ -110,15 +110,18 @@ function show(el, autoHideMs) {
   if (!el.isConnected || !el.dataset.tip) return;
   const rect = el.getBoundingClientRect();
   if (!rect.width && !rect.height) return;
-  if (current && current !== el) release(current);
+  const again = current === el; // hover + focus on the same trigger: keep the original aria-describedby
+  if (current && !again) release(current);
   current = el;
   fill(el);
   ensureEl().classList.remove("tooltip-show");
   place(el);
   // Next frame so the transition runs from the hidden state.
   requestAnimationFrame(() => { if (current === el) tipEl.classList.add("tooltip-show"); });
-  describedBefore = el.getAttribute("aria-describedby");
-  el.setAttribute("aria-describedby", describedBefore ? describedBefore + " appTooltip" : "appTooltip");
+  if (!again) {
+    describedBefore = el.getAttribute("aria-describedby");
+    el.setAttribute("aria-describedby", describedBefore ? describedBefore + " appTooltip" : "appTooltip");
+  }
   clearTimeout(hideTimer);
   if (autoHideMs) hideTimer = setTimeout(hide, autoHideMs);
   watch();

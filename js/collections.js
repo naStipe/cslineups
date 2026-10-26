@@ -674,7 +674,7 @@ function renderDossierBar() {
     if (it.note) {
       // Clamped to two lines; tap / Enter shows the rest as an overlay (a title tooltip doesn't work on touch).
       const note = Object.assign(document.createElement("p"), { className: "coll-item-note", textContent: it.note, tabIndex: 0 });
-      setTip(note, it.note, { pos: "bottom" });
+      setTip(note, "Tap to read the full note", { pos: "bottom" }); // short on purpose: the note itself can be 700 chars
       note.setAttribute("role", "button");
       note.setAttribute("aria-expanded", "false");
       const toggle = () => note.setAttribute("aria-expanded", String(meta.classList.toggle("expanded")));
