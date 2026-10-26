@@ -1,7 +1,7 @@
 import { setAddMode, startAddFlow } from "./add-mode.js";
 import { initAuth } from "./auth.js";
 import { MAPS, TYPES } from "./constants.js";
-import { closeDetailPanel, hideDetailPanel, openDetail, throwIndexFromParams } from "./detail-panel.js";
+import { closeDetailPanel, hideDetailPanel, openDetail, stepVariant, throwIndexFromParams } from "./detail-panel.js";
 import { appShell, detailPanel, homeBrand, lightboxModal, lightboxNext, lightboxPrev, lineupSearchInput, sidebarBrand } from "./dom.js";
 import "./tooltip.js"; // side effect only: data-tip tooltips
 import "./feedback.js"; // side effect only: feedback box
@@ -102,15 +102,17 @@ registerShortcut({
 registerShortcut({ keys: ["z", "Z"], label: "Z", description: "Reset zoom", group: "Map", when: inMap, handler: resetZoom });
 
 registerShortcut({
-  keys: ["ArrowLeft"], label: "←", description: "Previous image (lightbox) / previous lineup (dossier)", group: "Lineups",
+  keys: ["ArrowLeft"], label: "←", description: "Previous screenshot (full-size view)", group: "Screenshots",
   priority: 10, allowInModal: true, when: lightboxOpen, handler: () => lightboxPrev.onclick(),
 });
 registerShortcut({
-  keys: ["ArrowRight"], label: "→", description: "Next image (lightbox) / next lineup (dossier)", group: "Lineups",
+  keys: ["ArrowRight"], label: "→", description: "Next screenshot (full-size view)", group: "Screenshots",
   priority: 10, allowInModal: true, when: lightboxOpen, handler: () => lightboxNext.onclick(),
 });
-registerShortcut({ keys: ["ArrowLeft"], label: "←", group: "Lineups", when: dossierOpen, handler: () => stepLineup(-1) });
-registerShortcut({ keys: ["ArrowRight"], label: "→", group: "Lineups", when: dossierOpen, handler: () => stepLineup(1) });
+registerShortcut({ keys: ["ArrowLeft"], label: "←", description: "Previous lineup (wraps around)", group: "Lineups", when: dossierOpen, handler: () => stepLineup(-1) });
+registerShortcut({ keys: ["ArrowRight"], label: "→", description: "Next lineup (wraps around)", group: "Lineups", when: dossierOpen, handler: () => stepLineup(1) });
+registerShortcut({ keys: ["["], label: "[", description: "Previous variant of this lineup", group: "Lineups", when: dossierOpen, handler: () => stepVariant(-1) });
+registerShortcut({ keys: ["]"], label: "]", description: "Next variant of this lineup", group: "Lineups", when: dossierOpen, handler: () => stepVariant(1) });
 
 // ←/→ in the dossier: walk the lineups currently visible on the map, in the
 // same order as the sidebar list, wrapping around at either end.
