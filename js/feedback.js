@@ -46,7 +46,7 @@ async function submit() {
     if (authUser) Object.assign(headers, await authHeaders());
     const res = await fetch("/api/feedback", {
       method: "POST", headers,
-      body: JSON.stringify({ kind, message: text, contact: contact.value.trim(), page: `map:${state.mapId}${sel}`, website: website.value }),
+      body: JSON.stringify({ kind, message: text, contact: contact.value.trim(), page: document.getElementById("appShell")?.hidden ? "home" : `map:${state.mapId}${sel}`, website: website.value }),
     });
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Couldn't send your message.");
     closeModal(modal);
@@ -56,6 +56,14 @@ async function submit() {
 }
 
 watchDialog(modal, "show", () => message);
+// Links marked [data-open-feedback] (home page notice) open this box; their
+// mailto: href is the fallback while the script hasn't loaded.
+document.addEventListener("click", (e) => {
+  const a = e.target.closest && e.target.closest("[data-open-feedback]");
+  if (!a || !modal) return;
+  e.preventDefault();
+  openFeedback();
+});
 if (feedbackBtn) feedbackBtn.onclick = () => openFeedback();
 // Icon-only on phones (see style.css): label it there, nowhere else.
 if (feedbackBtn && window.matchMedia) {

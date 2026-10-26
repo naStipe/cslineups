@@ -3330,3 +3330,6 @@ body.in-collection .fb-prompt{left:354px;}
   .fb-prompt-actions .primary-btn,.fb-prompt-actions .ghost-btn{flex:1 1 40%;padding-left:8px;padding-right:8px;}
   .fb-prompt-later{flex:1 1 100%;margin:0;text-align:center;}
 }
+
+/* The feedback box also opens from the home page, whose full-screen layer (z-index 500) would otherwise cover it. */
+#feedbackModal{z-index:600;}
