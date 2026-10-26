@@ -3278,10 +3278,10 @@ body.in-collection .detail-variants:empty{display:block;min-height:101px;}
   font:500 12px/1.4 var(--font-body);letter-spacing:.01em;
   box-shadow:0 6px 20px rgba(0,0,0,.5);
   pointer-events:none;opacity:0;transform:scale(.96);
-  transition:opacity .12s ease,transform .12s ease;
+  transition:opacity .12s ease,transform .12s ease,visibility 0s linear .12s;
   visibility:hidden;
 }
-.tooltip.tooltip-show{opacity:1;transform:none;visibility:visible;}
+.tooltip.tooltip-show{opacity:1;transform:none;visibility:visible;transition-delay:0s;}
 .tooltip[data-pos="top"]{transform-origin:var(--arrow-x,50%) 100%;}
 .tooltip[data-pos="bottom"]{transform-origin:var(--arrow-x,50%) 0;}
 .tooltip[data-pos="left"]{transform-origin:100% var(--arrow-y,50%);}
