@@ -667,6 +667,8 @@ if (sheet && sheetHandle) attachSheetDrag(sheetHandle, sheet, { onClose: () => c
 
 export function renderDetailType(lineup, editable) {
   const typeInfo = TYPES.find(t => t.id === lineup.type);
+  const title = document.getElementById("detailDialogTitle");
+  if (title) title.textContent = lineup.name ? `${lineup.name} — ${typeInfo.label}` : `${typeInfo.label} lineup`;
   detailType.textContent = editable ? typeInfo.label + " ✎" : typeInfo.label;
   detailType.style.color = "#0a0d0e";
   detailType.style.background = getCssVarColor(typeInfo.color);
@@ -681,10 +683,23 @@ export function renderDetailType(lineup, editable) {
 export function openTypeModalForEdit(lineup) {
   buildTypeGrid(async (typeId) => {
     closeModal(typeModal);
+    if (typeId === lineup.type) return;
+    const prev = lineup.type;
     lineup.type = typeId;
-    await dbPut(lineup, lineup.isOfficial);
-    await loadLineups();
-    openDetail(lineup.id);
+    renderDetailType(lineup, true);
+    refreshLocal();
+    detailType.classList.add("is-busy");
+    try {
+      await dbPut(lineup, lineup.isOfficial);
+      upsertLocalLineup(lineup);
+      toast("Nade type updated");
+    } catch (err) {
+      lineup.type = prev;
+      renderDetailType(lineup, true);
+      refreshLocal();
+      toastError("Couldn't save the nade type. Please try again.");
+    }
+    detailType.classList.remove("is-busy");
   });
   typeModal.classList.add("show");
 }
