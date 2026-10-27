@@ -6,6 +6,7 @@ export let state = {
   viewMode: "official",  // "official" (public map) or "personal" (signed-in user's own map)
   lineups: [],          // all lineups for current map + view, loaded from DB
   lineupsLoading: false, // true while the current map's lineups are being fetched
+  lineupsError: false,   // true when the last lineup load failed (the list offers a retry)
   lineupsUserId: undefined, // auth user id (or null) the last lineup load ran for; undefined before any load
   savedThrowKeys: new Set(), // `${lineupId}::${throwId}` for every individual throw position the user has bookmarked
   activeFilters: new Set(TYPES.map(t => t.id)),

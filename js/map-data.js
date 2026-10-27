@@ -14,6 +14,7 @@ import { hooks } from "./marker-hooks.js";
 import { state } from "./state.js";
 import { applyViewModeClass, setViewMode } from "./view-mode.js";
 import { flushPendingDeletes } from "./undo-delete.js";
+import { toastError } from "./toast.js";
 
 export async function selectMap(id) {
   state.mapId = id;
@@ -124,6 +125,7 @@ export async function loadLineups() {
 
   lineupCount.textContent = "loading…";
   state.lineupsLoading = true;
+  state.lineupsError = false;
   state.lineupsUserId = authUser ? authUser.id : null;
   showMapLoading(true);
   try {
@@ -157,7 +159,9 @@ export async function loadLineups() {
     if (myToken !== loadToken) return;
     lineupCount.textContent = "load failed";
     state.lineupsLoading = false;
+    state.lineupsError = true;
     buildLineupList();
+    toastError("Couldn't load the lineups for this map.", { action: { label: "Retry", onClick: () => loadLineups() } });
     console.error(err);
   } finally {
     if (myToken === loadToken) {

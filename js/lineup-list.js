@@ -11,7 +11,7 @@ import { MOVEMENT_LABELS, RANGE_LABELS, TYPES } from "./constants.js";
 import { closeMobileSearch, lineupList, lineupSearchInput, markerLayer, mobileSearchBtn, mobileSearchInput, mobileSearchModal, mobileSearchResults } from "./dom.js";
 import { escapeHtml } from "./html-utils.js";
 import { openLightbox } from "./lightbox.js";
-import { refreshLocal } from "./map-data.js";
+import { loadLineups, refreshLocal } from "./map-data.js";
 import { renderMarkers } from "./markers.js";
 import { closeModal } from "./modal-utils.js";
 import { canModifyLineup } from "./permissions.js";
@@ -78,6 +78,14 @@ export function countsByType() {
 function listEmptyState(term) {
   if (state.lineups.length === 0) {
     if (state.lineupsLoading) return emptyState({ title: "Loading lineups…", compact: true });
+    if (state.lineupsError) {
+      return emptyState({
+        title: "Couldn't load lineups",
+        body: "Check your connection and try again.",
+        compact: true,
+        action: { label: "Retry", onClick: () => loadLineups() },
+      });
+    }
     if (state.viewMode === "personal") {
       return emptyState({
         title: "No lineups of your own yet",
