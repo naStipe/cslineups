@@ -104,6 +104,29 @@ export async function dbSubmitLineup(id, submit) {
   return res.json();
 }
 
+// Turn link sharing on/off for one of your personal lineups.
+export async function dbShareLineup(id, shared) {
+  const headers = await authHeaders();
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify({ id, action: "share", shared: !!shared }),
+  });
+  if (res.status === 401) throw new Error("SIGN_IN_REQUIRED");
+  if (!res.ok) throw new Error("Failed to update sharing");
+  return res.json();
+}
+
+// One lineup by id: official, yours, or a personal one whose owner shared its
+// link. Resolves null when it doesn't exist or isn't shared with you.
+export async function dbGetLineup(id) {
+  const headers = await authHeaders().catch(() => ({}));
+  const res = await fetch(`${API_URL}?id=${encodeURIComponent(id)}`, { headers });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Failed to load the lineup (${res.status})`);
+  return res.json();
+}
+
 export async function dbDelete(id) {
   const headers = await authHeaders();
   const res = await fetch(`${API_URL}?id=${encodeURIComponent(id)}`, {

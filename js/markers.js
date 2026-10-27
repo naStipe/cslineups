@@ -413,9 +413,15 @@ export function buildThrows(openLineup, landingEl, animate) {
     tp.style.left = t.pos.x + "%";
     tp.style.top = t.pos.y + "%";
     tp.title = "Click to open this lineup";
+    tp.dataset.lid = openLineup.id;     // read by the hover preview
+    tp.dataset.tidx = String(throwIdx);
     makeKeyboardButton(tp);
     tp.setAttribute("aria-label", `Open ${openLineup.name || "lineup"}, throw position ${throwIdx + 1}`);
-    tp.onclick = (e) => { e.stopPropagation(); openDetail(openLineup.id, throwIdx); };
+    tp.onclick = (e) => {
+      e.stopPropagation();
+      if (hooks.interceptThrow && hooks.interceptThrow(e, openLineup, throwIdx)) return;
+      openDetail(openLineup.id, throwIdx);
+    };
     markerLayer.appendChild(tp);
 
     const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
