@@ -3141,3 +3141,20 @@ body.in-collection .feedback-btn{display:none;}
 button.map-item{background:none;border:0;border-left:2px solid transparent;width:100%;text-align:left;font-weight:inherit;}
 button.filter-chip{font-weight:inherit;}
 button.type-opt{font:inherit;color:inherit;text-align:left;width:100%;}
+
+/* Phone drawer close button (index.html #sidebarClose); desktop has no drawer. */
+.sidebar-close{display:none;}
+@media (max-width: 768px){
+  .sidebar-close{display:flex;position:absolute;top:16px;right:12px;width:44px;height:44px;}
+
+  /* 44px minimum touch targets. Small controls keep their look and get an
+     invisible hit area; segmented buttons and list rows grow instead. */
+  .coll-mini-btn{position:relative;}
+  .coll-mini-btn::after{content:"";position:absolute;inset:-12px -3px;}
+  .mobile-menu-btn{position:relative;}
+  .mobile-menu-btn::after{content:"";position:absolute;inset:-4px;}
+  .view-toggle-btn::after{inset:-7px;}
+  .side-seg-btn{min-height:44px;min-width:44px;}
+  .mobile-search-results .lineup-item{min-height:44px;}
+  .marker.throwpos::after{inset:-15px;}
+}

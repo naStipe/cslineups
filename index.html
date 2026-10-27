@@ -208,6 +208,8 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
       </svg>
       <span class="sidebar-wordmark">lineup<span class="sidebar-wordmark-r">r</span></span>
     </div>
+    <!-- Phone drawer only: an explicit way out besides tapping the dimmed strip. -->
+    <button type="button" class="icon-btn sidebar-close" id="sidebarClose" aria-label="Close menu">✕</button>
 
     <p class="rail-label">Maps</p>
     <nav class="map-list" id="mapList"></nav>

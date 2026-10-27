@@ -206,17 +206,37 @@ export function buildTypeGrid(onPick) {
   });
 }
 
+// On phones the sidebar is an off-screen drawer: keep it out of the tab
+// order while closed, move focus in when it opens and back to ☰ on close.
+const drawerMq = window.matchMedia("(max-width: 768px)");
+const sidebarClose = document.getElementById("sidebarClose");
+function syncSidebarInert() {
+  sidebar.inert = drawerMq.matches && !sidebar.classList.contains("open");
+}
+drawerMq.addEventListener("change", syncSidebarInert);
+syncSidebarInert();
+
+export function sidebarOpen() {
+  return drawerMq.matches && sidebar.classList.contains("open");
+}
+
 export function openSidebar() {
   sidebar.classList.add("open");
   sidebarOverlay.classList.add("show");
+  syncSidebarInert();
+  if (sidebarClose) sidebarClose.focus({ preventScroll: true });
 }
 
 export function closeSidebar() {
+  const hadFocus = sidebar.contains(document.activeElement);
   sidebar.classList.remove("open");
   sidebarOverlay.classList.remove("show");
+  syncSidebarInert();
+  if (hadFocus && drawerMq.matches && mobileMenuBtn) mobileMenuBtn.focus({ preventScroll: true });
 }
 
 if (mobileMenuBtn) mobileMenuBtn.onclick = openSidebar;
+if (sidebarClose) sidebarClose.onclick = closeSidebar;
 
 if (sidebarOverlay) sidebarOverlay.onclick = closeSidebar;
 

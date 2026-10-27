@@ -17,7 +17,7 @@ import { focusLineup, openMobileSearch, orderedVisibleLineups } from "./lineup-l
 import { renderMarkers } from "./markers.js";
 import { resetZoom } from "./pan-zoom.js";
 import { registerLayer, registerShortcut, setShortcutSuspender } from "./shortcuts.js";
-import { buildFilters, buildSidebar, closeSidebar, toggleTypeFilter } from "./sidebar.js";
+import { buildFilters, buildSidebar, closeSidebar, sidebarOpen, toggleTypeFilter } from "./sidebar.js";
 import { state } from "./state.js";
 import { toastError } from "./toast.js";
 
@@ -76,6 +76,7 @@ registerLayer({
     if (!document.querySelector(".modal-backdrop.show")) setAddMode(false);
   },
 });
+registerLayer({ priority: 75, isOpen: sidebarOpen, close: closeSidebar });
 registerLayer({ priority: 70, isOpen: dossierOpen, close: closeDetailPanel });
 registerLayer({ priority: 65, isOpen: () => cheatsheetPanel.classList.contains("open"), close: () => cheatsheetPanel.classList.remove("open") });
 registerLayer({ priority: 60, isOpen: () => !!state.openClusterKey, close: () => { state.openClusterKey = null; renderMarkers(); } });
