@@ -1,6 +1,6 @@
 import { TYPES } from "./constants.js";
 import { openDetail } from "./detail-panel.js";
-import { linkSvg, mapStage, markerLayer } from "./dom.js";
+import { linkSvg, mapImage, mapStage, markerLayer } from "./dom.js";
 import { syncLineupListSelection } from "./lineup-list.js";
 import { zoom } from "./pan-zoom.js";
 import { hooks } from "./marker-hooks.js";
@@ -72,8 +72,15 @@ markerLayer.addEventListener("keydown", (e) => {
   el.click();
 });
 
+// Marks closer than this on screen (px) are combined, so on a small radar
+// (phones) neighbouring marks don't overlap and steal each other's taps.
+const MIN_MARK_GAP_PX = 22;
+
 export function clusterLineups(list) {
-  const THRESHOLD = 3.5 / zoom;
+  // 3.5% of the map at zoom 1 is the desktop spacing; small maps need more.
+  const mapPx = mapImage.offsetWidth;
+  const minPct = mapPx ? (MIN_MARK_GAP_PX / mapPx) * 100 : 0;
+  const THRESHOLD = Math.max(3.5, minPct) / zoom;
   const clusters = [];
   list.forEach(lineup => {
     const c = clusters.find(cl => Math.hypot(cl.x - lineup.landing.x, cl.y - lineup.landing.y) < THRESHOLD);
@@ -96,15 +103,38 @@ export function clusterKey(cluster) {
   return cluster.lineups.map(l => `${l.id}:${l.throws.length}`).sort().join(",");
 }
 
+// Label shown under a fan petal; unnamed lineups read like the sidebar list.
+function petalLabel(lineup) {
+  const t = TYPES.find(x => x.id === lineup.type);
+  return lineup.name || `Unnamed ${(t ? t.label : "lineup").toLowerCase()}`;
+}
+
+// Smallest fan radius (screen px) at which no two petal labels overlap.
+// Label boxes are estimated from the text (9px mono, ~5.5px per character
+// plus padding) and sit centred about 15px below each petal's centre.
+function fanRadius(labels, startAngle, step) {
+  const boxes = (r) => labels.map((text, i) => {
+    const rad = (startAngle + i * step) * Math.PI / 180;
+    const w = text.length * 5.5 + 16, h = 19;
+    const x = Math.cos(rad) * r, y = Math.sin(rad) * r + 15;
+    return { l: x - w / 2, r: x + w / 2, t: y - h / 2, b: y + h / 2 };
+  });
+  const clear = (bs) => bs.every((a, i) => bs.every((b, j) => j <= i || a.r <= b.l || b.r <= a.l || a.b <= b.t || b.b <= a.t));
+  for (let r = 46; r < 120; r += 4) if (clear(boxes(r))) return r;
+  return 120;
+}
+
 export function renderClusterFan(cluster, key, animate = true) {
   const count = cluster.lineups.length;
+  const startAngle = -90;
+  const step = 360 / count;
+  const labels = cluster.lineups.map(petalLabel);
   // Divide by zoom so the fan's on-screen spread stays constant — the map
   // frame itself is scaled by `zoom`, which would otherwise blow up these
   // pixel offsets and scatter the petals when zoomed in.
-  const radius = 46 / zoom;
-  const lineRadius = 28 / zoom;
-  const startAngle = -90;
-  const step = 360 / count;
+  const spread = fanRadius(labels, startAngle, step);
+  const radius = spread / zoom;
+  const lineRadius = (spread - 18) / zoom;
 
   const wrap = document.createElement("div");
   wrap.className = "cluster-fan";
@@ -159,7 +189,7 @@ export function renderClusterFan(cluster, key, animate = true) {
     petal.className = "fan-petal" + (animate ? "" : " show");
     petal.style.transform = animate ? shutPetal : openPetal;
     const typeInfo = TYPES.find(t => t.id === lineup.type);
-    const label = lineup.name || `${typeInfo.label} #${i + 1}`;
+    const label = labels[i];
     const dot = document.createElement("div");
     dot.className = "fan-petal-dot";
     dot.style.background = typeInfo.color;
@@ -191,6 +221,7 @@ export function renderClusterFan(cluster, key, animate = true) {
       hub.style.left = cluster.x + "%";
       hub.style.top = cluster.y + "%";
       hub.title = count > 1 ? `${count} lineups here` : "";
+      hub.setAttribute("aria-label", `${count} lineups here`);
       hub.onclick = (e2) => {
         e2.stopPropagation();
         if (count > 1) { state.openClusterKey = key; renderMarkers(); return; }
@@ -446,3 +477,11 @@ export function buildThrows(openLineup, landingEl, animate) {
   landingEl.onmouseenter = () => lines.forEach(l => l.classList.add("glow"));
   landingEl.onmouseleave = () => lines.forEach(l => l.classList.remove("glow"));
 }
+
+// The clustering distance depends on the rendered map size, so re-cluster
+// when the window (and with it the radar) changes size.
+let resizeTimer = null;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { if (state.lineups.length) renderMarkers(false); }, 150);
+});

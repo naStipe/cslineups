@@ -30,11 +30,22 @@ function standImage(t) {
   return (t.standing && t.standing[0]) || (t.screenshots && t.screenshots[0]) || t.precise || t.result || null;
 }
 
+let watchTimer = null;
+
 function hide() {
   clearTimeout(timer);
+  clearTimeout(watchTimer);
   timer = null;
   currentEl = null;
   if (card) card.classList.remove("show");
+}
+
+// A marker can go away under a still mouse (a fan collapsing after a pick,
+// a re-render), which fires no mouseout; drop the card when that happens.
+const gone = (el) => !el.isConnected || !!el.closest(".cluster-fan:not(.open)");
+function watchAnchor(el) {
+  clearTimeout(watchTimer);
+  watchTimer = setTimeout(() => { if (currentEl === el && gone(el)) hide(); else if (currentEl === el) watchAnchor(el); }, 250);
 }
 
 function show(el, lineup, throwIdx = null) {
@@ -68,6 +79,7 @@ function show(el, lineup, throwIdx = null) {
   card.style.left = x + "px";
   card.style.top = y + "px";
   card.classList.add("show");
+  watchAnchor(el);
 }
 
 if (canHover) {
@@ -79,7 +91,7 @@ if (canHover) {
     currentEl = el;
     timer = setTimeout(() => {
       const lineup = state.lineups.find(l => l.id === el.dataset.lid);
-      if (lineup && el.isConnected) show(el, lineup, el.dataset.tidx == null ? null : Number(el.dataset.tidx));
+      if (lineup && !gone(el)) show(el, lineup, el.dataset.tidx == null ? null : Number(el.dataset.tidx));
     }, DELAY_MS);
   });
   document.documentElement.addEventListener("mouseleave", hide);
