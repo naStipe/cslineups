@@ -20,7 +20,9 @@ function focusables(el) {
   return [...el.querySelectorAll(FOCUSABLE)].filter(n => n.getClientRects().length && !n.closest("[hidden]"));
 }
 
-export function watchDialog(el, openClass, initialFocus) {
+// `fallbackFocus` (optional) names where focus goes on close when the opener
+// no longer exists, e.g. a map marker that was re-rendered away.
+export function watchDialog(el, openClass, initialFocus, fallbackFocus) {
   let wasOpen = el.classList.contains(openClass);
   new MutationObserver(() => {
     const isOpen = el.classList.contains(openClass);
@@ -43,7 +45,9 @@ export function watchDialog(el, openClass, initialFocus) {
       // never steal it from something the user has since moved to.
       const a = document.activeElement;
       if (a && a !== document.body && !el.contains(a)) return;
+      const fallback = !(opener && opener.isConnected) && fallbackFocus ? fallbackFocus() : null;
       if (opener && opener.isConnected && opener.getClientRects().length) opener.focus({ preventScroll: true });
+      else if (fallback) fallback.focus({ preventScroll: true });
       else if (a && el.contains(a)) a.blur(); // don't leave focus inside a hidden dialog
     }
   }).observe(el, { attributes: true, attributeFilter: ["class"] });

@@ -3130,3 +3130,8 @@ body.in-collection .feedback-btn{display:none;}
 .tm-suggest{line-height:1.5;}
 .tm-suggest input{margin-top:1px;}
 .ghost-btn[hidden],.primary-btn[hidden],.icon-btn[hidden],.zoom-btn[hidden],.toast-action[hidden],.coll-mini-btn[hidden],.side-seg-btn[hidden]{display:none;}
+
+/* Type picker reused to change an existing lineup's type (js/add-mode.js
+   openTypeModal editType): only the type grid applies. */
+#typeModal.edit-type .field-label,#typeModal.edit-type #lineupNameInput,#typeModal.edit-type #lineupSideSlot,
+#typeModal.edit-type .name-hint,#typeModal.edit-type .name-suggestions{display:none;}

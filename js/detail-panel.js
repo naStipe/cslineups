@@ -1,16 +1,15 @@
-import { setAddMode, showAddFlow } from "./add-mode.js";
+import { openTypeModal, setAddMode, showAddFlow } from "./add-mode.js";
 import { API_URL, SAVED_URL, dbPut, dbSaveLineup, dbShareLineup, dbSubmitLineup, dbUnsaveLineup, throwKey } from "./api.js";
 import { authUser } from "./auth.js";
 import { MOVEMENT_LABELS, RANGE_LABELS, TYPES } from "./constants.js";
-import { addThrowBtn, closeDetail, deleteLineupBtn, detailNameInput, detailOwnerBadge, detailSideSlot, detailPanel, detailTitle, detailType, saveLineupBtn, shareLineupBtn, submitLineupBtn, submitLineupNote, throwList, typeModal } from "./dom.js";
+import { addThrowBtn, closeDetail, deleteLineupBtn, detailNameInput, detailOwnerBadge, detailSideSlot, detailPanel, detailTitle, detailType, markerLayer, saveLineupBtn, shareLineupBtn, submitLineupBtn, submitLineupNote, throwList, typeModal } from "./dom.js";
 import { attachInlineZoom, attachSheetDrag, attachStripReorder, attachVariantSwipe, loadFrameImage, loadFrameImages } from "./dossier-gestures.js";
 import { openLightbox } from "./lightbox.js";
-import { loadLineups, refreshLocal, upsertLocalLineup } from "./map-data.js";
+import { refreshLocal, upsertLocalLineup } from "./map-data.js";
 import { getCssVarColor, renderMarkers } from "./markers.js";
 import { closeModal, watchDialog } from "./modal-utils.js";
 import { canModifyLineup, requireLineupEditable } from "./permissions.js";
 import { startReposition } from "./reposition.js";
-import { buildTypeGrid } from "./sidebar.js";
 import { state } from "./state.js";
 import { escapeHtml } from "./html-utils.js";
 import { openThrowModal } from "./throw-modal.js";
@@ -34,9 +33,13 @@ const isOpenOn = (lineupId) => state.selectedLineupId === lineupId && detailPane
 // when the dossier is already showing this lineup (e.g. reopened after an
 // edit), where it stays on the variant being looked at.
 // opts.highlight briefly rings the variant (used for ?throw= deep links).
+// Last lineup shown in the dossier: focus returns to its marker on close.
+let lastDossierLineupId = null;
+
 export function openDetail(lineupId, throwIdx, opts = {}) {
   const lineup = state.lineups.find(l => l.id === lineupId);
   if (!lineup) return;
+  lastDossierLineupId = lineupId;
   const keep = throwIdx === undefined && isOpenOn(lineupId);
   state.selectedLineupId = lineupId;
   if (!keep) selectedThrowIdx = throwIdx !== undefined ? throwIdx : 0;
@@ -449,6 +452,7 @@ async function copyShareLink(lineup) {
       lineup.linkShared = true;
       renderLinkShareControls(lineup, true);
       shareLineupBtn.title = lineup.throws.length > 1 ? "Copy link to this variant" : "Copy shareable link";
+      shareLineupBtn.setAttribute("aria-label", shareLineupBtn.title);
     } catch { toastError("Couldn't turn on sharing. Please try again."); return; }
   }
   const url = `${location.origin}${lineupPath(lineup, selectedThrowIdx)}`;
@@ -672,15 +676,26 @@ export function renderDetailType(lineup, editable) {
   };
 }
 
+// Same picker as "Add lineup", without the name / side fields. The change
+// shows at once and rolls back if the save fails.
 export function openTypeModalForEdit(lineup) {
-  buildTypeGrid(async (typeId) => {
+  openTypeModal(async (typeId) => {
     closeModal(typeModal);
+    if (typeId === lineup.type) return;
+    const prev = lineup.type;
     lineup.type = typeId;
-    await dbPut(lineup, lineup.isOfficial);
-    await loadLineups();
-    openDetail(lineup.id);
-  });
-  typeModal.classList.add("show");
+    refreshLocal();
+    if (isOpenOn(lineup.id)) renderDetail(lineup);
+    try {
+      await dbPut(lineup, lineup.isOfficial);
+      toast(`Type changed to ${TYPES.find(t => t.id === typeId)?.label || typeId}`);
+    } catch (err) {
+      lineup.type = prev;
+      refreshLocal();
+      if (isOpenOn(lineup.id)) renderDetail(lineup);
+      toastError("Couldn't change the type. Please try again.");
+    }
+  }, { editType: lineup.type });
 }
 
 export function closeDetailPanel() {
@@ -694,7 +709,17 @@ export function closeDetailPanel() {
 }
 
 closeDetail.onclick = closeDetailPanel;
-watchDialog(detailPanel, "open", () => closeDetail);
+// While closed, the dossier is only faded out; keep its controls out of the
+// tab order and the accessibility tree. Registered before watchDialog so the
+// panel is no longer inert when that moves focus into it.
+const syncDossierInert = () => { detailPanel.inert = !detailPanel.classList.contains("open"); };
+new MutationObserver(syncDossierInert).observe(detailPanel, { attributes: true, attributeFilter: ["class"] });
+syncDossierInert();
+watchDialog(detailPanel, "open", () => closeDetail, () => {
+  if (!lastDossierLineupId) return null;
+  return [...markerLayer.querySelectorAll(".marker.landing[data-lids]")]
+    .find(el => el.dataset.lids.split(",").includes(lastDossierLineupId)) || null;
+});
 
 detailPanel.addEventListener("click", (e) => {
   if (e.target === detailPanel) closeDetailPanel();
@@ -765,7 +790,7 @@ function renderLinkShareControls(lineup, editable) {
       await dbShareLineup(lineup.id, false);
       lineup.linkShared = false;
       renderLinkShareControls(lineup, editable);
-      if (shareLineupBtn) shareLineupBtn.title = "Share with a link";
+      if (shareLineupBtn) { shareLineupBtn.title = "Share with a link"; shareLineupBtn.setAttribute("aria-label", "Share with a link"); }
       toast("Link sharing is off. The old link no longer works");
     } catch { toastError("Couldn't turn off sharing. Please try again."); }
     finally { btn.disabled = false; }

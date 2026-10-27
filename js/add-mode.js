@@ -9,6 +9,8 @@ import { buildTypeGrid } from "./sidebar.js";
 import { state, uid } from "./state.js";
 import { openThrowModal } from "./throw-modal.js";
 
+const typeModalTitle = document.getElementById("typeModalTitle");
+
 // ── Guided placement bar ─────────────────────────────────────────────────
 // Shown while the user is clicking on the map to place a lineup's landing /
 // throw markers, with a step counter and a Cancel button.
@@ -171,7 +173,7 @@ function highlightType(typeId, focus) {
 
 function pickType(typeId) {
   if (!typeId || !typePick) return;
-  try { localStorage.setItem(LAST_TYPE_KEY, typeId); } catch {}
+  if (!typeModal.classList.contains("edit-type")) { try { localStorage.setItem(LAST_TYPE_KEY, typeId); } catch {} }
   typePick(typeId);
 }
 
@@ -216,21 +218,26 @@ if (lineupNameInput) {
   lineupNameInput.addEventListener("input", () => setNameHint(false));
 }
 
-export function openTypeModal(onPick) {
+// `editType` (a type id) reuses the picker to change an existing lineup's
+// type: the name and side fields are hidden and the current type is marked.
+export function openTypeModal(onPick, { editType = null } = {}) {
   buildTypeGrid(onPick);
   typePick = onPick;
   enhanceTypeGrid();
+  typeModal.classList.toggle("edit-type", !!editType);
+  if (typeModalTitle) typeModalTitle.textContent = editType ? "Change nade type" : "What kind of nade?";
   if (lineupNameInput) lineupNameInput.value = "";
   state.pendingSide = "any";
   if (lineupSideSlot) {
     lineupSideSlot.replaceChildren(sideSegment(SIDES, "any", (v) => { state.pendingSide = v; }, { label: "Side" }));
   }
-  let last = null;
-  try { last = localStorage.getItem(LAST_TYPE_KEY); } catch {}
+  let last = editType;
+  if (!last) { try { last = localStorage.getItem(LAST_TYPE_KEY); } catch {} }
   highlightType(TYPES.some(t => t.id === last) ? last : null);
   setNameHint(false);
   typeModal.classList.add("show");
-  if (lineupNameInput) lineupNameInput.focus({ preventScroll: true });
+  if (editType) { const cur = typeOptions().find(o => o.dataset.type === editType); if (cur) cur.focus({ preventScroll: true }); }
+  else if (lineupNameInput) lineupNameInput.focus({ preventScroll: true });
 }
 
 cancelType.onclick = () => { closeModal(typeModal); typePick = null; setAddMode(false); };

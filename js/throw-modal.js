@@ -283,7 +283,7 @@ saveThrow.onclick = async () => {
     const existingLineup = state.lineups.find(l => l.id === draft.lineupId);
     if (!requireLineupEditable(existingLineup)) return;
   }
-  if (draft.screenshots.length === 0) {
+  if (!draft.screenshots.length && !draft.standing.length && !draft.precise && !draft.result) {
     const ok = await confirmDialog({
       title: "Save without screenshots?",
       body: "No throw screenshots are attached. You can add them later by editing this throw position.",
@@ -294,6 +294,7 @@ saveThrow.onclick = async () => {
 
   setBusy(saveThrow, true, "Saving…");
 
+  let toasted = false; // the suggestion step already said how the save went
   try {
     const failed = await waitForUploads(draft);
     if (pendingThrowDraft !== draft) return;
@@ -353,6 +354,7 @@ saveThrow.onclick = async () => {
         } catch (e) {
           toastError("Saved, but the suggestion didn't go through. You can suggest it from the lineup.");
         }
+        toasted = true;
       }
       upsertLocalLineup(lineup);
     } else {
@@ -373,15 +375,21 @@ saveThrow.onclick = async () => {
     }
 
     const wasEditing = !!draft.editingThrowId;
+    const addedVariant = !wasEditing && !draft.isNewLineup;
     const reopenId = draft.lineupId;
 
     setBusy(saveThrow, false);
     endThrowFlow({ discard: false });
     refreshLocal();
 
-    // If we were editing an existing throw, reopen the dossier so changes are visible immediately
+    // Editing a throw or adding one to an existing lineup: reopen the dossier
+    // so the change is visible (a new variant opens on itself, highlighted).
     if (wasEditing) openDetail(reopenId);
-    toast(wasEditing ? "Throw position updated" : "Lineup saved");
+    else if (addedVariant) {
+      const saved = state.lineups.find(l => l.id === reopenId);
+      if (saved) openDetail(reopenId, saved.throws.length - 1, { highlight: true });
+    }
+    if (!toasted) toast(wasEditing ? "Throw position updated" : addedVariant ? "Throw position added" : "Lineup saved");
   } catch (err) {
     console.error(err);
     toastError(
