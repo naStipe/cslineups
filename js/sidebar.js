@@ -1,5 +1,5 @@
 import { MAPS, TYPES } from "./constants.js";
-import { closeTypeFilter, markerLayer, mapList, mapLoading, mobileMenuBtn, mobileTypeFilterGrid, sidebar, sideFilters, sidebarOverlay, typeFilterBtn, typeFilterBtnLabel, typeFilterModal, typeFilters, typeGrid } from "./dom.js";
+import { appShell, closeTypeFilter, markerLayer, mapList, mapLoading, mobileMenuBtn, mobileTypeFilterGrid, sidebar, sideFilters, sidebarOverlay, typeFilterBtn, typeFilterBtnLabel, typeFilterModal, typeFilters, typeGrid } from "./dom.js";
 import { switchMap } from "./home-screen.js";
 import { areaBounds, areaOptions } from "./areas.js";
 import { buildLineupList, countsByType } from "./lineup-list.js";
@@ -9,6 +9,20 @@ import { SIDE_FILTERS, sideSegment } from "./side.js";
 import { closeModal } from "./modal-utils.js";
 import { state } from "./state.js";
 
+// Official lineup count per map ({ dust2: 26, … }), fetched once and shared
+// by the sidebar and the home screen's map cards. Resolves null on failure.
+let countsPromise = null;
+let mapCounts = null;
+export function fetchMapCounts() {
+  if (!countsPromise) {
+    countsPromise = fetch("/api/lineups?counts=true")
+      .then(r => (r.ok ? r.json() : null))
+      .catch(() => null)
+      .then(c => { mapCounts = c; if (c) buildSidebar(); return c; });
+  }
+  return countsPromise;
+}
+
 export function buildSidebar() {
   mapList.innerHTML = "";
   MAPS.forEach(m => {
@@ -16,10 +30,17 @@ export function buildSidebar() {
     el.type = "button";
     el.className = "map-item" + (m.id === state.mapId ? " active" : "");
     if (m.id === state.mapId) el.setAttribute("aria-current", "page");
-    el.innerHTML = `<span class="swatch" aria-hidden="true"></span>${m.name}`;
+    el.innerHTML = `<img class="map-item-icon" src="/maps/icons/${m.id}.webp" alt="" width="28" height="28" decoding="async"><span class="map-item-name"></span><span class="map-item-count"></span>`;
+    el.querySelector(".map-item-name").textContent = m.name;
+    const n = mapCounts ? mapCounts[m.id] || 0 : null;
+    if (n !== null) {
+      el.querySelector(".map-item-count").textContent = n || "soon";
+      el.title = n ? `${m.name} — ${n} lineup${n === 1 ? "" : "s"}` : `${m.name} — lineups coming soon`;
+    }
     el.onclick = () => { closeSidebar(); switchMap(m.id); };
     mapList.appendChild(el);
   });
+  if (!countsPromise && !appShell.hidden) fetchMapCounts();
 }
 
 // Active type filters and the official/personal view are remembered per map,
@@ -104,6 +125,33 @@ function buildSideAndAreaFilters() {
     row.append(filterControls());
     mobileTypeFilterGrid.append(row);
   }
+  fitFilters();
+}
+
+// Desktop topbar: show the filter row only when it fits between the map
+// title and the action buttons — first dropping the per-type counts, then
+// swapping the row for the "Filters" button that opens the same controls as
+// a popup. Measured rather than set by breakpoint, since the row's width
+// depends on the map (area list) and sign-in ("My Map", "Add lineup").
+const topbar = document.querySelector(".topbar");
+const filterBar = document.querySelector(".filter-bar");
+function filterBarWidth() {
+  const parts = [...filterBar.children].filter(c => c.offsetWidth);
+  return parts.reduce((w, c) => w + c.offsetWidth, 0)
+    + (parseFloat(getComputedStyle(filterBar).columnGap) || 0) * Math.max(0, parts.length - 1);
+}
+function fitFilters() {
+  if (!topbar || !filterBar) return;
+  topbar.classList.remove("filters-tight", "filters-compact");
+  if (drawerMq.matches) return;
+  const cs = getComputedStyle(topbar);
+  const gap = parseFloat(cs.columnGap) || 0;
+  const avail = topbar.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
+    - topbar.querySelector(".topbar-left").offsetWidth - topbar.querySelector(".topbar-right").offsetWidth - 2 * gap;
+  if (filterBarWidth() <= avail) return;
+  topbar.classList.add("filters-tight");
+  if (filterBarWidth() <= avail) return;
+  topbar.classList.add("filters-compact");
 }
 
 function afterFilterChange() {
@@ -159,10 +207,12 @@ export function toggleTypeFilter(typeId) {
   renderMarkers();
 }
 
+// "Filters" plus how many filters are narrowing the map, if any.
 function updateTypeFilterBtnLabel() {
   if (!typeFilterBtnLabel) return;
-  const activeCount = TYPES.filter(t => state.activeFilters.has(t.id)).length;
-  typeFilterBtnLabel.textContent = activeCount === TYPES.length ? "Types" : `Types (${activeCount})`;
+  const hiddenTypes = TYPES.filter(t => !state.activeFilters.has(t.id)).length;
+  const n = hiddenTypes + (state.sideFilter !== "all" ? 1 : 0) + (state.areaFilter ? 1 : 0);
+  typeFilterBtnLabel.textContent = n ? `Filters (${n})` : "Filters";
 }
 
 // Mobile stand-in for the topbar's type-chip row — the row doesn't fit at
@@ -209,6 +259,12 @@ export function buildTypeGrid(onPick) {
 // On phones the sidebar is an off-screen drawer: keep it out of the tab
 // order while closed, move focus in when it opens and back to ☰ on close.
 const drawerMq = window.matchMedia("(max-width: 768px)");
+// Re-fit when the bar or either side zone changes width (window resize,
+// sign-in showing "My Map", admin status showing "Add lineup").
+if (topbar) {
+  const ro = new ResizeObserver(() => fitFilters());
+  [topbar, topbar.querySelector(".topbar-left"), topbar.querySelector(".topbar-right")].forEach(el => el && ro.observe(el));
+}
 const sidebarClose = document.getElementById("sidebarClose");
 function syncSidebarInert() {
   sidebar.inert = drawerMq.matches && !sidebar.classList.contains("open");

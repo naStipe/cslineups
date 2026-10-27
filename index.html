@@ -214,45 +214,11 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
     <p class="rail-label">Maps</p>
     <nav class="map-list" id="mapList"></nav>
 
-    <!-- ===== Collections ===== -->
-    <section class="coll-rail" id="collRail" aria-label="Collections">
-      <div class="coll-rail-head">
-        <p class="rail-label">Collections</p>
-        <span class="coll-rail-actions">
-          <button type="button" class="coll-mini-btn" id="collSelectBtn" aria-pressed="false" title="Select several lineups on the map to add them to a collection">Select</button>
-          <button type="button" class="coll-mini-btn" id="collNewBtn">+ New</button>
-        </span>
-      </div>
-      <div class="coll-list" id="collList"></div>
-    </section>
-
-    <!-- Lineups on the current map: searchable list that focuses the
-         matching marker on the map when clicked. Desktop only — on mobile
-         this is replaced by #mobileSearchBtn, which opens the same search
-         as a small popup (see #mobileSearchModal below) so the drawer
-         itself stays just the map list. -->
-    <div class="lineup-rail">
-      <p class="rail-label">Lineups on this map</p>
-      <div class="side-filters" id="sideFilters" aria-label="Filter by side and area"></div>
-      <div class="lineup-search">
-        <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-          <circle cx="6" cy="6" r="4.3" stroke="currentColor" stroke-width="1.5"/>
-          <line x1="9.3" y1="9.3" x2="12.5" y2="12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-        <input type="search" id="lineupSearchInput" placeholder="Search lineups…" autocomplete="off" aria-label="Search lineups on this map">
-      </div>
-      <nav class="lineup-list" id="lineupList"></nav>
-    </div>
-
-    <button type="button" class="mobile-search-btn" id="mobileSearchBtn">
-      <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <circle cx="6" cy="6" r="4.3" stroke="currentColor" stroke-width="1.5"/>
-        <line x1="9.3" y1="9.3" x2="12.5" y2="12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>
-      Search lineups
-    </button>
-
     <div class="sidebar-footer">
+      <a href="/admin.html" id="adminLink" class="admin-link">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1.5 2.75 3.5v4c0 3.2 2.2 5.9 5.25 7 3.05-1.1 5.25-3.8 5.25-7v-4L8 1.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="m5.75 8 1.6 1.6 2.9-3.1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Review screenshots
+      </a>
       <div class="auth-box">
         <div class="auth-signed-out">
           <button id="signInBtn" class="ghost-btn">Sign in</button>
@@ -260,13 +226,16 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
         <div class="auth-signed-in">
           <button class="profile-btn" id="profileBtn" title="Open your profile">
             <span class="profile-avatar" id="profileAvatar"></span>
-            <span class="auth-email" id="authEmailLabel"></span>
-            <svg class="profile-chevron" width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M3 1.5L6.5 5L3 8.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span class="profile-text">
+              <span class="auth-email" id="authEmailLabel"></span>
+              <span class="profile-sub">View profile</span>
+            </span>
           </button>
-          <button id="signOutBtn" class="ghost-btn">Sign out</button>
+          <button id="signOutBtn" class="icon-btn sign-out-btn" aria-label="Sign out" title="Sign out">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 2.5H3.5a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M10.5 11 13.5 8l-3-3M13.5 8H6.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
         </div>
       </div>
-      <a href="/admin.html" id="adminLink" class="ghost-btn admin-link">🛡 Review screenshots</a>
     </div>
   </aside>
 
@@ -278,25 +247,35 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
         <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open map list">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><line x1="2" y1="4.5" x2="16" y2="4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="2" y1="9" x2="16" y2="9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="2" y1="13.5" x2="16" y2="13.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         </button>
-        <h2 class="topbar-map-name" id="currentMapName">DUST II</h2>
-        <span class="count-pill" id="lineupCount">0 lineups</span>
+        <div class="topbar-title">
+          <h2 class="topbar-map-name" id="currentMapName">DUST II</h2>
+          <span class="count-pill" id="lineupCount">0 lineups</span>
+        </div>
         <div class="view-toggle" id="viewToggle">
           <button class="view-toggle-btn active" id="officialViewBtn" data-view="official">Official</button>
           <button class="view-toggle-btn hidden" id="personalViewBtn" data-view="personal">My Map</button>
         </div>
       </div>
 
-      <div class="filters" id="typeFilters"></div>
+      <!-- What the map shows: grenade types, then T/CT side and area. -->
+      <div class="filter-bar" role="group" aria-label="Map filters">
+        <div class="filters" id="typeFilters"></div>
+        <span class="filter-divider" aria-hidden="true"></span>
+        <div class="side-filters" id="sideFilters"></div>
+      </div>
 
-      <!-- Mobile-only: the type chip row doesn't fit/scroll comfortably at
-           phone width, so it's replaced by this button + a popup list of
-           toggles (see #typeFilterModal below). Desktop keeps the row above. -->
+      <!-- Narrow screens: the filter row doesn't fit, so this button opens
+           the same filters as a popup (see #typeFilterModal below). -->
       <button type="button" class="type-filter-btn" id="typeFilterBtn">
         <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M1.5 2h11L8.5 7.2V12l-3-1.5V7.2L1.5 2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
-        <span id="typeFilterBtnLabel">Types</span>
+        <span id="typeFilterBtnLabel">Filters</span>
       </button>
 
       <div class="topbar-right">
+        <button type="button" class="panel-toggle" id="browseToggle" aria-controls="browsePanel" aria-expanded="true" title="Show or hide the lineup list (L)">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="1.75" y="2.75" width="12.5" height="10.5" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M10 3v10" stroke="currentColor" stroke-width="1.4"/><path d="M11.75 6h.75M11.75 8h.75M11.75 10h.75" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          <span>Lineups</span>
+        </button>
         <button id="addModeBtn" class="primary-btn">
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
           Add lineup
@@ -304,6 +283,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
       </div>
     </header>
 
+    <div class="workspace">
     <div class="map-stage" id="mapStage">
       <div class="map-loading show" id="mapLoading"><span class="map-loading-text">Loading lineups…</span></div>
       <div class="map-frame" id="mapFrame">
@@ -386,6 +366,51 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
       </div>
 
     </div>
+
+    <!-- Right-hand panel: browse this map's lineups and your collections.
+         A docked column on desktop (collapsible, remembered), a sheet on
+         phones. Driven by js/browse-panel.js. -->
+    <div class="browse-backdrop" id="browseBackdrop"></div>
+    <aside class="browse-panel" id="browsePanel" aria-label="Lineups and collections">
+      <div class="browse-head">
+        <div class="browse-tabs" role="tablist" aria-label="Browse">
+          <button type="button" role="tab" class="browse-tab active" id="browseTabLineups" aria-selected="true" aria-controls="browseLineups" data-tab="lineups">
+            Lineups <span class="browse-tab-count" id="browseLineupCount"></span>
+          </button>
+          <button type="button" role="tab" class="browse-tab" id="browseTabColls" aria-selected="false" aria-controls="browseColls" data-tab="collections" tabindex="-1">
+            Collections <span class="browse-tab-count" id="browseCollCount"></span>
+          </button>
+        </div>
+        <button type="button" class="icon-btn browse-close" id="browseClose" aria-label="Hide panel" title="Hide panel (L)">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m6 3.5 4.5 4.5L6 12.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <div class="browse-body" role="tabpanel" id="browseLineups" aria-labelledby="browseTabLineups">
+        <div class="lineup-search">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <circle cx="6" cy="6" r="4.3" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="9.3" y1="9.3" x2="12.5" y2="12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <input type="search" id="lineupSearchInput" placeholder="Search lineups" autocomplete="off" aria-label="Search lineups on this map">
+          <kbd class="search-kbd" aria-hidden="true">/</kbd>
+        </div>
+        <nav class="lineup-list" id="lineupList" aria-label="Lineups on this map"></nav>
+      </div>
+
+      <div class="browse-body" role="tabpanel" id="browseColls" aria-labelledby="browseTabColls" hidden>
+        <section class="coll-rail" id="collRail" aria-label="Collections">
+          <div class="coll-rail-head">
+            <span class="coll-rail-actions">
+              <button type="button" class="ghost-btn coll-mini-btn" id="collSelectBtn" aria-pressed="false" title="Pick several lineups on the map to add them to a collection">Select on map</button>
+              <button type="button" class="ghost-btn coll-mini-btn coll-new-btn" id="collNewBtn">+ New</button>
+            </span>
+          </div>
+          <div class="coll-list" id="collList"></div>
+        </section>
+      </div>
+    </aside>
+    </div>
   </main>
 
   <!-- Always-present map links (also crawlable). Mirrors the home-screen footer. -->
@@ -452,27 +477,13 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
 <div class="modal-backdrop" id="typeFilterModal">
   <div class="modal type-filter-modal" role="dialog" aria-modal="true" aria-labelledby="typeFilterTitle">
     <div class="type-filter-head">
-      <h3 id="typeFilterTitle">Lineup types</h3>
+      <h3 id="typeFilterTitle">Filters</h3>
       <button type="button" class="icon-btn" id="closeTypeFilter" aria-label="Close filters">✕</button>
     </div>
     <div class="type-grid" id="mobileTypeFilterGrid"></div>
   </div>
 </div>
 
-<!-- MODAL: mobile lineup search (small popup, mobile only — see #mobileSearchBtn) -->
-<div class="modal-backdrop" id="mobileSearchModal">
-  <div class="modal mobile-search-modal" role="dialog" aria-modal="true" aria-label="Search lineups">
-    <div class="mobile-search-head">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <circle cx="6" cy="6" r="4.3" stroke="currentColor" stroke-width="1.5"/>
-        <line x1="9.3" y1="9.3" x2="12.5" y2="12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>
-      <input type="search" id="mobileSearchInput" placeholder="Search lineups…" autocomplete="off" aria-label="Search lineups on this map">
-      <button type="button" class="icon-btn" id="closeMobileSearch" aria-label="Close search">✕</button>
-    </div>
-    <nav class="mobile-search-results" id="mobileSearchResults"></nav>
-  </div>
-</div>
 
 <!-- MODAL: sign in / sign up -->
 <div class="modal-backdrop" id="authModal">

@@ -4,15 +4,9 @@ export const lineupList = document.getElementById("lineupList");
 
 export const lineupSearchInput = document.getElementById("lineupSearchInput");
 
-export const mobileSearchBtn = document.getElementById("mobileSearchBtn");
+export const browsePanel = document.getElementById("browsePanel");
 
-export const mobileSearchModal = document.getElementById("mobileSearchModal");
-
-export const mobileSearchInput = document.getElementById("mobileSearchInput");
-
-export const mobileSearchResults = document.getElementById("mobileSearchResults");
-
-export const closeMobileSearch = document.getElementById("closeMobileSearch");
+export const browseToggle = document.getElementById("browseToggle");
 
 export const homeScreen = document.getElementById("homeScreen");
 

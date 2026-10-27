@@ -4,7 +4,7 @@ import { MAPS, TYPES } from "./constants.js";
 import { dbGetLineup } from "./api.js";
 import { upsertLocalLineup } from "./map-data.js";
 import { closeDetailPanel, hideDetailPanel, openDetail, stepVariant, throwIndexFromParams } from "./detail-panel.js";
-import { appShell, cheatsheetPanel, detailPanel, homeBrand, lightboxModal, lightboxNext, lightboxPrev, lineupSearchInput, sidebarBrand } from "./dom.js";
+import { appShell, cheatsheetPanel, detailPanel, homeBrand, lightboxModal, lightboxNext, lightboxPrev, sidebarBrand } from "./dom.js";
 import "./feedback.js"; // side effect only: feedback box
 import "./offline.js"; // side effect only: service worker, offline banner
 import "./collections.js"; // side effect only: collections rail, panel, popover
@@ -13,11 +13,12 @@ import "./marker-preview.js"; // side effect only: hover card on landing markers
 import "./fx.js"; // side effect only: home-screen visual effects
 import "./profile-modal.js"; // side effect only: wires up the profile button + modal
 import { enterMap, goHome } from "./home-screen.js";
-import { focusLineup, openMobileSearch, orderedVisibleLineups } from "./lineup-list.js";
+import { focusLineup, orderedVisibleLineups } from "./lineup-list.js";
+import { browseOpen, closeBrowse, isPhone, openBrowse, toggleBrowse } from "./browse-panel.js";
 import { renderMarkers } from "./markers.js";
 import { resetZoom } from "./pan-zoom.js";
 import { registerLayer, registerShortcut, setShortcutSuspender } from "./shortcuts.js";
-import { buildFilters, buildSidebar, closeSidebar, sidebarOpen, toggleTypeFilter } from "./sidebar.js";
+import { buildFilters, buildSidebar, closeSidebar, fetchMapCounts, sidebarOpen, toggleTypeFilter } from "./sidebar.js";
 import { state } from "./state.js";
 import { toastError } from "./toast.js";
 
@@ -77,6 +78,7 @@ registerLayer({
   },
 });
 registerLayer({ priority: 75, isOpen: sidebarOpen, close: closeSidebar });
+registerLayer({ priority: 74, isOpen: () => isPhone() && browseOpen(), close: closeBrowse });
 registerLayer({ priority: 70, isOpen: dossierOpen, close: closeDetailPanel });
 registerLayer({ priority: 65, isOpen: () => cheatsheetPanel.classList.contains("open"), close: () => cheatsheetPanel.classList.remove("open") });
 registerLayer({ priority: 60, isOpen: () => !!state.openClusterKey, close: () => { state.openClusterKey = null; renderMarkers(); } });
@@ -92,12 +94,9 @@ TYPES.forEach((t, i) => {
 });
 registerShortcut({
   keys: ["/"], label: "/", description: "Search lineups", group: "Map", when: inMap,
-  handler: () => {
-    // The sidebar search is hidden at phone width; use the search popup there.
-    if (lineupSearchInput && lineupSearchInput.getClientRects().length) { lineupSearchInput.focus(); lineupSearchInput.select(); }
-    else openMobileSearch();
-  },
+  handler: () => openBrowse({ tab: "lineups", focusSearch: true }),
 });
+registerShortcut({ keys: ["l", "L"], label: "L", description: "Show / hide the lineup panel", group: "Map", when: inMap, handler: toggleBrowse });
 registerShortcut({
   keys: ["a", "A"], label: "A", description: "Add a lineup / cancel adding", group: "Map", when: inMap,
   handler: () => { if (state.addMode) { setAddMode(false); state.pendingThrowFor = null; } else startAddFlow(); },
@@ -204,14 +203,11 @@ loadConfig().then(async () => {
 async function refreshHomeMapCounts() {
   const els = document.querySelectorAll("[data-map-count]");
   if (!els.length) return;
-  try {
-    const res = await fetch("/api/lineups?counts=true");
-    if (!res.ok) return;
-    const counts = await res.json();
-    els.forEach(el => {
-      const n = counts[el.dataset.mapCount] || 0;
-      el.textContent = n === 0 ? "Lineups coming soon" : `${n} lineup${n === 1 ? "" : "s"}`;
-    });
-  } catch (e) { /* keep the prerendered counts */ }
+  const counts = await fetchMapCounts();
+  if (!counts) return; // keep the prerendered counts
+  els.forEach(el => {
+    const n = counts[el.dataset.mapCount] || 0;
+    el.textContent = n === 0 ? "Lineups coming soon" : `${n} lineup${n === 1 ? "" : "s"}`;
+  });
 }
 if (!document.documentElement.hasAttribute("data-deep-link")) refreshHomeMapCounts();
