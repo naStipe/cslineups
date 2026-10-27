@@ -446,6 +446,14 @@ export function buildThrows(openLineup, landingEl, animate) {
     tp.title = "Click to open this lineup";
     tp.dataset.lid = openLineup.id;     // read by the hover preview
     tp.dataset.tidx = String(throwIdx);
+    // Variant number, so the spots on the map match "VARIANT 0N" in the dossier.
+    if (openLineup.throws.length > 1) {
+      const num = document.createElement("span");
+      num.className = "throw-num";
+      num.setAttribute("aria-hidden", "true");
+      num.textContent = String(throwIdx + 1);
+      tp.appendChild(num);
+    }
     makeKeyboardButton(tp);
     tp.setAttribute("aria-label", `Open ${openLineup.name || "lineup"}, throw position ${throwIdx + 1}`);
     tp.onclick = (e) => {

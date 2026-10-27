@@ -3168,3 +3168,13 @@ button.type-opt{font:inherit;color:inherit;text-align:left;width:100%;}
   .marker.enter{animation:none;}
   .marker.leaving{animation:none;opacity:0;}
 }
+
+/* Variant number inside each throw spot (js/markers.js buildThrows). */
+.marker.throwpos .throw-num{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:10px;font-weight:700;line-height:1;color:#0a0d0e;
+  pointer-events:none;
+}
+@media (max-width: 768px){
+  .marker.throwpos .throw-num{font-size:8px;}
+}
