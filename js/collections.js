@@ -151,6 +151,9 @@ async function saveEditModal() {
       toast("Collection saved");
     } else {
       const created = await createCollection(state.mapId, name, description, editPreset || undefined);
+      // The server's summary doesn't list members; fill them in so the
+      // "Add to collection" ticks are right straight away.
+      if (editPreset) created.members = editPreset.map(i => keyOf(i.lineupId, i.throwId));
       mine.unshift(created);
       toast(`Created “${created.name}”`, { action: { label: "Open", onClick: () => openCollection({ id: created.id }) } });
       selection.clear(); setSelectMode(false); syncSelectionUi();
@@ -263,6 +266,7 @@ function renderPopover() {
     setBusy(btn, true, "…");
     try {
       const created = await createCollection(state.mapId, name, "", items.map(i => ({ lineupId: i.lineupId, throwId: i.throwId || undefined })));
+      created.members = items.map(i => keyOf(i.lineupId, i.throwId));
       mine.unshift(created);
       renderRail();
       closePopover();
@@ -519,6 +523,8 @@ async function reloadOpenCollection() {
 }
 
 function leaveViewState() {
+  // A role / timing / note field still being edited saves on blur (change).
+  if (collPanel.contains(document.activeElement)) document.activeElement.blur();
   document.body.classList.remove("in-collection");
   const bar = $("detailCollBar"); if (bar) { bar.hidden = true; bar.replaceChildren(); }
   collPanel.hidden = true;
@@ -841,7 +847,11 @@ function itemFields(it) {
     input.onchange = async () => {
       const prev = it[key];
       it[key] = input.value.trim();
-      try { await updateItem(view.data.id, it.id, { [key]: it[key] }); }
+      if ((prev || "") === it[key]) return;
+      try {
+        await updateItem(view.data.id, it.id, { [key]: it[key] });
+        toast(`${label} saved`);
+      }
       catch (e) { it[key] = prev; input.value = prev || ""; toastError(e.message); }
     };
     wrap.append(input);
@@ -852,31 +862,41 @@ function itemFields(it) {
 async function moveItemTo(from, to) {
   const items = view.data.items;
   const prev = [...items];
+  const prevStep = view.step;
   const [moved] = items.splice(from, 1);
   items.splice(to, 0, moved);
   view.step = items.findIndex(x => x.id === prev[view.step]?.id);
   if (view.step < 0) view.step = 0;
   renderPanel(); refreshLocal();
   try { await reorderItems(view.data.id, items.map(x => x.id)); }
-  catch (e) { view.data.items = prev; renderPanel(); refreshLocal(); toastError("Couldn't save the new order. " + e.message); }
+  catch (e) { view.data.items = prev; view.step = prevStep; renderPanel(); refreshLocal(); toastError("Couldn't save the new order. " + e.message); }
 }
 const moveItem = (i, d) => moveItemTo(i, i + d);
 
 function removeItemUndoable(it) {
   const data = view.data;
+  const memberKey = keyOf(it.lineupId, it.throwId);
   const index = data.items.findIndex(x => x.id === it.id);
   deferDelete({
     key: `coll-item:${it.id}`,
     message: "Removed from collection",
-    apply: () => { data.items.splice(index, 1); view.step = Math.min(view.step, Math.max(0, data.items.length - 1)); applyViewLineups(); renderPanel(); bumpCount(data.id, -1); },
-    restore: () => { data.items.splice(index, 0, it); applyViewLineups(); renderPanel(); bumpCount(data.id, 1); },
+    apply: () => { data.items.splice(index, 1); view.step = Math.min(view.step, Math.max(0, data.items.length - 1)); applyViewLineups(); renderPanel(); bumpCount(data.id, -1, memberKey); },
+    restore: () => { data.items.splice(index, 0, it); applyViewLineups(); renderPanel(); bumpCount(data.id, 1, memberKey); },
     request: { method: "POST", url: "/api/collections", body: { action: "remove-item", id: data.id, itemId: it.id } },
     onError: (err) => toastError("Couldn't remove it. " + err.message),
   });
 }
-function bumpCount(id, d) {
+// Keep the sidebar count and the popover's membership list in step with a
+// step being removed (d = -1) or put back (d = 1).
+function bumpCount(id, d, memberKey) {
   const row = mine.find(c => c.id === id);
-  if (row) { row.itemCount = Math.max(0, row.itemCount + d); renderRail(); }
+  if (!row) return;
+  row.itemCount = Math.max(0, row.itemCount + d);
+  if (memberKey && row.members) {
+    if (d < 0) row.members = row.members.filter(m => m !== memberKey);
+    else if (!row.members.includes(memberKey)) row.members.push(memberKey);
+  }
+  renderRail();
 }
 
 async function duplicateCollection() {
@@ -885,6 +905,7 @@ async function duplicateCollection() {
     mine.unshift(copy);
     toast(`Duplicated as “${copy.name}”`, { action: { label: "Open", onClick: () => openCollection({ id: copy.id }) } });
     renderRail();
+    refreshCollections(); // the copy's summary has no member list; fetch it
   } catch (e) { toastError(e.message); }
 }
 
@@ -894,6 +915,7 @@ async function saveCopy() {
     const copy = await forkCollection({ slug: view.data.slug });
     mine.unshift(copy);
     renderRail();
+    refreshCollections(); // the copy's summary has no member list; fetch it
     toast(`Saved to your collections as “${copy.name}”`, { action: { label: "Open", onClick: () => openCollection({ id: copy.id }) } });
   } catch (e) { toastError(e.message); }
 }
