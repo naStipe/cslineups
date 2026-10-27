@@ -3,7 +3,6 @@
 // result screenshot (or the first screenshot). Purely informational and
 // pointer-events:none, so it never gets in the way of clicking the marker.
 import { TYPES } from "./constants.js";
-import { markerLayer } from "./dom.js";
 import { escapeHtml } from "./html-utils.js";
 import { hydrateImages } from "./private-images.js";
 import { state } from "./state.js";
@@ -15,12 +14,20 @@ let card = null;
 let timer = null;
 let currentEl = null;
 
+// A lineup's card shows its result photo when any throw has one, then falls
+// back to the first aim / standing / precise shot.
 function firstImage(lineup) {
+  for (const t of lineup.throws) if (t.result) return t.result;
   for (const t of lineup.throws) {
-    const url = t.result || (t.screenshots && t.screenshots[0]) || (t.standing && t.standing[0]) || t.precise;
+    const url = (t.screenshots && t.screenshots[0]) || (t.standing && t.standing[0]) || t.precise;
     if (url) return url;
   }
   return null;
+}
+
+// A throw position's card shows the "Stand here" photo.
+function standImage(t) {
+  return (t.standing && t.standing[0]) || (t.screenshots && t.screenshots[0]) || t.precise || t.result || null;
 }
 
 function hide() {
@@ -30,7 +37,7 @@ function hide() {
   if (card) card.classList.remove("show");
 }
 
-function show(el, lineup) {
+function show(el, lineup, throwIdx = null) {
   if (!card) {
     card = document.createElement("div");
     card.className = "marker-preview";
@@ -38,12 +45,17 @@ function show(el, lineup) {
     document.body.appendChild(card);
   }
   const type = TYPES.find(t => t.id === lineup.type);
-  const img = firstImage(lineup);
   const n = lineup.throws.length;
+  const t = throwIdx == null ? null : lineup.throws[throwIdx];
+  if (throwIdx != null && !t) return;
+  const img = t ? standImage(t) : firstImage(lineup);
+  const meta = t
+    ? `Stand here · throw position ${throwIdx + 1} of ${n}`
+    : `${type ? type.label : lineup.type} · ${n} variant${n === 1 ? "" : "s"}`;
   card.innerHTML =
     (img ? `<img data-real-src="${escapeHtml(img)}" alt="">` : "") +
     `<div class="marker-preview-name">${escapeHtml(lineup.name || "Unnamed position")}</div>` +
-    `<div class="marker-preview-meta">${escapeHtml(type ? type.label : lineup.type)} · ${n} variant${n === 1 ? "" : "s"}</div>`;
+    `<div class="marker-preview-meta">${escapeHtml(meta)}</div>`;
   hydrateImages(card);
 
   // Sit to the right of the marker, flipping left / clamping so it stays on screen.
@@ -59,18 +71,18 @@ function show(el, lineup) {
 }
 
 if (canHover) {
-  markerLayer.addEventListener("mouseover", (e) => {
-    const el = e.target.closest(".marker.landing[data-lid]");
+  document.addEventListener("mouseover", (e) => {
+    const el = e.target.closest && e.target.closest(".marker.landing[data-lid], .fan-petal[data-lid], [data-lid][data-tidx]");
     if (el === currentEl) return;
     hide();
     if (!el || state.addMode || state.reposition) return;
     currentEl = el;
     timer = setTimeout(() => {
       const lineup = state.lineups.find(l => l.id === el.dataset.lid);
-      if (lineup && el.isConnected) show(el, lineup);
+      if (lineup && el.isConnected) show(el, lineup, el.dataset.tidx == null ? null : Number(el.dataset.tidx));
     }, DELAY_MS);
   });
-  markerLayer.addEventListener("mouseleave", hide);
-  markerLayer.addEventListener("mousedown", hide);
+  document.documentElement.addEventListener("mouseleave", hide);
+  document.addEventListener("mousedown", hide, true);
   window.addEventListener("wheel", hide, { passive: true });
 }

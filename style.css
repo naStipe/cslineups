@@ -3116,3 +3116,17 @@ body.in-collection .feedback-btn{display:none;}
 .fb-message{margin:4px 0;font-size:13.5px;white-space:pre-wrap;overflow-wrap:anywhere;}
 .fb-item.closed{opacity:.65;}
 @media (max-width:768px){ .feedback-btn{min-height:44px;bottom:84px;} .feedback-btn span{display:none;} .feedback-btn{width:44px;justify-content:center;padding:0;} }
+
+/* ===================== Button centering =====================
+   Buttons that hold a glyph or short label were left to the browser's
+   default text placement, so ✕ / arrows / labels sat off-centre. Centre
+   the content on both axes everywhere. */
+.ghost-btn,a.ghost-btn,.primary-btn,.icon-btn,.zoom-btn,.view-toggle-btn,.level-toggle-btn,
+.side-seg-btn,.toast-action,.toast-close,.tm-reposition-btn,.coll-mini-btn,.lightbox-nav{
+  display:inline-flex;align-items:center;justify-content:center;text-align:center;
+}
+.ghost-btn,a.ghost-btn,.primary-btn,.toast-action{gap:6px;line-height:1.2;}
+.icon-btn,.toast-close,.zoom-btn,.lightbox-nav{padding:0;line-height:1;flex-shrink:0;}
+.tm-suggest{line-height:1.5;}
+.tm-suggest input{margin-top:1px;}
+.ghost-btn[hidden],.primary-btn[hidden],.icon-btn[hidden],.zoom-btn[hidden],.toast-action[hidden],.coll-mini-btn[hidden],.side-seg-btn[hidden]{display:none;}
