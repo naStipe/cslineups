@@ -3135,3 +3135,9 @@ body.in-collection .feedback-btn{display:none;}
    openTypeModal editType): only the type grid applies. */
 #typeModal.edit-type .field-label,#typeModal.edit-type #lineupNameInput,#typeModal.edit-type #lineupSideSlot,
 #typeModal.edit-type .name-hint,#typeModal.edit-type .name-suggestions{display:none;}
+
+/* Map list items, type chips and the phone type toggles are <button>s (for
+   keyboard and screen readers); drop the browser's button chrome. */
+button.map-item{background:none;border:0;border-left:2px solid transparent;width:100%;text-align:left;font-weight:inherit;}
+button.filter-chip{font-weight:inherit;}
+button.type-opt{font:inherit;color:inherit;text-align:left;width:100%;}

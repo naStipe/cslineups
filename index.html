@@ -313,9 +313,9 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
       <div class="level-toggle hidden" id="levelToggle"></div>
       <p class="hint" id="addHint">Click anywhere on the map to drop the landing spot.</p>
       <div class="zoom-controls">
-        <button class="zoom-btn" id="zoomIn">+</button>
-        <button class="zoom-btn" id="zoomReset" title="Reset zoom">⌂</button>
-        <button class="zoom-btn" id="zoomOut">−</button>
+        <button class="zoom-btn" id="zoomIn" aria-label="Zoom in" title="Zoom in">+</button>
+        <button class="zoom-btn" id="zoomReset" title="Reset zoom" aria-label="Reset zoom">⌂</button>
+        <button class="zoom-btn" id="zoomOut" aria-label="Zoom out" title="Zoom out">−</button>
       </div>
 
       <!-- Mobile-only floating action button for "Add lineup" — topbar-right
@@ -372,7 +372,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
               </svg>
               <span class="cheatsheet-title" id="cheatsheetTitle">Instant smokes</span>
             </div>
-            <button class="icon-btn" id="cheatsheetClose">✕</button>
+            <button class="icon-btn" id="cheatsheetClose" aria-label="Close cheatsheet">✕</button>
           </div>
           <!-- Only populated (and shown) when a map has more than one
                cheatsheet entry, so you can switch spots without closing. -->
@@ -448,10 +448,10 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
 
 <!-- MODAL: mobile type filter (small popup, mobile only — see #typeFilterBtn) -->
 <div class="modal-backdrop" id="typeFilterModal">
-  <div class="modal type-filter-modal">
+  <div class="modal type-filter-modal" role="dialog" aria-modal="true" aria-labelledby="typeFilterTitle">
     <div class="type-filter-head">
-      <h3>Lineup types</h3>
-      <button type="button" class="icon-btn" id="closeTypeFilter">✕</button>
+      <h3 id="typeFilterTitle">Lineup types</h3>
+      <button type="button" class="icon-btn" id="closeTypeFilter" aria-label="Close filters">✕</button>
     </div>
     <div class="type-grid" id="mobileTypeFilterGrid"></div>
   </div>
@@ -459,14 +459,14 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
 
 <!-- MODAL: mobile lineup search (small popup, mobile only — see #mobileSearchBtn) -->
 <div class="modal-backdrop" id="mobileSearchModal">
-  <div class="modal mobile-search-modal">
+  <div class="modal mobile-search-modal" role="dialog" aria-modal="true" aria-label="Search lineups">
     <div class="mobile-search-head">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
         <circle cx="6" cy="6" r="4.3" stroke="currentColor" stroke-width="1.5"/>
         <line x1="9.3" y1="9.3" x2="12.5" y2="12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
       </svg>
       <input type="search" id="mobileSearchInput" placeholder="Search lineups…" autocomplete="off" aria-label="Search lineups on this map">
-      <button type="button" class="icon-btn" id="closeMobileSearch">✕</button>
+      <button type="button" class="icon-btn" id="closeMobileSearch" aria-label="Close search">✕</button>
     </div>
     <nav class="mobile-search-results" id="mobileSearchResults"></nav>
   </div>
@@ -505,7 +505,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
 
 <!-- MODAL: user profile -->
 <div class="modal-backdrop" id="profileModal">
-  <div class="modal profile-modal">
+  <div class="modal profile-modal" role="dialog" aria-modal="true" aria-labelledby="profileModalName">
     <div class="profile-head">
       <div class="profile-avatar profile-avatar-lg" id="profileModalAvatar"></div>
       <div class="profile-head-text">
@@ -514,7 +514,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
         <p class="profile-admin-stat" id="profileAccountCount" hidden></p>
         <a class="ghost-btn profile-admin-link" id="profileAccountsLink" href="/admin.html?view=accounts" hidden>Account management</a>
       </div>
-      <button class="icon-btn" id="closeProfile">✕</button>
+      <button class="icon-btn" id="closeProfile" aria-label="Close profile">✕</button>
     </div>
 
     <div class="profile-section">
@@ -547,7 +547,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
 
 <!-- MODAL: new landing spot -> choose type -->
 <div class="modal-backdrop" id="typeModal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="typeModalTitle">
     <h3 id="typeModalTitle">What kind of nade?</h3>
     <div class="type-grid" id="typeGrid" role="radiogroup" aria-labelledby="typeModalTitle"></div>
     <label class="field-label" for="lineupNameInput" style="margin-top:8px;">Name this position <span style="color:var(--text-faint);font-size:10px;">optional</span></label>

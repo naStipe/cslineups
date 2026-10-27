@@ -12,9 +12,11 @@ import { state } from "./state.js";
 export function buildSidebar() {
   mapList.innerHTML = "";
   MAPS.forEach(m => {
-    const el = document.createElement("div");
+    const el = document.createElement("button");
+    el.type = "button";
     el.className = "map-item" + (m.id === state.mapId ? " active" : "");
-    el.innerHTML = `<span class="swatch"></span>${m.name}`;
+    if (m.id === state.mapId) el.setAttribute("aria-current", "page");
+    el.innerHTML = `<span class="swatch" aria-hidden="true"></span>${m.name}`;
     el.onclick = () => { closeSidebar(); switchMap(m.id); };
     mapList.appendChild(el);
   });
@@ -59,13 +61,17 @@ export function buildFilters() {
   const counts = countsByType();
   TYPES.forEach(t => {
     const count = counts[t.id] || 0;
-    const chip = document.createElement("div");
+    const chip = document.createElement("button");
+    chip.type = "button";
     chip.className = "filter-chip" + (state.activeFilters.has(t.id) ? "" : " off") + (count === 0 ? " zero" : "");
     chip.style.setProperty("--chip-color", t.color);
+    chip.setAttribute("aria-pressed", state.activeFilters.has(t.id) ? "true" : "false");
+    chip.setAttribute("aria-label", `${t.label}, ${count} lineup${count === 1 ? "" : "s"}`);
     chip.innerHTML = `<span class="dot" style="background:${t.color}"></span>${t.label}<span class="chip-count">${count}</span>`;
     chip.onclick = () => {
       toggleTypeFilter(t.id);
       chip.classList.toggle("off", !state.activeFilters.has(t.id));
+      chip.setAttribute("aria-pressed", state.activeFilters.has(t.id) ? "true" : "false");
     };
     typeFilters.appendChild(chip);
   });
@@ -169,13 +175,16 @@ function buildMobileTypeFilters() {
   TYPES.forEach(t => {
     const count = counts[t.id] || 0;
     const active = state.activeFilters.has(t.id);
-    const opt = document.createElement("div");
+    const opt = document.createElement("button");
+    opt.type = "button";
     opt.className = "type-opt" + (active ? " active" : " off");
+    opt.setAttribute("aria-pressed", active ? "true" : "false");
     opt.innerHTML = `<span class="dot" style="background:${t.color}"></span>${t.label}<span class="chip-count">${count}</span>`;
     opt.onclick = () => {
       toggleTypeFilter(t.id);
       opt.classList.toggle("off", !state.activeFilters.has(t.id));
       opt.classList.toggle("active", state.activeFilters.has(t.id));
+      opt.setAttribute("aria-pressed", state.activeFilters.has(t.id) ? "true" : "false");
       updateTypeFilterBtnLabel();
     };
     mobileTypeFilterGrid.appendChild(opt);
