@@ -52,6 +52,9 @@ const VIS = {
 // ---------------------------------------------------------------- state ---
 let mine = [];            // summaries of the signed-in user's collections on this map
 let mineLoaded = false;
+// Collections deleted locally whose DELETE is still inside its undo window.
+// The list is refetched when the map reloads, and the server still has them.
+const pendingDeleted = new Set();
 let view = null;          // { data, step, saved } while a collection is open (mirrors state.collectionView)
 let selectMode = false;
 // Throw positions picked on the map: "lineupId|throwId" -> { lineupId, throwId }.
@@ -68,7 +71,7 @@ const okItems = () => (view ? view.data.items.filter(i => i.status === "ok") : [
 export async function refreshCollections() {
   if (!authUser) { mine = []; mineLoaded = true; renderRail(); return; }
   try {
-    mine = await listMine(state.mapId);
+    mine = (await listMine(state.mapId)).filter(c => !pendingDeleted.has(c.id));
   } catch (e) { console.warn("collections:", e); mine = []; }
   mineLoaded = true;
   renderRail();
@@ -469,7 +472,10 @@ async function openCollection(ref, { fromUrl = false } = {}) {
     data = ref.slug ? await getBySlug(ref.slug) : await getById(ref.id);
   } catch (e) {
     collPanel.hidden = true;
-    if (e.status === 404) toastError("That collection doesn't exist, or it isn't shared with you.");
+    if (e.status === 404) {
+      toastError("That collection doesn't exist, or it isn't shared with you.");
+      if (ref.id && mine.some(c => c.id === ref.id)) { mine = mine.filter(c => c.id !== ref.id); renderRail(); }
+    }
     else toastError(e.message);
     return;
   }
@@ -898,8 +904,8 @@ function deleteOpenCollection() {
   deferDelete({
     key: `collection:${data.id}`,
     message: `Deleted “${data.name}”`,
-    apply: () => { mine = mine.filter(c => c.id !== data.id); exitCollection(); },
-    restore: () => { mine = prevMine; renderRail(); },
+    apply: () => { pendingDeleted.add(data.id); mine = mine.filter(c => c.id !== data.id); exitCollection(); },
+    restore: () => { pendingDeleted.delete(data.id); mine = prevMine; renderRail(); },
     request: { method: "DELETE", url: `/api/collections?id=${encodeURIComponent(data.id)}` },
     onError: (err) => toastError("Couldn't delete the collection. " + err.message),
   });

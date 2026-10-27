@@ -4,6 +4,7 @@ const { setCorsHeaders } = require("./_lib/cors");
 const { getAuthUser, isAdmin } = require("./_lib/auth");
 const { checkRateLimit } = require("./_lib/rate-limit");
 const { isVideoName, verifyNewImages, setLongCache } = require("./_lib/uploads");
+const { sharedPersonalIds } = require("./_lib/sharing");
 
 function supabase() {
   return createClient(
@@ -29,6 +30,8 @@ function mapRow(row) {
     ownerId:    row.owner_id || null,
     submittedAt: row.submitted_at || null,
     deniedAt:   row.submission_denied_at || null,
+    // Only the owner needs this flag; others reach the lineup because it is on.
+    linkShared: !!row.link_shared,
   };
 }
 
@@ -179,6 +182,19 @@ module.exports = async function handler(req, res) {
         return;
       }
 
+      // ?id=<lineup id> — one lineup: official, yours, or a personal one whose
+      // owner switched on link sharing. Anything else reads as not found.
+      if (req.query.id) {
+        const { data: row, error } = await sb.from("lineups").select("*").eq("id", String(req.query.id)).maybeSingle();
+        if (error) throw new Error(error.message);
+        const viewer = await getAuthUser(req, sb);
+        const ok = row && (row.is_official || (viewer && row.owner_id === viewer.id) || (row.link_shared && (await sharedPersonalIds(sb, [row])).has(row.id)));
+        if (!ok) { res.status(404).json({ error: "Lineup not found" }); return; }
+        res.setHeader("Cache-Control", "no-store");
+        res.status(200).json(mapRow(row));
+        return;
+      }
+
       const mapId = req.query && req.query.mapId;
 
       // ?mine=true — the caller's own personal (non-official) lineups.
@@ -208,7 +224,7 @@ module.exports = async function handler(req, res) {
     // A plain create/edit needs both the admin flag and the rate-limit RPC;
     // each is a DB round trip, so run them side by side. (Admins skip the
     // limit below; counting their writes anyway costs nothing.)
-    const plainSave = req.method === "POST" && req.body && !Array.isArray(req.body.records) && req.body.id && req.body.action !== "submit";
+    const plainSave = req.method === "POST" && req.body && !Array.isArray(req.body.records) && req.body.id && req.body.action !== "submit" && req.body.action !== "share";
     const [admin, underLimit] = await Promise.all([
       isAdmin(sb, user.id),
       plainSave ? checkRateLimit(sb, user.id, "lineup_write") : Promise.resolve(true),
@@ -278,6 +294,19 @@ module.exports = async function handler(req, res) {
         const { error } = await sb.from("lineups").update(patch).eq("id", body.id).eq("owner_id", user.id);
         if (error) throw new Error(error.message);
         res.status(200).json({ ok: true, submittedAt });
+        return;
+      }
+
+      // Turn link sharing on or off for one of your personal lineups.
+      if (body.action === "share") {
+        const { data: row, error: fetchErr } = await sb.from("lineups").select("is_official, owner_id").eq("id", body.id).maybeSingle();
+        if (fetchErr) throw new Error(fetchErr.message);
+        if (!row) { res.status(404).json({ error: "Not found" }); return; }
+        if (row.is_official || row.owner_id !== user.id) { res.status(403).json({ error: "You can only share your own lineups" }); return; }
+        const linkShared = body.shared === true;
+        const { error } = await sb.from("lineups").update({ link_shared: linkShared }).eq("id", body.id).eq("owner_id", user.id);
+        if (error) throw new Error(error.message);
+        res.status(200).json({ ok: true, linkShared });
         return;
       }
 

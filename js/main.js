@@ -1,6 +1,8 @@
 import { setAddMode, startAddFlow } from "./add-mode.js";
 import { initAuth } from "./auth.js";
 import { MAPS, TYPES } from "./constants.js";
+import { dbGetLineup } from "./api.js";
+import { upsertLocalLineup } from "./map-data.js";
 import { closeDetailPanel, hideDetailPanel, openDetail, throwIndexFromParams } from "./detail-panel.js";
 import { appShell, detailPanel, homeBrand, lightboxModal, lightboxNext, lightboxPrev, lineupSearchInput, sidebarBrand } from "./dom.js";
 import "./feedback.js"; // side effect only: feedback box
@@ -17,6 +19,7 @@ import { resetZoom } from "./pan-zoom.js";
 import { registerLayer, registerShortcut, setShortcutSuspender } from "./shortcuts.js";
 import { buildFilters, buildSidebar, closeSidebar, toggleTypeFilter } from "./sidebar.js";
 import { state } from "./state.js";
+import { toastError } from "./toast.js";
 
 // The map view is its own history entry above the chooser, so going home from
 // the logo pops back to it (keeping Back/Forward symmetric). Fall back to a
@@ -162,7 +165,7 @@ async function handleDeepLink() {
   // The initial auth event can restart the lineup load mid-flight (see
   // auth.js onAuthStateChange -> loadLineups), cancelling the load we just
   // awaited — so poll briefly for the lineup instead of checking once.
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 25; i++) {
     if (state.lineups.some(l => l.id === lineupId)) {
       const throwIdx = throwIndexFromParams(params);
       if (throwIdx !== undefined) openDetail(lineupId, throwIdx, { highlight: true });
@@ -171,6 +174,15 @@ async function handleDeepLink() {
     }
     await new Promise(r => setTimeout(r, 100));
   }
+  // Not in the map's lists: it may be someone's personal lineup they shared by link.
+  try {
+    const shared = await dbGetLineup(lineupId);
+    if (!shared || shared.mapId !== state.mapId) { toastError("That lineup doesn't exist, or it isn't shared with you."); return; }
+    upsertLocalLineup(shared);
+    renderMarkers();
+    const throwIdx = throwIndexFromParams(params);
+    openDetail(lineupId, throwIdx !== undefined ? throwIdx : 0, { highlight: throwIdx !== undefined });
+  } catch (e) { console.warn("shared lineup:", e); }
 }
 
 loadConfig().then(async () => {

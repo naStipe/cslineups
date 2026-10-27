@@ -1,5 +1,5 @@
 import { setAddMode, showAddFlow } from "./add-mode.js";
-import { API_URL, SAVED_URL, dbPut, dbSaveLineup, dbSubmitLineup, dbUnsaveLineup, throwKey } from "./api.js";
+import { API_URL, SAVED_URL, dbPut, dbSaveLineup, dbShareLineup, dbSubmitLineup, dbUnsaveLineup, throwKey } from "./api.js";
 import { authUser } from "./auth.js";
 import { MOVEMENT_LABELS, RANGE_LABELS, TYPES } from "./constants.js";
 import { addThrowBtn, closeDetail, deleteLineupBtn, detailNameInput, detailOwnerBadge, detailSideSlot, detailPanel, detailTitle, detailType, saveLineupBtn, shareLineupBtn, submitLineupBtn, submitLineupNote, throwList, typeModal } from "./dom.js";
@@ -151,11 +151,13 @@ export function renderDetail(lineup, opts = {}) {
   deleteLineupBtn.textContent = "Delete this lineup";
 
   renderSubmitControls(lineup, editable);
+  renderLinkShareControls(lineup, editable);
 
   if (saveLineupBtn) saveLineupBtn.classList.add("hidden"); // superseded by the per-throw button in the hero card
 
   if (shareLineupBtn) {
-    const label = multi ? "Copy link to this variant" : "Copy shareable link";
+    const needsOptIn = editable && !lineup.isOfficial && !lineup.linkShared;
+    const label = needsOptIn ? "Share with a link" : multi ? "Copy link to this variant" : "Copy shareable link";
     shareLineupBtn.title = label;
     if (!shareLineupBtn.classList.contains("copied")) shareLineupBtn.setAttribute("aria-label", label);
     shareLineupBtn.onclick = () => copyShareLink(lineup);
@@ -434,6 +436,21 @@ function renderName(lineup, editable) {
 // several variants the link points at the one being viewed (&throw=n).
 let copyResetTimer = null;
 async function copyShareLink(lineup) {
+  // A personal lineup is private until its owner opts in to link sharing.
+  if (canModifyLineup(lineup) && !lineup.isOfficial && !lineup.linkShared) {
+    const ok = await confirmDialog({
+      title: "Share this lineup with a link?",
+      body: "Anyone with the link can view this lineup, its notes and its screenshots. It isn't listed, searchable or shown on the map to others, and you can stop sharing any time.",
+      confirmLabel: "Share and copy link",
+    });
+    if (!ok) return;
+    try {
+      await dbShareLineup(lineup.id, true);
+      lineup.linkShared = true;
+      renderLinkShareControls(lineup, true);
+      shareLineupBtn.title = lineup.throws.length > 1 ? "Copy link to this variant" : "Copy shareable link";
+    } catch { toastError("Couldn't turn on sharing. Please try again."); return; }
+  }
   const url = `${location.origin}${lineupPath(lineup, selectedThrowIdx)}`;
   try {
     await navigator.clipboard.writeText(url);
@@ -732,6 +749,26 @@ function renderSubmitControls(lineup, editable) {
     } finally {
       submitLineupBtn.disabled = false;
     }
+  };
+}
+
+// Owner of a link-shared personal lineup: a way to switch sharing off again.
+function renderLinkShareControls(lineup, editable) {
+  const btn = document.getElementById("linkShareOffBtn");
+  if (!btn) return;
+  const show = editable && !lineup.isOfficial && !!lineup.linkShared;
+  btn.classList.toggle("hidden", !show);
+  if (!show) return;
+  btn.onclick = async () => {
+    btn.disabled = true;
+    try {
+      await dbShareLineup(lineup.id, false);
+      lineup.linkShared = false;
+      renderLinkShareControls(lineup, editable);
+      if (shareLineupBtn) shareLineupBtn.title = "Share with a link";
+      toast("Link sharing is off. The old link no longer works");
+    } catch { toastError("Couldn't turn off sharing. Please try again."); }
+    finally { btn.disabled = false; }
   };
 }
 
