@@ -97,7 +97,7 @@ function selectVariant(lineup, idx, { dir = 0, focusThumb = false } = {}) {
   if (focusThumb) focusActiveThumb();
 }
 
-function stepVariant(dir) {
+export function stepVariant(dir) {
   const lineup = state.lineups.find(l => l.id === state.selectedLineupId);
   if (!lineup || !detailPanel.classList.contains("open")) return;
   const next = selectedThrowIdx + dir;
