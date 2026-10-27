@@ -147,8 +147,13 @@ export async function initAuth() {
   authReady = true;
   applyAuthState();
 
-  sb.auth.onAuthStateChange(async (_event, session) => {
+  sb.auth.onAuthStateChange(async (event, session) => {
     authUser = session ? session.user : null;
+    // The first event after subscribing (INITIAL_SESSION) and token refreshes
+    // don't change who is signed in; if the lineups on screen were already
+    // loaded for this user, reloading them would only fetch the same list twice.
+    const sameUser = state.lineupsUserId !== undefined && state.lineupsUserId === (authUser ? authUser.id : null);
+    if (sameUser && (event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED")) return;
     await refreshProfile();
     applyAuthState();
     // Personal view depends entirely on being signed in — bounce back to

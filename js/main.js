@@ -4,7 +4,7 @@ import { MAPS, TYPES } from "./constants.js";
 import { dbGetLineup } from "./api.js";
 import { upsertLocalLineup } from "./map-data.js";
 import { closeDetailPanel, hideDetailPanel, openDetail, throwIndexFromParams } from "./detail-panel.js";
-import { appShell, detailPanel, homeBrand, lightboxModal, lightboxNext, lightboxPrev, lineupSearchInput, sidebarBrand } from "./dom.js";
+import { appShell, cheatsheetPanel, detailPanel, homeBrand, lightboxModal, lightboxNext, lightboxPrev, lineupSearchInput, sidebarBrand } from "./dom.js";
 import "./feedback.js"; // side effect only: feedback box
 import "./offline.js"; // side effect only: service worker, offline banner
 import "./collections.js"; // side effect only: collections rail, panel, popover
@@ -77,6 +77,7 @@ registerLayer({
   },
 });
 registerLayer({ priority: 70, isOpen: dossierOpen, close: closeDetailPanel });
+registerLayer({ priority: 65, isOpen: () => cheatsheetPanel.classList.contains("open"), close: () => cheatsheetPanel.classList.remove("open") });
 registerLayer({ priority: 60, isOpen: () => !!state.openClusterKey, close: () => { state.openClusterKey = null; renderMarkers(); } });
 registerLayer({ priority: 50, isOpen: () => !!state.selectedLineupId, close: () => { state.selectedLineupId = null; renderMarkers(); } });
 registerLayer({ priority: 40, isOpen: () => state.addMode || !!state.pendingThrowFor, close: () => { setAddMode(false); state.pendingThrowFor = null; } });
@@ -172,6 +173,9 @@ async function handleDeepLink() {
       else focusLineup(lineupId);
       return;
     }
+    // Lineups finished loading and it isn't among them: stop waiting and
+    // ask the server (a short grace period covers a load restarting).
+    if (i >= 3 && !state.lineupsLoading) break;
     await new Promise(r => setTimeout(r, 100));
   }
   // Not in the map's lists: it may be someone's personal lineup they shared by link.

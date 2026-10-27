@@ -124,6 +124,7 @@ export async function loadLineups() {
 
   lineupCount.textContent = "loading…";
   state.lineupsLoading = true;
+  state.lineupsUserId = authUser ? authUser.id : null;
   showMapLoading(true);
   try {
     // A delete still inside its undo window hasn't reached the server yet;
