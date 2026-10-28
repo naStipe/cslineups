@@ -25,40 +25,81 @@
 <script type="module" src="/analytics.js"></script>
 </head>
 <body>
-<div class="wrap">
 <header class="site-head">
-  <a class="brand-link" href="/">
-    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="26" height="26" aria-hidden="true"><circle cx="20" cy="20" r="17" stroke="#ffa53e" stroke-width="2.2"/><circle cx="20" cy="20" r="9" stroke="#ffa53e" stroke-width="1" opacity="0.3"/><line x1="20" y1="3" x2="20" y2="11" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><line x1="20" y1="29" x2="20" y2="37" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="20" x2="11" y2="20" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><line x1="29" y1="20" x2="37" y2="20" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><circle cx="20" cy="20" r="3.5" fill="#ffa53e"/><circle cx="20" cy="20" r="1.4" fill="#0f0c09"/></svg>
-    <span>lineupr</span>
+  <a class="brand-link" href="/" aria-label="Lineupr home">
+    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="30" height="30" aria-hidden="true"><circle cx="20" cy="20" r="17" stroke="#ffa53e" stroke-width="2.2"/><circle cx="20" cy="20" r="9" stroke="#ffa53e" stroke-width="1" opacity="0.3"/><line x1="20" y1="3" x2="20" y2="11" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><line x1="20" y1="29" x2="20" y2="37" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="20" x2="11" y2="20" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><line x1="29" y1="20" x2="37" y2="20" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><circle cx="20" cy="20" r="3.5" fill="#ffa53e"/><circle cx="20" cy="20" r="1.4" fill="#0f0c09"/></svg>
+    <span class="wordmark">lineup<span>r</span></span>
   </a>
-  <nav><a href="/maps">Maps</a><a href="/blog">Blog</a></nav>
+  <nav aria-label="Primary"><a href="/maps">Maps</a><a href="/blog" aria-current="page">Blog</a><a class="nav-cta" href="/maps">Open the map</a></nav>
 </header>
-<nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> › Blog</nav>
+<div class="wrap">
 <main>
+<header class="blog-head">
+<p class="post-meta"><span class="post-tag">Blog</span></p>
 <h1>CS2 Grenade Lineup Guides</h1>
 <p class="lede">Practical guides on learning lineups, setting up binds, and figuring out which throws are actually worth memorizing. For the lineups themselves, use <a href="/maps">the interactive map</a>.</p>
-<ul class="plain">
-  <li>
-    <a href="/blog/how-to-learn-cs2-nade-lineups-fast.html">How to Learn CS2 Grenade Lineups Fast</a>
-    <span class="excerpt">A practice routine for actually retaining smoke, flash and molotov lineups instead of forgetting them the next round.</span>
-    <span class="date">September 2026</span>
-  </li>
-  <li>
-    <a href="/blog/cs2-jumpthrow-bind-guide.html">CS2 Jumpthrow Bind: Setup and When to Use It</a>
-    <span class="excerpt">The console command for a jumpthrow bind, why it exists, and which lineups actually need it.</span>
-    <span class="date">September 2026</span>
-  </li>
-  <li>
-    <a href="/blog/dust2-smokes-that-matter.html">Dust II Smokes That Actually Matter</a>
-    <span class="excerpt">Which Dust II smokes are worth memorizing first, and why, before you drown in lineups you'll rarely use.</span>
-    <span class="date">September 2026</span>
-  </li>
-</ul>
-</main>
-<footer class="foot">
-<p><a href="/">Lineupr</a> — the interactive CS2 grenade lineup map. <a href="/maps">Browse lineups by map</a>. · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="/cookies.html">Cookies</a> · <a href="mailto:support@nastipe.dev?subject=Content%20report">Report content</a></p>
-<p>Lineupr is an independent fan project, not affiliated with or endorsed by Valve. Counter-Strike 2 and its map images are trademarks or copyrighted material of Valve.</p>
-</footer>
+</header>
+<div class="post-grid post-grid--index">
+  <a class="post-card" href="/blog/how-to-learn-cs2-nade-lineups-fast.html">
+    <span class="post-meta"><span class="post-tag">Practice</span><span>September 2026</span><span>2 min read</span></span>
+    <h2 class="post-card-title">How to Learn CS2 Grenade Lineups Fast</h2>
+    <span class="post-card-excerpt">A practice routine for actually retaining smoke, flash and molotov lineups instead of forgetting them the next round.</span>
+    <span class="post-card-more">Read guide <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+  </a>
+  <a class="post-card" href="/blog/cs2-jumpthrow-bind-guide.html">
+    <span class="post-meta"><span class="post-tag">Setup</span><span>September 2026</span><span>2 min read</span></span>
+    <h2 class="post-card-title">CS2 Jumpthrow Bind: Setup and When to Use It</h2>
+    <span class="post-card-excerpt">The console command for a jumpthrow bind, why it exists, and which lineups actually need it.</span>
+    <span class="post-card-more">Read guide <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+  </a>
+  <a class="post-card" href="/blog/dust2-smokes-that-matter.html">
+    <span class="post-meta"><span class="post-tag">Dust II</span><span>September 2026</span><span>2 min read</span></span>
+    <h2 class="post-card-title">Dust II Smokes That Actually Matter</h2>
+    <span class="post-card-excerpt">Which Dust II smokes are worth memorizing first, and why, before you drown in lineups you'll rarely use.</span>
+    <span class="post-card-more">Read guide <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+  </a>
 </div>
+</main>
+</div>
+<footer class="site-footer" aria-label="Site footer">
+  <div class="site-footer-grid">
+    <div class="site-footer-brand">
+      <span class="wordmark">lineup<span>r</span></span>
+      <p>Built by players, for players. An independent fan project, not affiliated with or endorsed by Valve. Counter-Strike 2 and its map images are trademarks or copyrighted material of Valve.</p>
+    </div>
+    <nav class="site-footer-col" aria-label="Lineups by map">
+      <p class="site-footer-title">Lineups by map</p>
+      <ul class="site-footer-maps">
+        <li><a href="/dust2">Dust II</a></li>
+        <li><a href="/mirage">Mirage</a></li>
+        <li><a href="/inferno">Inferno</a></li>
+        <li><a href="/nuke">Nuke</a></li>
+        <li><a href="/ancient">Ancient</a></li>
+        <li><a href="/anubis">Anubis</a></li>
+        <li><a href="/vertigo">Vertigo</a></li>
+        <li><a href="/cache">Cache</a></li>
+        <li><a href="/overpass">Overpass</a></li>
+      </ul>
+    </nav>
+    <nav class="site-footer-col" aria-label="Lineupr">
+      <p class="site-footer-title">Lineupr</p>
+      <ul>
+        <li><a href="/">Home</a></li>
+        <li><a href="/maps">All maps</a></li>
+        <li><a href="/blog">Blog</a></li>
+        <li><a href="mailto:support@nastipe.dev">Contact</a></li>
+      </ul>
+    </nav>
+    <nav class="site-footer-col" aria-label="Legal">
+      <p class="site-footer-title">Legal</p>
+      <ul>
+        <li><a href="/privacy.html">Privacy</a></li>
+        <li><a href="/terms.html">Terms</a></li>
+        <li><a href="/cookies.html">Cookies</a></li>
+        <li><a href="mailto:support@nastipe.dev?subject=Content%20report">Report content</a></li>
+      </ul>
+    </nav>
+  </div>
+</footer>
 </body>
 </html>
