@@ -52,5 +52,6 @@ export function goHome() {
   a.className = "hero-continue";
   a.href = `/?map=${map.id}`;
   a.innerHTML = `<span>Continue on</span> ${map.name}`;
-  actions.prepend(a);
+  const cta = actions.querySelector(".hero-cta");
+  if (cta) cta.after(a); else actions.prepend(a);
 })();

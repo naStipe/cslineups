@@ -319,17 +319,36 @@ ${jsonLd.map(jsonLdScript).join("\n")}
 ${cards}
     </div></div>
   </div>
-  <footer class="home-footer" aria-label="Map chooser footer">
-    <nav class="home-footer-links" aria-label="Browse lineups by map">
-      <a href="/">Home</a>
-${C.MAPS.map(m => `      <a href="/${m.id}">${esc(m.name)} lineups</a>`).join("\n")}
-      <a href="/blog">Blog</a>
-      <a href="/privacy.html">Privacy</a>
-      <a href="/terms.html">Terms</a>
-      <a href="/cookies.html">Cookies</a>
-      <a href="mailto:support@nastipe.dev?subject=Content%20report">Report content</a>
-    </nav>
-    <p class="home-footer-note">Lineupr is an independent fan project, not affiliated with or endorsed by Valve. Counter-Strike 2 and its map images are trademarks or copyrighted material of Valve.</p>
+  <footer class="home-footer site-footer" aria-label="Site footer">
+    <div class="site-footer-grid">
+      <div class="site-footer-brand">
+        <span class="home-wordmark">lineup<span class="home-wordmark-r">r</span></span>
+        <p>Built by players, for players. An independent fan project, not affiliated with or endorsed by Valve. Counter-Strike 2 and its map images are trademarks or copyrighted material of Valve.</p>
+      </div>
+      <nav class="site-footer-col" aria-label="Lineups by map">
+        <p class="site-footer-title">Lineups by map</p>
+        <ul class="site-footer-maps">
+${C.MAPS.map(m => `          <li><a href="/${m.id}">${esc(m.name)}</a></li>`).join("\n")}
+        </ul>
+      </nav>
+      <nav class="site-footer-col" aria-label="Lineupr">
+        <p class="site-footer-title">Lineupr</p>
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li><a href="/blog">Blog</a></li>
+          <li><a href="mailto:support@nastipe.dev">Contact</a></li>
+        </ul>
+      </nav>
+      <nav class="site-footer-col" aria-label="Legal">
+        <p class="site-footer-title">Legal</p>
+        <ul>
+          <li><a href="/privacy.html">Privacy</a></li>
+          <li><a href="/terms.html">Terms</a></li>
+          <li><a href="/cookies.html">Cookies</a></li>
+          <li><a href="mailto:support@nastipe.dev?subject=Content%20report">Report content</a></li>
+        </ul>
+      </nav>
+    </div>
   </footer>
 </div>
 </body>
