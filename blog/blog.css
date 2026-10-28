@@ -105,6 +105,26 @@ pre code{display:block;padding:0;border:0;background:none;font-size:14px;line-he
 .post-related{margin:56px 0 0;padding-top:36px;border-top:1px solid var(--line-soft)}
 .post-related h2{margin:0 0 18px;font-size:20px;font-weight:700}
 
+/* ---- Legal documents (privacy, terms, cookies) ---- */
+.wrap--doc{max-width:820px}
+.doc-toc{margin:0 0 40px;padding:18px 22px;border:1px solid var(--line);border-radius:14px;background:var(--hull)}
+.doc-toc-title{margin:0 0 10px;font-size:13px;font-weight:600;color:var(--text)}
+.doc-toc ol{margin:0;padding:0;list-style:none;columns:2;column-gap:28px}
+.doc-toc li{margin:0 0 6px;break-inside:avoid;font-size:14px;line-height:1.5}
+.doc-toc a{color:var(--dim);text-decoration:none;transition:color .2s}
+.wrap--doc main .post-meta{font-size:13px;color:var(--faint)}
+#resetConsentStatus{margin-left:10px;font-size:13px}
+.doc-toc a:hover{color:var(--signal)}
+.wrap--doc main h2{scroll-margin-top:90px}
+.wrap--doc main p,.wrap--doc main ul,.wrap--doc main ol{font-size:16px}
+.table-wrap{overflow-x:auto;margin:0 0 22px;border:1px solid var(--line);border-radius:12px}
+.cookie-table{width:100%;border-collapse:collapse;margin:0;font-size:14px;line-height:1.55}
+.cookie-table th,.cookie-table td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line-soft);vertical-align:top;color:#ddd5c9}
+.cookie-table th{font-weight:600;color:var(--text);background:var(--hull);white-space:nowrap}
+.cookie-table tr:last-child td{border-bottom:0}
+#resetConsentBtn{font:inherit;font-size:14px;font-weight:600;padding:9px 18px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--text);cursor:pointer;transition:border-color .2s}
+#resetConsentBtn:hover{border-color:var(--signal)}
+
 /* ---- Footer (matches the home page) ---- */
 .site-footer{padding:48px 32px 40px;border-top:1px solid var(--line);background:var(--hull)}
 .site-footer-grid{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:1.4fr 1.6fr 1fr 1fr;gap:32px}
@@ -137,6 +157,7 @@ html.fx .fx-rv.is-in{opacity:1;translate:0 0}
   .post-card{padding:18px}
   .post-card-title{font-size:19px}
   .post-cta{padding:20px}
+  .doc-toc ol{columns:1}
   .site-footer{padding:36px 20px 32px}
   .site-footer-grid{grid-template-columns:1fr;gap:28px}
 }

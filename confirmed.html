@@ -15,29 +15,35 @@
 <body class="admin-body">
 
 <div class="confirm-wrap">
-  <div class="home-brand confirm-brand">
-    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+  <a class="home-brand confirm-brand" href="/" aria-label="Lineupr home">
+    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32" aria-hidden="true">
       <circle cx="20" cy="20" r="17" stroke="#ffa53e" stroke-width="2.2"/>
       <circle cx="20" cy="20" r="9"  stroke="#ffa53e" stroke-width="1" opacity="0.3"/>
+      <line x1="20" y1="3"  x2="20" y2="11" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/>
+      <line x1="20" y1="29" x2="20" y2="37" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/>
+      <line x1="3"  y1="20" x2="11" y2="20" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/>
+      <line x1="29" y1="20" x2="37" y2="20" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/>
       <circle cx="20" cy="20" r="3.5" fill="#ffa53e"/>
+      <circle cx="20" cy="20" r="1.4" fill="#0f0c09"/>
     </svg>
     <span class="home-wordmark">lineup<span class="home-wordmark-r">r</span></span>
-  </div>
+  </a>
 
   <div class="confirm-card">
     <div id="confirmOk">
       <div class="confirm-icon">✓</div>
-      <h3>Email confirmed</h3>
+      <h1 class="confirm-title">Email confirmed</h1>
       <p class="confirm-text" id="confirmText">Your account is ready.</p>
       <a href="/" class="primary-btn confirm-btn" id="confirmCta">Sign in to Lineupr</a>
     </div>
     <div id="confirmErr" hidden>
       <div class="confirm-icon confirm-icon-err">✕</div>
-      <h3>Something's not right</h3>
+      <h1 class="confirm-title">Something's not right</h1>
       <p class="confirm-text" id="confirmErrText"></p>
       <a href="/" class="primary-btn confirm-btn">Go to Lineupr</a>
     </div>
   </div>
+  <p class="confirm-foot"><a href="/">Home</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="mailto:support@nastipe.dev">Contact</a></p>
 </div>
 
 <script type="module">
