@@ -38,104 +38,119 @@ function jsonLdScript(obj) {
 
 const BRAND_SVG = `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="26" height="26" aria-hidden="true"><circle cx="20" cy="20" r="17" stroke="#ffa53e" stroke-width="2.2"/><circle cx="20" cy="20" r="9" stroke="#ffa53e" stroke-width="1" opacity="0.3"/><line x1="20" y1="3" x2="20" y2="11" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><line x1="20" y1="29" x2="20" y2="37" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="20" x2="11" y2="20" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><line x1="29" y1="20" x2="37" y2="20" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><circle cx="20" cy="20" r="3.5" fill="#ffa53e"/><circle cx="20" cy="20" r="1.4" fill="#0f0c09"/></svg>`;
 
-// Minimal inline CSS matching the SPA's dark theme — no external
-// stylesheet or webfont requests, so the pages stay a single fetch.
+// Inline CSS matching the rest of the site (home page, blog): same palette,
+// header, footer and type. No external stylesheet, so each page stays a
+// single fetch.
 const PAGE_CSS = `
-:root{--void:#0c0a08;--panel:#1d1815;--line:#382e25;--text:#f2ece2;--dim:#a99d8c;--faint:#6b5f51;--signal:#ffa53e}
+:root{--void:#0c0a08;--hull:#161210;--panel:#1d1815;--panel-2:#25201a;--line:#382e25;--line-soft:#2a221c;--text:#f2ece2;--dim:#a99d8c;--faint:#8f8270;--signal:#ffa53e;--signal-dim:#6b4a1f;--ease-out:cubic-bezier(.22,1,.36,1)}
 *{box-sizing:border-box}
-body{margin:0;background:var(--void);color:var(--text);font:16px/1.6 Inter,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
-a{color:var(--signal);text-decoration:none}a:hover{text-decoration:underline}
-.wrap{max-width:880px;margin:0 auto;padding:20px 20px 64px}
-.site-head{display:flex;align-items:center;gap:10px;padding:6px 0 22px;border-bottom:1px solid var(--line);margin-bottom:24px}
-.site-head a{display:flex;align-items:center;gap:10px;color:var(--text);font-weight:700;letter-spacing:.02em}
-.crumbs{font-size:13px;color:var(--faint);margin:0 0 14px}
+body{margin:0;background:var(--void);color:var(--text);font:16px/1.65 Inter,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+::selection{background:var(--signal-dim);color:var(--text)}
+a{color:var(--signal);text-decoration:none}
+a:focus-visible{outline:2px solid var(--signal);outline-offset:3px;border-radius:4px}
+.site-head{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 48px;border-bottom:1px solid var(--line-soft);background:rgba(12,10,8,.78);backdrop-filter:blur(14px) saturate(1.3);-webkit-backdrop-filter:blur(14px) saturate(1.3);transition:border-color .3s,box-shadow .3s}
+.site-head.is-scrolled{border-bottom-color:var(--line);box-shadow:0 10px 30px -18px rgba(0,0,0,.8)}
+.brand-link{display:flex;align-items:center;gap:10px;color:var(--text)}
+.brand-link svg{transition:transform .8s var(--ease-out)}
+.brand-link:hover svg{transform:rotate(180deg)}
+.wordmark{font-family:Bahnschrift,Oswald,"Arial Narrow",sans-serif;font-stretch:condensed;font-weight:700;font-size:21px;letter-spacing:.06em;color:var(--text)}
+.wordmark span{color:var(--signal)}
+.site-head nav{display:flex;align-items:center;gap:22px}
+.site-head nav a{color:var(--dim);font-size:14.5px;font-weight:500;transition:color .2s}
+.site-head nav a:hover{color:var(--text)}
+.site-head .nav-cta{padding:8px 16px;border:1px solid var(--signal-dim);border-radius:999px;color:var(--signal);font-weight:600}
+.site-head .nav-cta:hover{border-color:var(--signal);color:var(--signal);background:rgba(255,165,62,.08)}
+.wrap{max-width:960px;margin:0 auto;padding:48px 32px 72px}
+.crumbs{font-size:13px;color:var(--faint);margin:0 0 24px}
 .crumbs a{color:var(--dim)}
-h1{font-family:Bahnschrift,Oswald,"Arial Narrow",sans-serif;font-stretch:condensed;letter-spacing:.03em;font-size:32px;margin:0 0 10px}
-h2{font-family:Bahnschrift,Oswald,"Arial Narrow",sans-serif;font-stretch:condensed;letter-spacing:.03em;font-size:21px;margin:34px 0 12px;color:var(--signal)}
-.lede{color:var(--dim);margin:0 0 20px;max-width:64ch}
-.cta{display:inline-block;background:var(--signal);color:#1a150f;font-weight:600;padding:10px 18px;border-radius:8px;margin:6px 0 10px}
-.cta:hover{text-decoration:none;filter:brightness(1.08)}
-ul.plain{list-style:none;padding:0;margin:0}
-ul.plain li{padding:9px 0;border-bottom:1px solid var(--line)}
+.crumbs a:hover{color:var(--text)}
+.page-head{margin:0 0 28px}
+.kicker{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;margin:0 0 12px;font-size:13px;color:var(--faint)}
+.kicker a{color:var(--dim);text-decoration:none}
+.kicker a:hover{color:var(--text)}
+.kicker > :not(.tag) + :not(.tag)::before{content:"·";margin-right:12px;color:var(--line)}
+.tag{display:inline-flex;align-items:center;gap:7px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;color:var(--signal);background:rgba(255,165,62,.12)}
+.tag .dot{width:7px;height:7px}
+h1{margin:0;font-size:clamp(30px,4.4vw,44px);line-height:1.12;font-weight:700;letter-spacing:-.02em;color:var(--text)}
+h2{margin:44px 0 14px;display:flex;align-items:center;gap:10px;font-size:21px;font-weight:700;letter-spacing:-.01em;color:var(--text)}
+h2 .count{font-size:13px;font-weight:500;color:var(--faint)}
+.lede{color:var(--dim);margin:12px 0 0;max-width:64ch;font-size:17px;line-height:1.65}
+.actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px 20px;margin:24px 0 8px}
+.cta{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:999px;background:var(--signal);color:#1a1006;font-size:15px;font-weight:600;transition:transform .3s var(--ease-out),box-shadow .3s}
+.cta:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(255,165,62,.22)}
+.cta svg{transition:transform .3s var(--ease-out)}
+.cta:hover svg{transform:translateX(3px)}
+.link-quiet{color:var(--dim);font-size:15px;font-weight:500}
+.link-quiet:hover{color:var(--text)}
+main p a{text-decoration:underline;text-decoration-color:rgba(255,165,62,.4);text-underline-offset:3px}
+ul.plain,ul.rows{list-style:none;padding:0;margin:0}
+ul.plain li{padding:10px 0;border-bottom:1px solid var(--line-soft)}
 ul.plain .sub{color:var(--faint);font-size:13px;margin-left:8px}
-ol.steps{color:var(--dim);font-size:14px;line-height:1.7;margin:0 0 28px;padding-left:22px}
-ol.steps li{padding:2px 0}
-.map-card-grid{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
-.map-card-item{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
-.map-card-link{display:block;color:inherit}
-.map-card-link:hover{text-decoration:none}
-.map-card-link:hover .map-card-title{color:var(--signal)}
-.map-card-thumb{display:block;aspect-ratio:16/10;background-size:cover;background-position:center;background-color:var(--void)}
-.map-card-info{display:block;padding:12px 14px}
-.map-card-title{display:block;font-family:inherit;font-weight:700;font-size:16px;color:var(--text)}
-.map-card-info .sub{display:block;margin:2px 0 0;color:var(--faint);font-size:12.5px}
-.map-card-breakdown{display:flex;flex-wrap:wrap;gap:2px 10px;margin-top:8px;font-size:12px;color:var(--dim)}
-.map-card-type{display:inline-flex;align-items:center;gap:5px}
-.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
-.dot-smoke{background:#c7cdd2}
-.dot-flash{background:#f5d142}
-.dot-fire{background:#ff6a45}
-.dot-he{background:#79e07e}
-.dot-decoy{background:#cf9f6e}
-.throw{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:0 0 18px}
-.throw h3{margin:0 0 8px;font-size:17px}
-.facts{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:14px;color:var(--dim);margin:0 0 10px;padding:0;list-style:none}
+ul.rows{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+ul.rows a{display:flex;align-items:center;gap:12px;height:100%;padding:13px 16px;border:1px solid var(--line);border-radius:12px;background:var(--hull);color:var(--text);transition:border-color .3s,background .3s,transform .4s var(--ease-out)}
+ul.rows a:hover{border-color:rgba(255,165,62,.5);background:var(--panel);transform:translateY(-2px)}
+ul.rows .num{flex-shrink:0;width:24px;height:24px;border-radius:7px;display:grid;place-items:center;font-size:12px;font-weight:600;color:var(--signal);background:rgba(255,165,62,.12)}
+ul.rows .name{flex:1;min-width:0;font-weight:600;font-size:15px;line-height:1.35}
+ul.rows .sub{display:block;margin-top:2px;font-weight:400;font-size:12.5px;color:var(--faint)}
+ul.rows .arrow{flex-shrink:0;color:var(--faint);transition:color .3s,transform .3s var(--ease-out)}
+ul.rows a:hover .arrow{color:var(--signal);transform:translateX(3px)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips a{padding:7px 14px;border:1px solid var(--line);border-radius:999px;color:var(--dim);font-size:14px;transition:border-color .2s,color .2s}
+.chips a:hover{border-color:var(--signal);color:var(--text)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+.dot-smoke{background:#c7cdd2}.dot-flash{background:#f5d142}.dot-fire{background:#ff6a45}.dot-he{background:#79e07e}.dot-decoy{background:#cf9f6e}
+.throw{background:var(--hull);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin:0 0 18px}
+.throw-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 12px}
+.throw h3{margin:0;font-size:18px;font-weight:700}
+.throw-head a{font-size:13.5px;font-weight:500}
+.facts{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;padding:0;list-style:none}
+.facts li{padding:4px 12px;border-radius:999px;background:var(--panel-2);font-size:13px;color:var(--dim)}
 .facts b{color:var(--text);font-weight:600}
-.notes{margin:0 0 12px;white-space:normal}
-.shots{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.notes{margin:0 0 16px;font-size:15.5px;line-height:1.7;color:#ddd5c9}
+.shots{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
 .shots figure{margin:0}
-.shots img{width:100%;height:auto;border-radius:6px;border:1px solid var(--line);display:block}
-.shots figcaption{font-size:12px;color:var(--faint);margin-top:4px}
-.foot{margin-top:44px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--faint)}
-.foot a{color:var(--dim)}
-.shots img{cursor:zoom-in}
+.shots img{width:100%;height:auto;border-radius:10px;border:1px solid var(--line);display:block;cursor:zoom-in;transition:border-color .3s}
+.shots img:hover{border-color:var(--signal-dim)}
+.shots figcaption{font-size:12.5px;color:var(--faint);margin-top:6px}
+.site-footer{padding:48px 32px 40px;border-top:1px solid var(--line);background:var(--hull)}
+.site-footer-grid{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:1.4fr 1.6fr 1fr 1fr;gap:32px}
+.site-footer-brand .wordmark{font-size:20px}
+.site-footer-brand p{margin:12px 0 0;max-width:36ch;font-size:12.5px;line-height:1.6;color:var(--faint)}
+.site-footer-title{margin:0 0 12px;font-size:13px;font-weight:600;color:var(--text)}
+.site-footer-col ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.site-footer-col ul.site-footer-maps{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px}
+.site-footer-col a{color:var(--dim);font-size:13.5px;line-height:1.5;transition:color .2s}
+.site-footer-col a:hover{color:var(--signal)}
 .lb{position:fixed;inset:0;background:rgba(4,6,7,.93);display:none;align-items:center;justify-content:center;z-index:100;overflow:hidden}
 .lb.show{display:flex}
 .lb img{max-width:94vw;max-height:92vh;border-radius:4px;user-select:none;-webkit-user-drag:none;transform-origin:center;will-change:transform}
 .lb-close{position:absolute;top:12px;right:16px;background:none;border:none;color:#fff;font-size:32px;line-height:1;cursor:pointer;padding:4px 10px}
 .lb-hint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);color:var(--dim);font-size:12px;pointer-events:none}
-
-:root{--ease-out:cubic-bezier(.22,1,.36,1)}
-body{background:var(--void)}
-
-::selection{background:#6b4a1f;color:#f2ece2}
-.site-head{position:sticky;top:0;z-index:20;margin:-20px -20px 24px;padding:20px 20px 14px;background:rgba(12,10,8,.72);backdrop-filter:blur(14px) saturate(1.4);-webkit-backdrop-filter:blur(14px) saturate(1.4);transition:border-color .3s,box-shadow .3s}
-.site-head.is-scrolled{border-bottom-color:#6b4a1f;box-shadow:0 10px 30px -18px rgba(0,0,0,.8)}
-.site-head svg{transition:transform .8s var(--ease-out)}
-.site-head a:hover svg{transform:rotate(180deg)}
-.site-head a:hover{text-decoration:none}
-.site-head nav a{position:relative}
-.site-head nav a::after{content:"";position:absolute;left:0;right:0;bottom:-3px;height:1px;background:var(--signal);transform:scaleX(0);transform-origin:right;transition:transform .5s var(--ease-out)}
-.site-head nav a:hover{text-decoration:none;color:var(--text)}
-.site-head nav a:hover::after{transform:scaleX(1);transform-origin:left}
-h1{color:var(--text);font-size:clamp(32px,5vw,48px)}
-h2{position:relative;padding-left:16px}
-h2::before{content:"";position:absolute;left:0;top:.22em;bottom:.22em;width:3px;border-radius:2px;background:var(--signal)}
-main p a,main li a,.crumbs a,.foot a{background:linear-gradient(currentColor,currentColor) 0 100%/0 1px no-repeat;transition:background-size .5s var(--ease-out),color .3s}
-main p a:hover,main li a:hover,.crumbs a:hover,.foot a:hover{background-size:100% 1px;text-decoration:none}
-.cta{position:relative;overflow:hidden;isolation:isolate;border-radius:999px;padding:12px 24px;background:#ffa53e;transition:color .4s var(--ease-out),transform .5s var(--ease-out)}
-.cta::before{content:"";position:absolute;inset:0;z-index:-1;background:#fff;transform:translateY(101%);border-radius:50% 50% 0 0/100% 100% 0 0;transition:transform .55s var(--ease-out),border-radius .55s var(--ease-out)}
-.cta:hover{filter:none}
-.cta:hover::before{transform:translateY(0);border-radius:0}
-.cta:active{scale:.97}
-ul.plain li{transition:padding-left .4s var(--ease-out),border-color .3s}
-ul.plain li:hover{padding-left:10px;border-color:#6b4a1f}
-.map-card-item,.throw{position:relative;transition:transform .5s var(--ease-out),border-color .3s,box-shadow .5s}
-.map-card-item:hover,.throw:hover{transform:translateY(-6px);border-color:#6b4a1f;box-shadow:0 24px 48px -24px rgba(0,0,0,.85)}
-.map-card-thumb{transition:transform .9s var(--ease-out)}
-.map-card-item{overflow:hidden}
-.map-card-item:hover .map-card-thumb{transform:scale(1.08)}
-.map-card-title{transition:color .3s,transform .5s var(--ease-out)}
-.map-card-link:hover .map-card-title{transform:translateX(4px)}
-.shots img{transition:transform .5s var(--ease-out),border-color .3s}
-.shots img:hover{transform:scale(1.015);border-color:#6b4a1f}
-kbd,code{transition:border-color .3s}
-kbd:hover,code:hover{border-color:#6b4a1f}
-.fx-progress{position:fixed;inset:0 0 auto 0;height:3px;z-index:700;transform:scaleX(0);transform-origin:left;background:#ffa53e;pointer-events:none;will-change:transform}
-html.fx .fx-rv{opacity:0;translate:0 28px;transition:opacity .9s var(--ease-out) var(--d,0ms),translate .9s var(--ease-out) var(--d,0ms),transform .5s var(--ease-out),border-color .3s,box-shadow .5s,padding-left .4s var(--ease-out)}
+.fx-progress{position:fixed;inset:0 0 auto 0;height:3px;z-index:700;transform:scaleX(0);transform-origin:left;background:var(--signal);pointer-events:none;will-change:transform}
+html.fx .fx-rv{opacity:0;translate:0 24px;transition:opacity .8s var(--ease-out) var(--d,0ms),translate .8s var(--ease-out) var(--d,0ms)}
 html.fx .fx-rv.is-in{opacity:1;translate:0 0}
-@media(max-width:560px){.site-head{margin:-20px -16px 20px;padding:18px 16px 12px}}
+@media(max-width:900px){.site-footer-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:640px){.site-head{padding:12px 16px}.site-head nav a:not(.nav-cta){display:none}.wrap{padding:28px 18px 56px}.lede{font-size:16px}.throw{padding:16px}.site-footer{padding:36px 20px 32px}.site-footer-grid{grid-template-columns:1fr;gap:28px}}
 `.trim();
+
+const ARROW_SVG = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+// Same header and column footer as the home page and blog.
+const SITE_HEADER = `<header class="site-head">
+<a class="brand-link" href="/" aria-label="Lineupr home">${BRAND_SVG.replace('width="26" height="26"', 'width="30" height="30"')}<span class="wordmark">lineup<span>r</span></span></a>
+<nav aria-label="Primary"><a href="/maps">Maps</a><a href="/blog">Blog</a><a class="nav-cta" href="/maps">Open the map</a></nav>
+</header>`;
+
+function siteFooter(C) {
+  return `<footer class="site-footer" aria-label="Site footer">
+<div class="site-footer-grid">
+<div class="site-footer-brand"><span class="wordmark">lineup<span>r</span></span><p>Built by players, for players. An independent fan project, not affiliated with or endorsed by Valve. Counter-Strike 2 and its map images are trademarks or copyrighted material of Valve.</p></div>
+<nav class="site-footer-col" aria-label="Lineups by map"><p class="site-footer-title">Lineups by map</p><ul class="site-footer-maps">${C.MAPS.map(m => `<li><a href="/${esc(m.id)}">${esc(m.name)}</a></li>`).join("")}</ul></nav>
+<nav class="site-footer-col" aria-label="Lineupr"><p class="site-footer-title">Lineupr</p><ul><li><a href="/">Home</a></li><li><a href="/maps">All maps</a></li><li><a href="/blog">Blog</a></li><li><a href="mailto:support@nastipe.dev">Contact</a></li></ul></nav>
+<nav class="site-footer-col" aria-label="Legal"><p class="site-footer-title">Legal</p><ul><li><a href="/privacy.html">Privacy</a></li><li><a href="/terms.html">Terms</a></li><li><a href="/cookies.html">Cookies</a></li><li><a href="mailto:support@nastipe.dev?subject=Content%20report">Report content</a></li></ul></nav>
+</div>
+</footer>`;
+}
 
 // Self-contained click-to-zoom lightbox for the screenshot <img>s. Vanilla,
 // inline, no dependencies — click a shot to open it fullscreen; wheel or
@@ -193,17 +208,14 @@ ${(jsonLd || []).map(jsonLdScript).join("\n")}
 <script defer src="/site-fx.js"></script>
 </head>
 <body>
+${SITE_HEADER}
 <div class="wrap">
-<header class="site-head"><a href="/">${BRAND_SVG}<span>lineupr</span></a></header>
 ${crumbs ? `<nav class="crumbs" aria-label="Breadcrumb">${crumbs}</nav>` : ""}
 <main>
 ${body}
 </main>
-<footer class="foot">
-<p><a href="/">Lineupr</a> — the interactive CS2 grenade lineup map. <a href="/maps">Browse lineups by map</a>. <a href="/blog">Blog</a>. · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="/cookies.html">Cookies</a> · <a href="mailto:support@nastipe.dev?subject=Content%20report">Report content</a></p>
-<p>Lineupr is an independent fan project, not affiliated with or endorsed by Valve. Counter-Strike 2 and its map images are trademarks or copyrighted material of Valve.</p>
-</footer>
 </div>
+${siteFooter(CONSTANTS)}
 ${lightbox ? LIGHTBOX_HTML : ""}
 </body>
 </html>`;
@@ -370,13 +382,13 @@ async function renderMapPage(res, C, mapId) {
     if (ofType.length === 0) return "";
     const items = ofType.map(l => {
       const n = l.throws.length;
-      return `<li><a href="${esc(lineupPath(l))}">${esc(lineupDisplayName(l, t.label))}</a><span class="sub">${n} throw${n === 1 ? "" : "s"}</span></li>`;
+      return `<li><a href="${esc(lineupPath(l))}"><span class="dot dot-${esc(t.id)}"></span><span class="name">${esc(lineupDisplayName(l, t.label))}<span class="sub">${n} throw${n === 1 ? "" : "s"}</span></span><span class="arrow">${ARROW_SVG}</span></a></li>`;
     }).join("\n");
-    return `<h2>${esc(map.name)} ${TYPE_PLURALS[t.id] || t.label} (${ofType.length})</h2>\n<ul class="plain">\n${items}\n</ul>`;
+    return `<h2><span class="dot dot-${esc(t.id)}"></span>${esc(map.name)} ${TYPE_PLURALS[t.id] || t.label} <span class="count">${ofType.length}</span></h2>\n<ul class="rows">\n${items}\n</ul>`;
   }).join("\n");
 
   const otherMaps = C.MAPS.filter(m => m.id !== mapId)
-    .map(m => `<a href="/${m.id}">${esc(m.name)}</a>`).join(" · ");
+    .map(m => `<a href="/${m.id}">${esc(m.name)}</a>`).join("");
 
   const jsonLd = [
     {
@@ -401,12 +413,15 @@ async function renderMapPage(res, C, mapId) {
   ];
 
   const body = `
+<header class="page-head">
+<p class="kicker"><span class="tag">Map</span><span>${lineups.length} official lineup${lineups.length === 1 ? "" : "s"}</span></p>
 <h1>${esc(map.name)} Grenade Lineups (CS2)</h1>
 <p class="lede">${lineups.length} official grenade lineup${lineups.length === 1 ? "" : "s"} for ${esc(map.name)} — smokes, flashes, molotovs and HE grenades. Every lineup includes where to stand, where to aim, the throw technique, and screenshots.</p>
-<a class="cta" href="/?map=${esc(map.id)}">Open ${esc(map.name)} in the interactive map</a>
+<div class="actions"><a class="cta" href="/?map=${esc(map.id)}">Open ${esc(map.name)} in the interactive map ${ARROW_SVG}</a><a class="link-quiet" href="/maps">All maps</a></div>
+</header>
 ${sections || `<p class="lede">No official lineups for ${esc(map.name)} yet — check back soon.</p>`}
 <h2>Other maps</h2>
-<p>${otherMaps} · <a href="/maps">All maps</a></p>`;
+<div class="chips">${otherMaps}</div>`;
 
   sendHtml(res, 200, layout({
     title: `${map.name} Grenade Lineups (CS2) — Smokes, Flashes & Molotovs | Lineupr`,
@@ -467,8 +482,8 @@ async function renderLineupPage(res, C, mapId, typeId, slug) {
     ).join("\n");
 
     return `<section class="throw">
-<h3>Throw ${i + 1} of ${lineup.throws.length}</h3>
-<ul class="facts"><li>Movement: <b>${movement}</b></li><li>Range: <b>${range}</b></li>${lineup.throws.length > 1 ? `<li><a href="/?map=${esc(map.id)}&amp;lineup=${esc(lineup.id)}&amp;throw=${i + 1}">Open this throw in the map</a></li>` : ""}</ul>
+<div class="throw-head"><h3>Throw ${i + 1} of ${lineup.throws.length}</h3>${lineup.throws.length > 1 ? `<a href="/?map=${esc(map.id)}&amp;lineup=${esc(lineup.id)}&amp;throw=${i + 1}">Open this throw in the map →</a>` : ""}</div>
+<ul class="facts"><li>Movement: <b>${movement}</b></li><li>Range: <b>${range}</b></li></ul>
 ${notes ? `<p class="notes">${esc(notes).replace(/\r?\n/g, "<br>")}</p>` : ""}
 ${imgs ? `<div class="shots">\n${imgs}\n</div>` : ""}
 </section>`;
@@ -481,11 +496,11 @@ ${imgs ? `<div class="shots">\n${imgs}\n</div>` : ""}
     .slice(0, 6);
   const relatedHtml = related.length ? `
 <h2>More ${esc(map.name)} lineups</h2>
-<ul class="plain">
+<ul class="rows">
 ${related.map(l => {
     const t = C.TYPES.find(x => x.id === l.type);
     const label = t ? t.label : l.type;
-    return `<li><a href="${esc(lineupPath(l))}">${esc(lineupDisplayName(l, label))}</a><span class="sub">${esc(label)}</span></li>`;
+    return `<li><a href="${esc(lineupPath(l))}"><span class="dot dot-${esc(l.type)}"></span><span class="name">${esc(lineupDisplayName(l, label))}<span class="sub">${esc(label)}</span></span><span class="arrow">${ARROW_SVG}</span></a></li>`;
   }).join("\n")}
 </ul>` : "";
 
@@ -519,13 +534,16 @@ ${related.map(l => {
   ];
 
   const body = `
+<header class="page-head">
+<p class="kicker"><span class="tag"><span class="dot dot-${esc(type.id)}"></span>${esc(type.label)}</span><a href="/${esc(map.id)}">${esc(map.name)}</a><span>${lineup.throws.length} throw${lineup.throws.length === 1 ? "" : "s"}</span></p>
 <h1>${esc(displayName)}</h1>
-<p class="lede">${esc(map.name)} · ${esc(type.label)} · ${lineup.throws.length} throw${lineup.throws.length === 1 ? "" : "s"} — official Lineupr lineup with screenshots and technique for each throw.</p>
-<a class="cta" href="/?map=${esc(map.id)}&amp;lineup=${esc(lineup.id)}">Open in interactive map</a>
+<p class="lede">Official Lineupr lineup with screenshots and technique for each throw.</p>
+<div class="actions"><a class="cta" href="/?map=${esc(map.id)}&amp;lineup=${esc(lineup.id)}">Open in interactive map ${ARROW_SVG}</a><a class="link-quiet" href="/${esc(map.id)}">All ${esc(map.name)} lineups</a></div>
+</header>
 ${throwsHtml}
 ${relatedHtml}
 <h2>Browse more</h2>
-<p><a href="/${esc(map.id)}">All ${esc(map.name)} lineups</a> · <a href="/maps">All maps</a></p>`;
+<div class="chips"><a href="/${esc(map.id)}">All ${esc(map.name)} lineups</a><a href="/maps">All maps</a></div>`;
 
   sendHtml(res, 200, layout({
     title: `${displayName} — ${map.name} ${type.label} Lineup (CS2) | Lineupr`,
@@ -577,7 +595,7 @@ async function renderCollectionPage(res, C, slug) {
     const type = C.TYPES.find(t => t.id === lineup.type);
     const label = lineupDisplayName(lineup, type ? type.label : lineup.type);
     const extra = [item.role, item.timing].filter(Boolean).map(esc).join(" · ");
-    return `<li><strong>${i + 1}.</strong> <a href="${esc(lineupPath(lineup))}">${esc(label)}</a><span class="sub">${esc(type ? type.label : "")}${extra ? " · " + extra : ""}</span></li>`;
+    return `<li><a href="${esc(lineupPath(lineup))}"><span class="num">${i + 1}</span><span class="name">${esc(label)}<span class="sub">${esc(type ? type.label : "")}${extra ? " · " + extra : ""}</span></span><span class="arrow">${ARROW_SVG}</span></a></li>`;
   }).join("");
 
   sendHtml(res, 200, layout({
@@ -586,11 +604,14 @@ async function renderCollectionPage(res, C, slug) {
     // Real browsers go straight to the app; link-preview bots don't run JS.
     head: `<script>if(!/bot|crawl|spider|preview|facebookexternalhit|discord|telegram|slack/i.test(navigator.userAgent))location.replace(${JSON.stringify(appUrl)});</script>\n`,
     crumbs: `<a href="/">Lineupr</a> › <a href="/${esc(map.id)}">${esc(map.name)}</a> › Collection`,
-    body: `<h1>${esc(col.name)}</h1>
+    body: `<header class="page-head">
+<p class="kicker"><span class="tag">Collection</span><a href="/${esc(map.id)}">${esc(map.name)}</a><span>${total} lineup${total === 1 ? "" : "s"}</span></p>
+<h1>${esc(col.name)}</h1>
 <p class="lede">${esc(description)}</p>
-<p><a class="cta" href="${esc(appUrl)}">Open in the interactive map</a></p>
+<div class="actions"><a class="cta" href="${esc(appUrl)}">Open in the interactive map ${ARROW_SVG}</a></div>
+</header>
 <h2>${total} lineup${total === 1 ? "" : "s"} on ${esc(map.name)}</h2>
-<ul class="plain">${list || "<li>No official lineups to show.</li>"}</ul>
+${list ? `<ul class="rows">${list}</ul>` : `<p class="lede">No official lineups to show.</p>`}
 ${visible.length < total ? `<p class="lede">${total - visible.length} more ${total - visible.length === 1 ? "item is" : "items are"} personal or no longer available.</p>` : ""}`,
   }), CACHE_OK);
 }
@@ -601,7 +622,7 @@ function notFound(res) {
     title: "Page not found | Lineupr",
     description: "This lineup or map page does not exist.",
     path: "/maps",
-    body: `<h1>Page not found</h1><p class="lede">This lineup or map doesn't exist (it may have been removed).</p><p><a href="/maps">Browse all maps</a> or <a href="/">open the interactive map</a>.</p>`,
+    body: `<header class="page-head"><p class="kicker"><span class="tag">404</span></p><h1>Page not found</h1><p class="lede">This lineup or map doesn't exist (it may have been removed).</p><div class="actions"><a class="cta" href="/maps">Browse all maps ${ARROW_SVG}</a><a class="link-quiet" href="/">Home</a></div></header>`,
   }), CACHE_MISS);
 }
 
