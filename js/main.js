@@ -38,7 +38,9 @@ sidebarBrand.onclick = goHomeFromLogo;
 window.addEventListener("popstate", () => {
   const params = new URLSearchParams(window.location.search);
   const id = params.get("map");
-  if (!id || !MAPS.some(m => m.id === id)) { goHome(); return; }
+  // No map in the URL: leave the map view. On the home page itself (e.g. an
+  // in-page #anchor link, which also fires popstate) there's nothing to do.
+  if (!id || !MAPS.some(m => m.id === id)) { if (!appShell.hidden) goHome(); return; }
   // Same map still on screen: only the open lineup changed (Back/Forward
   // over a dossier entry), so open/close it without reloading the map.
   if (id === state.mapId && !appShell.hidden) {
@@ -198,13 +200,15 @@ loadConfig().then(async () => {
   handleDeepLink();
 });
 
-// Home "Guides for every map" cards ship with prerendered counts; refresh
-// them with the live official-lineup counts (one small request).
+// Home map cards and the hero's lineup total ship with prerendered counts;
+// refresh them with the live official-lineup counts (one small request).
 async function refreshHomeMapCounts() {
   const els = document.querySelectorAll("[data-map-count]");
   if (!els.length) return;
   const counts = await fetchMapCounts();
   if (!counts) return; // keep the prerendered counts
+  const total = MAPS.reduce((n, m) => n + (counts[m.id] || 0), 0);
+  document.querySelectorAll("[data-total-lineups]").forEach(el => { el.textContent = total.toLocaleString(); });
   els.forEach(el => {
     const n = counts[el.dataset.mapCount] || 0;
     el.textContent = n === 0 ? "Lineups coming soon" : `${n} lineup${n === 1 ? "" : "s"}`;

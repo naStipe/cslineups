@@ -76,16 +76,16 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
       <div class="hero-text">
         <p class="hero-eyebrow"><span class="hero-eyebrow-dot"></span>CS2 lineup database</p>
         <h1 class="hero-title" id="heroTitle">Find lineups. Learn. <span class="hero-accent">Save yours</span></h1>
-        <p class="hero-sub">Lineupr is your all-in-one tool for practicing and sharing game-winning lineups. Learn new smokes, add your own, share with friends. Keep <span class="hero-highlight">YOUR</span> lineups in one place, one click away.</p>
+        <p class="hero-sub">Smokes, flashes, molotovs and HEs on an interactive map, each with where to stand, where to aim and how to throw. Save the ones you use, add your own and share them with your team.</p>
         <div class="hero-actions">
           <a class="hero-cta" href="/maps" data-magnetic><span>Choose your map</span><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
-          <div class="hero-legend" aria-hidden="true">
-            <span class="hero-legend-item"><span class="hero-legend-dot" style="--dot:var(--smoke)"></span>Smoke</span>
-            <span class="hero-legend-item"><span class="hero-legend-dot" style="--dot:var(--flash)"></span>Flash</span>
-            <span class="hero-legend-item"><span class="hero-legend-dot" style="--dot:var(--fire)"></span>Molotov</span>
-            <span class="hero-legend-item"><span class="hero-legend-dot" style="--dot:var(--he)"></span>HE</span>
-          </div>
+          <a class="hero-secondary" href="#howTitle">How it works</a>
         </div>
+        <ul class="hero-facts" aria-label="Lineupr at a glance">
+          <li><strong data-total-lineups>225</strong> lineups</li>
+          <li><strong>9</strong> maps</li>
+          <li><strong>Free</strong>, no ads</li>
+        </ul>
       </div>
 
       <div class="hero-diagram-wrap" data-parallax="28"><div class="hero-diagram" id="heroDiagram" data-spot data-tilt aria-label="Real Lineupr maps rotating through Dust II, Mirage, Inferno, Nuke, Ancient, Anubis, Cache and Overpass, each showing live lineup markers.">
@@ -98,28 +98,98 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
         <img class="hero-slide" src="/maps/hero/cache.webp" width="720" height="564" loading="lazy" decoding="async" alt="" aria-hidden="true">
         <img class="hero-slide" src="/maps/hero/overpass.webp" width="720" height="724" loading="lazy" decoding="async" alt="" aria-hidden="true">
         <span class="hero-diagram-corners" aria-hidden="true"></span>
+      </div>
+      <div class="hero-legend" aria-hidden="true">
+        <span class="hero-legend-item"><span class="hero-legend-dot" style="--dot:var(--smoke)"></span>Smoke</span>
+        <span class="hero-legend-item"><span class="hero-legend-dot" style="--dot:var(--flash)"></span>Flash</span>
+        <span class="hero-legend-item"><span class="hero-legend-dot" style="--dot:var(--fire)"></span>Molotov</span>
+        <span class="hero-legend-item"><span class="hero-legend-dot" style="--dot:var(--he)"></span>HE</span>
       </div></div>
     </section>
 
-    <section class="home-stats" aria-label="Lineupr at a glance">
-      <div class="home-stat" data-reveal><span class="home-stat-num" data-count="9">9</span><span class="home-stat-label">Maps</span></div>
-      <div class="home-stat" data-reveal><span class="home-stat-num" data-count="5">5</span><span class="home-stat-label">Nade types</span></div>
-      <div class="home-stat" data-reveal><span class="home-stat-num">1</span><span class="home-stat-label">Click to a lineup</span></div>
-      <div class="home-stat" data-reveal><span class="home-stat-num">0</span><span class="home-stat-label">Dollars, ever</span></div>
+    <section class="home-section" aria-labelledby="mapsTitle">
+      <div class="home-section-head" data-reveal>
+        <div>
+          <h2 id="mapsTitle" class="home-section-title">Pick a map</h2>
+          <p class="home-section-sub">Every active-duty map, plus Cache and Overpass.</p>
+        </div>
+        <a class="home-section-link" href="/maps">All maps <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      </div>
+      <div class="home-map-grid">
+        <a class="home-map-card" href="/?map=dust2" data-reveal data-spot style="--bg:url(/maps/hero/dust2.webp)">
+          <span class="home-map-card-art" aria-hidden="true"></span>
+          <img class="home-map-card-icon" src="/maps/icons/dust2.webp" alt="" width="44" height="44" loading="lazy" decoding="async">
+          <span class="home-map-card-text"><h3>Dust II</h3><p data-map-count="dust2">26 lineups</p></span>
+          <svg class="home-map-card-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a class="home-map-card" href="/?map=mirage" data-reveal data-spot style="--bg:url(/maps/hero/mirage.webp)">
+          <span class="home-map-card-art" aria-hidden="true"></span>
+          <img class="home-map-card-icon" src="/maps/icons/mirage.webp" alt="" width="44" height="44" loading="lazy" decoding="async">
+          <span class="home-map-card-text"><h3>Mirage</h3><p data-map-count="mirage">34 lineups</p></span>
+          <svg class="home-map-card-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a class="home-map-card" href="/?map=inferno" data-reveal data-spot style="--bg:url(/maps/hero/inferno.webp)">
+          <span class="home-map-card-art" aria-hidden="true"></span>
+          <img class="home-map-card-icon" src="/maps/icons/inferno.webp" alt="" width="44" height="44" loading="lazy" decoding="async">
+          <span class="home-map-card-text"><h3>Inferno</h3><p data-map-count="inferno">39 lineups</p></span>
+          <svg class="home-map-card-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a class="home-map-card" href="/?map=nuke" data-reveal data-spot style="--bg:url(/maps/hero/nuke.webp)">
+          <span class="home-map-card-art" aria-hidden="true"></span>
+          <img class="home-map-card-icon" src="/maps/icons/nuke.webp" alt="" width="44" height="44" loading="lazy" decoding="async">
+          <span class="home-map-card-text"><h3>Nuke</h3><p data-map-count="nuke">11 lineups</p></span>
+          <svg class="home-map-card-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a class="home-map-card" href="/?map=ancient" data-reveal data-spot style="--bg:url(/maps/hero/ancient.webp)">
+          <span class="home-map-card-art" aria-hidden="true"></span>
+          <img class="home-map-card-icon" src="/maps/icons/ancient.webp" alt="" width="44" height="44" loading="lazy" decoding="async">
+          <span class="home-map-card-text"><h3>Ancient</h3><p data-map-count="ancient">24 lineups</p></span>
+          <svg class="home-map-card-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a class="home-map-card" href="/?map=anubis" data-reveal data-spot style="--bg:url(/maps/hero/anubis.webp)">
+          <span class="home-map-card-art" aria-hidden="true"></span>
+          <img class="home-map-card-icon" src="/maps/icons/anubis.webp" alt="" width="44" height="44" loading="lazy" decoding="async">
+          <span class="home-map-card-text"><h3>Anubis</h3><p data-map-count="anubis">29 lineups</p></span>
+          <svg class="home-map-card-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a class="home-map-card" href="/?map=vertigo" data-reveal data-spot style="--bg:url(/maps/hero/vertigo.webp)">
+          <span class="home-map-card-art" aria-hidden="true"></span>
+          <img class="home-map-card-icon" src="/maps/icons/vertigo.webp" alt="" width="44" height="44" loading="lazy" decoding="async">
+          <span class="home-map-card-text"><h3>Vertigo</h3><p data-map-count="vertigo">Lineups coming soon</p></span>
+          <svg class="home-map-card-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a class="home-map-card" href="/?map=cache" data-reveal data-spot style="--bg:url(/maps/hero/cache.webp)">
+          <span class="home-map-card-art" aria-hidden="true"></span>
+          <img class="home-map-card-icon" src="/maps/icons/cache.webp" alt="" width="44" height="44" loading="lazy" decoding="async">
+          <span class="home-map-card-text"><h3>Cache</h3><p data-map-count="cache">26 lineups</p></span>
+          <svg class="home-map-card-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a class="home-map-card" href="/?map=overpass" data-reveal data-spot style="--bg:url(/maps/hero/overpass.webp)">
+          <span class="home-map-card-art" aria-hidden="true"></span>
+          <img class="home-map-card-icon" src="/maps/icons/overpass.webp" alt="" width="44" height="44" loading="lazy" decoding="async">
+          <span class="home-map-card-text"><h3>Overpass</h3><p data-map-count="overpass">36 lineups</p></span>
+          <svg class="home-map-card-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
     </section>
 
-    <section class="home-features" aria-labelledby="featuresTitle">
-      <h2 id="featuresTitle" class="home-section-title" data-reveal>How Lineupr works</h2>
+    <section class="home-section" aria-labelledby="howTitle">
+      <div class="home-section-head" data-reveal>
+        <div>
+          <h2 id="howTitle" class="home-section-title">How Lineupr works</h2>
+          <p class="home-section-sub">Browsing is open to everyone. An account lets you keep and share your own.</p>
+        </div>
+      </div>
       <div class="home-steps">
         <div class="home-step" data-reveal data-spot>
           <span class="home-step-num">01</span>
           <h3>Sign in</h3>
-          <p>Create an account to unlock your own collection.</p>
+          <p>Create a free account to keep your own collection.</p>
         </div>
         <div class="home-step" data-reveal data-spot>
           <span class="home-step-num">02</span>
           <h3>Save</h3>
-          <p>Save lineups to your collection so they're one click away.</p>
+          <p>Save lineups to your map so they're one click away.</p>
         </div>
         <div class="home-step" data-reveal data-spot>
           <span class="home-step-num">03</span>
@@ -129,24 +199,17 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
         <div class="home-step" data-reveal data-spot>
           <span class="home-step-num">04</span>
           <h3>Share</h3>
-          <p>Send a lineup link to friends or your team, no sign-in needed.</p>
+          <p>Send a lineup or a whole strategy to your team, no sign-in needed.</p>
         </div>
       </div>
     </section>
 
-    <section class="home-features" aria-labelledby="mapsTitle">
-      <h2 id="mapsTitle" class="home-section-title" data-reveal>Guides for every map</h2>
-      <div class="home-map-grid">
-        <a class="home-map-card" href="/dust2" data-reveal data-spot style="--bg:url(/maps/hero/dust2.webp)"><span class="home-map-card-art" aria-hidden="true"></span><h3>Dust II</h3><p data-map-count="dust2">26 lineups</p></a>
-        <a class="home-map-card" href="/mirage" data-reveal data-spot style="--bg:url(/maps/hero/mirage.webp)"><span class="home-map-card-art" aria-hidden="true"></span><h3>Mirage</h3><p data-map-count="mirage">34 lineups</p></a>
-        <a class="home-map-card" href="/inferno" data-reveal data-spot style="--bg:url(/maps/hero/inferno.webp)"><span class="home-map-card-art" aria-hidden="true"></span><h3>Inferno</h3><p data-map-count="inferno">39 lineups</p></a>
-        <a class="home-map-card" href="/nuke" data-reveal data-spot style="--bg:url(/maps/hero/nuke.webp)"><span class="home-map-card-art" aria-hidden="true"></span><h3>Nuke</h3><p data-map-count="nuke">11 lineups</p></a>
-        <a class="home-map-card" href="/ancient" data-reveal data-spot style="--bg:url(/maps/hero/ancient.webp)"><span class="home-map-card-art" aria-hidden="true"></span><h3>Ancient</h3><p data-map-count="ancient">24 lineups</p></a>
-        <a class="home-map-card" href="/anubis" data-reveal data-spot style="--bg:url(/maps/hero/anubis.webp)"><span class="home-map-card-art" aria-hidden="true"></span><h3>Anubis</h3><p data-map-count="anubis">29 lineups</p></a>
-        <a class="home-map-card" href="/vertigo" data-reveal data-spot style="--bg:url(/maps/hero/vertigo.webp)"><span class="home-map-card-art" aria-hidden="true"></span><h3>Vertigo</h3><p data-map-count="vertigo">Lineups coming soon</p></a>
-        <a class="home-map-card" href="/cache" data-reveal data-spot style="--bg:url(/maps/hero/cache.webp)"><span class="home-map-card-art" aria-hidden="true"></span><h3>Cache</h3><p data-map-count="cache">26 lineups</p></a>
-        <a class="home-map-card" href="/overpass" data-reveal data-spot style="--bg:url(/maps/hero/overpass.webp)"><span class="home-map-card-art" aria-hidden="true"></span><h3>Overpass</h3><p data-map-count="overpass">36 lineups</p></a>
+    <section class="home-cta-band" data-reveal aria-labelledby="ctaTitle">
+      <div>
+        <h2 id="ctaTitle">Ready for your next match?</h2>
+        <p>Open a map and learn a lineup in under a minute.</p>
       </div>
+      <a class="hero-cta" href="/maps" data-magnetic><span>Choose your map</span><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
     </section>
 
   </div>
@@ -166,26 +229,45 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
   })();
   </script>
   <!-- Crawlable links so search engines can discover the server-rendered
-       lineup pages (the map cards above are JS-only). -->
-  <footer class="home-footer" aria-label="Map chooser footer">
-    <p class="home-footer-note">Built by players, for players. Lineupr is an independent fan project, not affiliated with or endorsed by Valve. Counter-Strike 2 and its map images are trademarks or copyrighted material of Valve.</p>
-    <nav class="home-footer-links" aria-label="Browse lineups by map">
-      <a href="/maps">All maps</a>
-      <a href="/dust2">Dust II lineups</a>
-      <a href="/mirage">Mirage lineups</a>
-      <a href="/inferno">Inferno lineups</a>
-      <a href="/nuke">Nuke lineups</a>
-      <a href="/ancient">Ancient lineups</a>
-      <a href="/anubis">Anubis lineups</a>
-      <a href="/vertigo">Vertigo lineups</a>
-      <a href="/overpass">Overpass lineups</a>
-      <a href="/cache">Cache lineups</a>
-      <a href="/blog">Blog</a>
-      <a href="/privacy.html">Privacy</a>
-      <a href="/terms.html">Terms</a>
-      <a href="/cookies.html">Cookies</a>
-      <a href="mailto:support@nastipe.dev?subject=Content%20report">Report content</a>
-    </nav>
+       lineup pages (/dust2 and so on). -->
+  <footer class="home-footer site-footer" aria-label="Site footer">
+    <div class="site-footer-grid">
+      <div class="site-footer-brand">
+        <span class="home-wordmark">lineup<span class="home-wordmark-r">r</span></span>
+        <p>Built by players, for players. An independent fan project, not affiliated with or endorsed by Valve. Counter-Strike 2 and its map images are trademarks or copyrighted material of Valve.</p>
+      </div>
+      <nav class="site-footer-col" aria-label="Lineups by map">
+        <p class="site-footer-title">Lineups by map</p>
+        <ul class="site-footer-maps">
+          <li><a href="/dust2">Dust II</a></li>
+          <li><a href="/mirage">Mirage</a></li>
+          <li><a href="/inferno">Inferno</a></li>
+          <li><a href="/nuke">Nuke</a></li>
+          <li><a href="/ancient">Ancient</a></li>
+          <li><a href="/anubis">Anubis</a></li>
+          <li><a href="/vertigo">Vertigo</a></li>
+          <li><a href="/cache">Cache</a></li>
+          <li><a href="/overpass">Overpass</a></li>
+        </ul>
+      </nav>
+      <nav class="site-footer-col" aria-label="Lineupr">
+        <p class="site-footer-title">Lineupr</p>
+        <ul>
+          <li><a href="/maps">All maps</a></li>
+          <li><a href="/blog">Blog</a></li>
+          <li><a href="mailto:support@nastipe.dev">Contact</a></li>
+        </ul>
+      </nav>
+      <nav class="site-footer-col" aria-label="Legal">
+        <p class="site-footer-title">Legal</p>
+        <ul>
+          <li><a href="/privacy.html">Privacy</a></li>
+          <li><a href="/terms.html">Terms</a></li>
+          <li><a href="/cookies.html">Cookies</a></li>
+          <li><a href="mailto:support@nastipe.dev?subject=Content%20report">Report content</a></li>
+        </ul>
+      </nav>
+    </div>
   </footer>
 </div>
 
