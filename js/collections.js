@@ -1,6 +1,6 @@
 // Collections: named, ordered sets of lineups on one map (a strategy to plan,
 // practise and share). This module owns
-//   - the sidebar "Collections" section (your collections for the map),
+//   - the browse panel's "Collections" tab (your collections for the map),
 //   - the "Add to collection" popover (dossier button + multi-select bar),
 //   - multi-select on the map (Shift-click, or the Select mode),
 //   - collection view mode: the map shows only the collection's lineups with
@@ -18,6 +18,7 @@ import {
 } from "./collections-api.js";
 import { dbGetAll, dbGetMine, dbSaveLineup, throwKey } from "./api.js";
 import { authUser } from "./auth.js";
+import { closeBrowseOnPhone, setTabCount } from "./browse-panel.js";
 import { openAuthModal } from "./auth-modal.js";
 import { MAPS, TYPES } from "./constants.js";
 import {
@@ -80,6 +81,7 @@ export async function refreshCollections() {
 function renderRail() {
   if (!collList) return;
   collList.replaceChildren();
+  setTabCount("collections", authUser && mineLoaded ? mine.length : 0);
   if (!authUser) {
     collList.append(emptyState({
       title: "Plan a strategy", body: "Group lineups into an execute and share it with your team.", compact: true,
@@ -105,7 +107,7 @@ function renderRail() {
     b.innerHTML = `<span class="coll-row-name"></span><span class="coll-row-meta"></span>`;
     b.querySelector(".coll-row-name").textContent = c.name;
     b.querySelector(".coll-row-meta").textContent = `${c.itemCount} · ${VIS[c.visibility].label}`;
-    b.onclick = () => openCollection({ id: c.id });
+    b.onclick = () => { closeBrowseOnPhone(); openCollection({ id: c.id }); };
     collList.append(b);
   });
 }
@@ -372,7 +374,7 @@ function endSelecting() {
 
 if (collSelectBtn) collSelectBtn.onclick = () => {
   if (!authUser) { openAuthModal("signin"); return; }
-  if (selectMode) endSelecting(); else setSelectMode(true);
+  if (selectMode) endSelecting(); else { setSelectMode(true); closeBrowseOnPhone(); }
 };
 $("collSelectClear").onclick = endSelecting;
 $("collSelectAdd").onclick = (e) => (picking() ? commitPicking() : openPopover(e.currentTarget, { items: [...selection.values()] }));

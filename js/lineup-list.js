@@ -1,4 +1,5 @@
-// Searchable list of the current map's lineups in the sidebar. Clicking an
+// Searchable list of the current map's lineups in the browse panel (see
+// js/browse-panel.js), grouped by grenade type. Clicking an
 // entry focuses (pins + centers) its marker on the map AND expands a compact
 // inline detail (throw technique + zoomable screenshot thumbnails) right in
 // the list — the marker isn't auto-opened into the big detail panel.
@@ -8,17 +9,17 @@
 // simply re-enables that type's markers if needed.
 import { dbPut } from "./api.js";
 import { MOVEMENT_LABELS, RANGE_LABELS, TYPES } from "./constants.js";
-import { closeMobileSearch, lineupList, lineupSearchInput, markerLayer, mobileSearchBtn, mobileSearchInput, mobileSearchModal, mobileSearchResults } from "./dom.js";
+import { closeBrowseOnPhone, isPhone, setTabCount } from "./browse-panel.js";
+import { lineupList, lineupSearchInput, markerLayer } from "./dom.js";
 import { escapeHtml } from "./html-utils.js";
 import { openLightbox } from "./lightbox.js";
 import { loadLineups, refreshLocal } from "./map-data.js";
 import { renderMarkers } from "./markers.js";
-import { closeModal } from "./modal-utils.js";
 import { canModifyLineup } from "./permissions.js";
 import { hydrateImages } from "./private-images.js";
 import { startLandingReposition } from "./reposition.js";
 import { emptyState } from "./ui-utils.js";
-import { buildFilters, closeSidebar, refreshAreaUi, saveFilters } from "./sidebar.js";
+import { buildFilters, refreshAreaUi, saveFilters } from "./sidebar.js";
 import { state } from "./state.js";
 import { toastError } from "./toast.js";
 import { lineupVisible, passesNonTypeFilters } from "./visibility.js";
@@ -74,7 +75,9 @@ export function countsByType() {
   return counts;
 }
 
-// Empty-state block shared by the sidebar list and the mobile search popup.
+// Group headings in the list ("Smokes 12").
+const TYPE_PLURALS = { smoke: "Smokes", flash: "Flashes", fire: "Molotovs", he: "HE grenades", decoy: "Decoys" };
+
 function listEmptyState(term) {
   if (state.lineups.length === 0) {
     if (state.lineupsLoading) return emptyState({ title: "Loading lineups…", compact: true });
@@ -101,8 +104,7 @@ function listEmptyState(term) {
       compact: true,
       action: { label: "Clear search", onClick: () => {
         if (lineupSearchInput) lineupSearchInput.value = "";
-        if (mobileSearchInput) mobileSearchInput.value = "";
-        buildLineupList(); renderMobileSearchResults(); buildFilters();
+        buildLineupList(); buildFilters();
       } },
     });
   }
@@ -122,6 +124,7 @@ export function buildLineupList() {
   const matches = matchLineups(term);
 
   lineupList.innerHTML = "";
+  setTabCount("lineups", state.lineups.length);
 
   if (matches.length === 0) {
     lineupList.appendChild(listEmptyState(term));
@@ -138,8 +141,21 @@ export function buildLineupList() {
     }));
   }
 
+  const perType = {};
+  matches.forEach(l => { perType[l.type] = (perType[l.type] || 0) + 1; });
+
+  let lastType = null;
   matches.forEach(l => {
     const t = typeInfo(l.type);
+
+    if (l.type !== lastType) {
+      lastType = l.type;
+      const head = document.createElement("div");
+      head.className = "lineup-group-head";
+      head.innerHTML = `<span class="lineup-group-dot" style="background:${t.color}"></span><span></span><span class="lineup-group-count">${perType[l.type]}</span>`;
+      head.children[1].textContent = TYPE_PLURALS[l.type] || t.label;
+      lineupList.appendChild(head);
+    }
 
     const entry = document.createElement("div");
     entry.className = "lineup-entry";
@@ -173,6 +189,9 @@ export function buildLineupList() {
     detail.className = "lineup-item-detail";
 
     item.onclick = () => {
+      // Phone: the list is a sheet over the map, so show the marker instead
+      // of expanding the row inside the sheet.
+      if (isPhone()) { closeBrowseOnPhone(); focusLineup(l.id); return; }
       focusLineup(l.id);
       toggleExpand(entry, detail, l);
     };
@@ -240,7 +259,7 @@ function renderInlineDetail(container, l) {
 
   const moveBtn = container.querySelector(".lli-move-landing");
   if (moveBtn) moveBtn.onclick = () => {
-    closeSidebar(); // on mobile, get the drawer out of the way of the map
+    closeBrowseOnPhone(); // get the sheet out of the way of the map
     startLandingReposition({
       typeId: l.type,
       landing: l.landing,
@@ -283,9 +302,8 @@ export function focusLineup(id) {
   state.openClusterKey = null;
   state.selectedLineupId = id;
 
-  // Note: we deliberately don't close the mobile drawer here — the inline
-  // detail we're about to expand lives inside it. And we don't zoom/pan the
-  // map: the marker is just pinned and flashed in place at the current view.
+  // We don't zoom/pan the map: the marker is just pinned and flashed in
+  // place at the current view.
   renderMarkers();
   syncLineupListSelection();
 
@@ -325,61 +343,3 @@ if (lineupSearchInput) {
   // Chip counts follow the search term, so rebuild them with the list.
   lineupSearchInput.addEventListener("input", () => { buildLineupList(); buildFilters(); });
 }
-
-// ── Mobile search popup ──────────────────────────────────────────────────
-// Small standalone find-a-lineup popup for mobile, opened from a button in
-// the drawer (the drawer itself has no room for the full searchable list
-// there — see .lineup-rail's mobile display:none). Picking a result just
-// focuses the marker on the map, same as clicking a row in the desktop list.
-function renderMobileSearchResults() {
-  if (!mobileSearchResults) return;
-  const term = (mobileSearchInput && mobileSearchInput.value || "").trim().toLowerCase();
-  const matches = matchLineups(term);
-
-  mobileSearchResults.innerHTML = "";
-
-  if (matches.length === 0) {
-    mobileSearchResults.appendChild(listEmptyState(term));
-    return;
-  }
-
-  matches.forEach(l => {
-    const t = typeInfo(l.type);
-    const item = document.createElement("button");
-    item.type = "button";
-    item.className = "lineup-item";
-    item.title = `${displayName(l)} — ${t.label}`;
-
-    const dot = document.createElement("span");
-    dot.className = "lineup-item-dot";
-    dot.style.background = t.color;
-
-    const name = document.createElement("span");
-    name.className = "lineup-item-name";
-    name.textContent = displayName(l);
-
-    const meta = document.createElement("span");
-    meta.className = "lineup-item-meta";
-    meta.textContent = `${l.throws.length}×`;
-
-    item.append(dot, name, meta);
-    item.onclick = () => {
-      closeModal(mobileSearchModal);
-      closeSidebar();
-      focusLineup(l.id);
-    };
-    mobileSearchResults.appendChild(item);
-  });
-}
-
-export function openMobileSearch() {
-  if (!mobileSearchModal) return;
-  if (mobileSearchInput) mobileSearchInput.value = "";
-  renderMobileSearchResults();
-  mobileSearchModal.classList.add("show");
-  if (mobileSearchInput) mobileSearchInput.focus();
-}
-
-if (mobileSearchBtn) mobileSearchBtn.onclick = openMobileSearch;
-if (closeMobileSearch) closeMobileSearch.onclick = () => closeModal(mobileSearchModal);
-if (mobileSearchInput) mobileSearchInput.addEventListener("input", renderMobileSearchResults);
