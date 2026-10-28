@@ -560,16 +560,30 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
 
 <!-- MODAL: new landing spot -> choose type -->
 <div class="modal-backdrop" id="typeModal">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="typeModalTitle">
-    <h3 id="typeModalTitle">What kind of nade?</h3>
-    <div class="type-grid" id="typeGrid" role="radiogroup" aria-labelledby="typeModalTitle"></div>
-    <label class="field-label" for="lineupNameInput" style="margin-top:8px;">Name this position <span style="color:var(--text-faint);font-size:10px;">optional</span></label>
-    <input type="text" id="lineupNameInput" placeholder="e.g. CT Spawn, Mid Box, Window…" autocomplete="off" maxlength="40" aria-describedby="lineupNameHint">
-    <label class="field-label" style="margin-top:12px;">Side <span style="color:var(--text-faint);font-size:10px;">optional</span></label>
-    <div id="lineupSideSlot"></div>
-    <div class="name-suggestions" id="lineupNameSuggestions" hidden></div>
+  <div class="modal type-modal" role="dialog" aria-modal="true" aria-labelledby="typeModalTitle">
+    <div class="modal-head">
+      <div>
+        <p class="modal-eyebrow" id="typeModalEyebrow">New lineup</p>
+        <h3 id="typeModalTitle">What kind of nade?</h3>
+      </div>
+      <button type="button" class="icon-btn modal-close" id="cancelType" data-esc aria-label="Cancel">✕</button>
+    </div>
+    <div class="type-modal-fields">
+      <div class="field">
+        <label class="field-label" for="lineupNameInput">Name <span class="field-optional">Optional</span></label>
+        <input type="text" id="lineupNameInput" placeholder="e.g. CT Spawn, Mid Box, Window…" autocomplete="off" maxlength="40" aria-describedby="lineupNameHint">
+        <div class="name-suggestions" id="lineupNameSuggestions" hidden></div>
+      </div>
+      <div class="field">
+        <span class="field-label" id="lineupSideLabel">Side <span class="field-optional">Optional</span></span>
+        <div id="lineupSideSlot"></div>
+      </div>
+    </div>
+    <div class="field">
+      <span class="field-label" id="typeGridLabel">Grenade</span>
+      <div class="type-grid" id="typeGrid" role="radiogroup" aria-labelledby="typeGridLabel"></div>
+    </div>
     <p class="name-hint" id="lineupNameHint" aria-live="polite"></p>
-    <button class="ghost-btn" id="cancelType" data-esc>Cancel</button>
   </div>
 </div>
 
@@ -578,9 +592,10 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
   <div class="modal throw-modal" role="dialog" aria-modal="true" aria-labelledby="throwModalTitle">
 
     <div class="tm-header">
-      <div>
-        <p class="tm-eyebrow" id="throwModalHint">New lineup</p>
+      <div class="tm-heading">
+        <p class="modal-eyebrow" id="throwModalEyebrow"><span class="tm-type-dot" id="throwModalTypeDot"></span><span id="throwModalContext">New lineup</span></p>
         <h3 id="throwModalTitle">Throw position</h3>
+        <p class="tm-sub" id="throwModalHint"></p>
       </div>
       <div class="tm-preview-wrap">
         <div class="tm-preview" id="tmPreview">
@@ -589,73 +604,100 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
           <div class="tm-preview-dot tm-preview-landing" id="tmPreviewLanding"></div>
           <div class="tm-preview-dot tm-preview-throw" id="tmPreviewThrow"></div>
         </div>
-        <button type="button" class="tm-reposition-btn" id="repositionOnMapBtn">⤢ Reposition on map</button>
+        <button type="button" class="tm-reposition-btn" id="repositionOnMapBtn">Move on map</button>
       </div>
-      <button class="icon-btn" id="cancelThrow" data-esc aria-label="Close">✕</button>
+      <button class="icon-btn modal-close" id="cancelThrow" data-esc aria-label="Close">✕</button>
     </div>
 
     <div class="tm-body">
 
-    <!-- Upload zones. Images upload in the background as soon as they're
-         added (file picker, Ctrl+V paste, or files dropped on a slot). -->
-    <div class="tm-section">
-      <p class="tm-paste-hint" id="tmPasteHint">Tip: paste screenshots with <kbd>Ctrl</kbd>+<kbd>V</kbd>, or drop image files onto a slot.</p>
-
+    <!-- Screenshots. Images upload in the background as soon as they're
+         added (Add tile, Ctrl+V paste, or files dropped on a slot). -->
+    <section class="tm-section" aria-labelledby="tmShotsTitle">
+      <div class="tm-section-head">
+        <h4 class="tm-section-title" id="tmShotsTitle">Screenshots</h4>
+        <p class="tm-paste-hint" id="tmPasteHint">Paste with <kbd>Ctrl</kbd>+<kbd>V</kbd> or drop files on a slot</p>
+      </div>
       <div class="tm-upload-row">
         <div class="tm-upload-col">
           <div class="tm-upload-head">
-            <span class="tm-label">🦶 Where to stand <span class="tm-optional">up to 3</span></span>
-            <label class="tm-upload-trigger" for="standingInput">+ Add</label>
+            <span class="tm-label">Where to stand</span>
+            <span class="tm-optional">Up to 3</span>
+          </div>
+          <div class="tm-slot-body">
+            <div class="tm-thumbs" id="standingThumbGrid"></div>
+            <button type="button" class="tm-add-tile" data-input="standingInput" aria-label="Add where to stand screenshot">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              <span>Add</span>
+            </button>
             <input type="file" id="standingInput" accept="image/*" multiple hidden>
           </div>
-          <div class="tm-thumbs" id="standingThumbGrid"></div>
         </div>
-
         <div class="tm-upload-col">
           <div class="tm-upload-head">
-            <span class="tm-label">🎯 Where to aim <span class="tm-optional">up to 5</span></span>
-            <label class="tm-upload-trigger" for="screenshotInput">+ Add</label>
+            <span class="tm-label">Where to aim</span>
+            <span class="tm-optional">Up to 5</span>
+          </div>
+          <div class="tm-slot-body">
+            <div class="tm-thumbs" id="thumbGrid"></div>
+            <button type="button" class="tm-add-tile" data-input="screenshotInput" aria-label="Add where to aim screenshot">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              <span>Add</span>
+            </button>
             <input type="file" id="screenshotInput" accept="image/*" multiple hidden>
           </div>
-          <div class="tm-thumbs" id="thumbGrid"></div>
         </div>
-
         <div class="tm-upload-col">
           <div class="tm-upload-head">
-            <span class="tm-label">🔍 Precise <span class="tm-optional">optional</span></span>
-            <label class="tm-upload-trigger" for="preciseInput">+ Add</label>
+            <span class="tm-label">Precise aim</span>
+            <span class="tm-optional">Optional</span>
+          </div>
+          <div class="tm-slot-body">
+            <div class="tm-thumbs" id="preciseThumbWrap"></div>
+            <button type="button" class="tm-add-tile" data-input="preciseInput" aria-label="Add precise aim screenshot">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              <span>Add</span>
+            </button>
             <input type="file" id="preciseInput" accept="image/*" hidden>
           </div>
-          <div class="tm-thumbs" id="preciseThumbWrap"></div>
         </div>
-
         <div class="tm-upload-col">
           <div class="tm-upload-head">
-            <span class="tm-label">🖼️ Result <span class="tm-optional">optional</span></span>
-            <label class="tm-upload-trigger" for="resultInput">+ Add</label>
+            <span class="tm-label">Result</span>
+            <span class="tm-optional">Optional</span>
+          </div>
+          <div class="tm-slot-body">
+            <div class="tm-thumbs" id="resultThumbWrap"></div>
+            <button type="button" class="tm-add-tile" data-input="resultInput" aria-label="Add result screenshot">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              <span>Add</span>
+            </button>
             <input type="file" id="resultInput" accept="image/*" hidden>
           </div>
-          <div class="tm-thumbs" id="resultThumbWrap"></div>
         </div>
       </div>
-
-    </div>
+    </section>
 
     <!-- One short clip (mp4 / webm), e.g. to show the jumpthrow timing -->
-    <div class="tm-section">
-      <div class="tm-upload-head">
-        <span class="tm-label">🎬 Clip <span class="tm-optional">optional · mp4 or webm, up to 15 s and 20 MB</span></span>
-        <label class="tm-upload-trigger" for="clipInput" id="clipTrigger">+ Add</label>
-        <input type="file" id="clipInput" accept="video/mp4,video/webm" hidden>
+    <section class="tm-section" aria-labelledby="tmClipTitle">
+      <div class="tm-section-head">
+        <h4 class="tm-section-title" id="tmClipTitle">Clip <span class="tm-optional">Optional</span></h4>
+        <p class="tm-paste-hint tm-paste-hint--static">MP4 or WebM, up to 15 s and 20 MB</p>
       </div>
       <div class="tm-clip" id="clipWrap"></div>
-    </div>
+      <button type="button" class="tm-add-tile tm-add-tile--wide" id="clipTrigger" data-input="clipInput">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span>Add a clip</span>
+      </button>
+      <input type="file" id="clipInput" accept="video/mp4,video/webm" hidden>
+    </section>
 
     <!-- Technique -->
-    <div class="tm-section">
+    <section class="tm-section" aria-labelledby="tmTechTitle">
+      <h4 class="tm-section-title" id="tmTechTitle">Technique</h4>
       <div class="tm-selects">
         <div class="tm-select-group">
-          <label class="tm-label">Throw range</label>
+          <label class="tm-label" for="throwRangeSelect">Throw range</label>
           <select id="throwRangeSelect" class="tm-select">
             <option value="throw">Throw (full)</option>
             <option value="mid-throw">Mid-throw</option>
@@ -663,7 +705,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
           </select>
         </div>
         <div class="tm-select-group">
-          <label class="tm-label">Movement</label>
+          <label class="tm-label" for="movementSelect">Movement</label>
           <select id="movementSelect" class="tm-select">
             <option value="none">None / standing</option>
             <option value="jumpthrow">Jumpthrow</option>
@@ -680,13 +722,11 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
           </select>
         </div>
       </div>
-    </div>
-
-    <!-- Notes -->
-    <div class="tm-section">
-      <label class="tm-label">Notes <span class="tm-optional">optional</span></label>
-      <textarea id="notesInput" class="tm-textarea" rows="3" placeholder="Crosshair placement, jump timing, smoke pixel..."></textarea>
-    </div>
+      <div class="tm-select-group tm-notes">
+        <label class="tm-label" for="notesInput">Notes <span class="tm-optional">Optional</span></label>
+        <textarea id="notesInput" class="tm-textarea" rows="3" placeholder="Crosshair placement, jump timing, smoke pixel…"></textarea>
+      </div>
+    </section>
 
     <!-- New personal lineups only: opt in to suggesting it for the official map -->
     <div class="tm-section" id="tmSuggestWrap" hidden>

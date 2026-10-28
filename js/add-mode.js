@@ -10,6 +10,7 @@ import { state, uid } from "./state.js";
 import { openThrowModal } from "./throw-modal.js";
 
 const typeModalTitle = document.getElementById("typeModalTitle");
+const typeModalEyebrow = document.getElementById("typeModalEyebrow");
 
 // ── Guided placement bar ─────────────────────────────────────────────────
 // Shown while the user is clicking on the map to place a lineup's landing /
@@ -226,6 +227,7 @@ export function openTypeModal(onPick, { editType = null } = {}) {
   enhanceTypeGrid();
   typeModal.classList.toggle("edit-type", !!editType);
   if (typeModalTitle) typeModalTitle.textContent = editType ? "Change nade type" : "What kind of nade?";
+  if (typeModalEyebrow) typeModalEyebrow.textContent = editType ? "Edit lineup" : "New lineup";
   if (lineupNameInput) lineupNameInput.value = "";
   state.pendingSide = "any";
   if (lineupSideSlot) {

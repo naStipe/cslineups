@@ -3078,8 +3078,7 @@ body.in-collection .feedback-btn{display:none;}
 
 /* Type picker reused to change an existing lineup's type (js/add-mode.js
    openTypeModal editType): only the type grid applies. */
-#typeModal.edit-type .field-label,#typeModal.edit-type #lineupNameInput,#typeModal.edit-type #lineupSideSlot,
-#typeModal.edit-type .name-hint,#typeModal.edit-type .name-suggestions{display:none;}
+#typeModal.edit-type .type-modal-fields,#typeModal.edit-type .name-hint{display:none;}
 
 /* Map list items, type chips and the phone type toggles are <button>s (for
    keyboard and screen readers); drop the browser's button chrome. */
@@ -3338,3 +3337,140 @@ body:not(.signed-in) .coll-rail-head,
   .browse-body .coll-mini-btn{min-height:40px;padding:0 14px;}
 }
 @media (prefers-reduced-motion:reduce){ .browse-panel{transition:none !important;} }
+
+/* =========================================================================
+   DIALOGS & FORMS — shared pieces
+   Head: small eyebrow for context, a title, a quiet close button. Labels are
+   sentence case; "Optional" is a soft tag rather than shouting caps.
+   ========================================================================= */
+.modal{border-radius:14px;}
+.modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:6px;}
+.modal-head h3{margin:0;}
+.modal-eyebrow{
+  display:flex;align-items:center;gap:7px;margin:0 0 4px;
+  font-family:var(--font-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint);
+}
+.icon-btn.modal-close{border-color:transparent;width:32px;height:32px;border-radius:8px;margin:-4px -6px 0 0;}
+.icon-btn.modal-close:hover{transform:none;background:var(--panel-2);color:var(--text);}
+
+.field{display:flex;flex-direction:column;gap:7px;min-width:0;}
+.field-label,.tm-label{
+  display:flex;align-items:baseline;gap:8px;margin:0;
+  font-family:var(--font-body);font-size:12.5px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--text-dim);
+}
+.field-optional,.tm-optional{
+  margin:0;font-family:var(--font-body);font-size:11.5px;font-weight:400;letter-spacing:0;text-transform:none;color:var(--text-faint);
+}
+.modal input[type=text],.modal input[type=email],.modal input[type=password],.modal select,.modal textarea{border-radius:8px;}
+
+/* ---- New lineup: name, side, grenade ---- */
+.type-modal{width:440px;gap:18px;}
+.type-modal-fields{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:start;}
+.type-modal .side-seg{height:38px;border-radius:8px;background:var(--void);}
+.type-modal .side-seg-btn{padding:0 13px;font-family:var(--font-body);font-size:12.5px;font-weight:500;letter-spacing:0;}
+.type-modal .side-seg{padding:3px;gap:2px;border-color:var(--line);}
+.type-modal .side-seg-btn{border:0;border-radius:6px;}
+.type-modal .side-seg-btn.active{background:var(--panel-2);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.35);}
+.type-modal .type-grid{grid-template-columns:repeat(2,1fr);margin:0;}
+.type-modal .type-opt{position:relative;padding:12px 12px;border-radius:10px;font-size:14px;font-weight:500;}
+.type-modal .type-opt:hover{border-color:var(--text-faint);}
+.type-modal .type-opt[aria-checked="true"]{border-color:var(--signal);background:color-mix(in srgb, var(--signal) 8%, var(--panel-2));}
+.type-key{
+  margin-left:auto;font-family:var(--font-mono);font-size:10.5px;line-height:1;color:var(--text-faint);
+  border:1px solid var(--line);border-radius:4px;padding:3px 6px;
+}
+.type-modal .name-hint{margin:-6px 0 0;font-size:12px;}
+.type-modal .name-hint:empty{display:none;}
+@media (hover:none) and (pointer:coarse){ .type-key{display:none;} }
+
+/* ---- Throw position form ---- */
+.throw-modal{width:640px;border-radius:14px;border-top:2px solid var(--signal);}
+.tm-header{align-items:flex-start;padding:20px 22px 18px;}
+.tm-heading{flex:1;min-width:0;}
+.tm-heading h3{font-size:20px;}
+.tm-type-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.tm-sub{margin:6px 0 0;font-size:13px;line-height:1.5;color:var(--text-dim);}
+.tm-preview-wrap{gap:8px;}
+.tm-preview{width:84px;height:84px;border-radius:10px;border:1px solid var(--line);}
+.tm-reposition-btn{
+  width:100%;padding:5px 8px;border-radius:999px;background:transparent;color:var(--text-dim);
+  font-family:var(--font-body);font-size:11.5px;font-weight:500;letter-spacing:0;
+}
+.tm-reposition-btn:hover{color:var(--text);border-color:var(--text-faint);background:var(--panel-2);}
+
+.tm-section{padding:18px 22px 20px;}
+.tm-section-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
+.tm-section-title{
+  display:flex;align-items:baseline;gap:8px;margin:0;
+  font-family:var(--font-body);font-stretch:normal;font-size:14px;font-weight:600;letter-spacing:0;color:var(--text);
+}
+.tm-section > .tm-section-title{margin-bottom:14px;}
+.tm-section-head .tm-paste-hint{margin:0;font-size:12px;color:var(--text-faint);}
+
+.tm-upload-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.tm-upload-col{
+  gap:10px;padding:12px;border:1px solid var(--line-soft);border-radius:10px;background:var(--hull);
+  outline-offset:-1px;
+}
+.tm-upload-col.drag-over{outline-color:var(--signal);}
+.tm-upload-head{justify-content:flex-start;gap:8px;}
+.tm-slot-body{display:flex;flex-wrap:wrap;gap:8px;}
+.tm-slot-body .tm-thumbs{display:contents;}
+.tm-thumbs .thumb{width:64px;height:64px;border-radius:8px;}
+.tm-add-tile{
+  display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  width:64px;height:64px;border-radius:8px;cursor:pointer;
+  border:1px dashed var(--line);background:transparent;color:var(--text-faint);
+  font-family:var(--font-body);font-size:11px;font-weight:500;transition:border-color .2s,color .2s,background .2s;
+}
+.tm-add-tile:hover{border-color:var(--signal);color:var(--signal);background:color-mix(in srgb, var(--signal) 6%, transparent);}
+.tm-add-tile:focus-visible{outline:2px solid var(--signal);outline-offset:2px;}
+.tm-upload-col.is-full .tm-add-tile{display:none;}
+.tm-add-tile--wide{flex-direction:row;gap:8px;width:100%;height:48px;font-size:12.5px;}
+.tm-clip:not(:empty) + .tm-add-tile{display:none;}
+
+.tm-selects{gap:14px;}
+.tm-select,.tm-textarea{border-radius:8px;background-color:var(--void);}
+.tm-notes{margin-top:14px;}
+.tm-notes .tm-textarea{margin-top:0;}
+.tm-footer{padding:14px 22px;}
+
+@media (max-width:768px){
+  .type-modal{width:calc(100vw - 24px);}
+  .type-modal-fields{grid-template-columns:1fr;}
+  .type-modal .side-seg{height:44px;}
+  .throw-modal{width:calc(100vw - 24px);}
+  .tm-header{padding:16px 16px 14px;}
+  .tm-section{padding:16px;}
+  .tm-upload-row{grid-template-columns:1fr;}
+  .tm-preview{width:64px;height:64px;}
+  .icon-btn.modal-close{width:44px;height:44px;}
+}
+
+/* ---- On-map guidance bars (placing markers, repositioning) ---- */
+.addflow-bar,.reposition-bar,.coll-select-bar{
+  border:1px solid var(--line);border-radius:14px;background:color-mix(in srgb, var(--panel) 92%, transparent);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  box-shadow:0 18px 50px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.03);
+  padding:8px 8px 8px 10px;gap:12px;
+}
+.addflow-badge{
+  font-family:var(--font-body);font-size:11.5px;font-weight:600;letter-spacing:0;
+  color:var(--signal);background:color-mix(in srgb, var(--signal) 14%, transparent);border-radius:999px;padding:4px 10px;
+}
+.addflow-text,.reposition-text{font-size:13px;color:var(--text);}
+.reposition-text b{font-weight:600;}
+.addflow-bar .ghost-btn,.reposition-actions .ghost-btn{padding:7px 14px;}
+.reposition-bar{padding-left:16px;}
+
+/* Thumbnail remove: quiet until hovered. */
+.tm-thumbs .thumb .thumb-remove{
+  width:20px;height:20px;top:4px;right:4px;background:rgba(10,8,6,.78);color:var(--text);
+  border:0;font-size:10px;opacity:.85;transition:background .2s,opacity .2s;
+}
+.tm-thumbs .thumb:hover .thumb-remove,.tm-thumbs .thumb .thumb-remove:focus-visible{opacity:1;}
+.tm-thumbs .thumb .thumb-remove:hover{background:var(--fire);color:#1a0a05;}
+@media (max-width:768px){
+  .tm-heading h3{font-size:18px;}
+  .tm-thumbs .thumb .thumb-remove{width:24px;height:24px;opacity:1;}
+}
