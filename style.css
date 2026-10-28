@@ -3474,3 +3474,105 @@ body:not(.signed-in) .coll-rail-head,
   .tm-heading h3{font-size:18px;}
   .tm-thumbs .thumb .thumb-remove{width:24px;height:24px;opacity:1;}
 }
+
+/* =========================================================================
+   LINEUP DETAIL (dossier)
+   Head: type + status, the name, then side and variant count on one line.
+   Each variant is a card with a quiet toolbar; images keep their 16:9 frames.
+   ========================================================================= */
+.detail-panel-inner{border-top:1px solid var(--line);padding:24px 28px 26px;}
+.detail-head{gap:20px;margin-bottom:20px;}
+.detail-head-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;}
+.detail-kicker{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.type-chip{
+  display:inline-flex;align-items:center;gap:7px;padding:4px 11px 4px 9px;border-radius:999px;
+  font-family:var(--font-body);font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;
+  color:var(--text);background:color-mix(in srgb, var(--chip-color, var(--signal)) 16%, transparent);
+  border:1px solid color-mix(in srgb, var(--chip-color, var(--signal)) 40%, transparent);
+}
+.type-chip::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--chip-color, var(--signal));}
+.owner-badge{
+  margin:0;padding:4px 10px;border-radius:999px;border:0;
+  font-family:var(--font-body);font-size:12px;font-weight:500;letter-spacing:0;text-transform:none;
+  background:var(--panel-2);color:var(--text-dim);
+}
+.owner-badge.badge-official{color:var(--signal);border:0;background:color-mix(in srgb, var(--signal) 12%, transparent);}
+.owner-badge.badge-personal{color:var(--he);border:0;background:color-mix(in srgb, var(--he) 12%, transparent);}
+.detail-name-wrap{padding:0;}
+.detail-name-input{
+  font-family:var(--font-body);font-stretch:normal;font-size:26px;font-weight:600;letter-spacing:-.01em;
+  padding:2px 0 4px;border-bottom-color:var(--line-soft);
+}
+.detail-name-input:hover:not(:disabled){border-bottom-color:var(--line);}
+.name-nudge{font-family:var(--font-body);font-size:12.5px;letter-spacing:0;}
+.detail-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-height:30px;}
+.detail-meta .detail-side{margin:0;}
+.detail-meta .detail-side:empty{display:none;}
+#detailTitle.detail-meta-text{margin:0;padding:0;border:0;font-family:var(--font-body);font-size:13px;letter-spacing:0;color:var(--text-dim);}
+.detail-meta-text time{color:var(--text-faint);}
+.side-badge{font-family:var(--font-body);font-size:12px;font-weight:600;letter-spacing:0;border-radius:999px;padding:3px 10px;}
+.detail-meta .side-seg{border-radius:8px;background:var(--void);border-color:var(--line);padding:2px;gap:2px;}
+.detail-meta .side-seg-btn{border:0;border-radius:6px;padding:4px 11px;font-family:var(--font-body);font-size:12px;font-weight:500;letter-spacing:0;}
+.detail-meta .side-seg-btn.active{background:var(--panel-2);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.35);}
+.detail-meta .side-save{padding:5px 12px;}
+
+.detail-head-actions{gap:4px;}
+.icon-btn.head-btn{width:36px;height:36px;border-radius:9px;border-color:transparent;color:var(--text-dim);}
+.icon-btn.head-btn:hover{transform:none;background:var(--panel-2);color:var(--text);}
+#shareLineupBtn.copied{border-color:transparent;background:color-mix(in srgb, var(--he) 14%, transparent);}
+
+/* Variant card */
+.detail-hero{border-radius:12px;border:1px solid var(--line);border-top:1px solid var(--line);background:var(--hull);}
+.hero-header{padding:10px 12px 10px 16px;gap:12px;}
+.hero-header .variant-tag{
+  padding:0;border:0;background:none;color:var(--text);
+  font-family:var(--font-body);font-size:14px;font-weight:600;letter-spacing:0;
+}
+.variant-of{color:var(--text-faint);font-weight:400;}
+.tag{
+  font-family:var(--font-body);font-size:12px;font-weight:500;text-transform:none;letter-spacing:0;
+  background:var(--panel-2);border:0;border-radius:999px;padding:3px 10px;color:var(--text-dim);
+}
+.throw-card-actions{border-top:0;gap:4px;padding:0;}
+.throw-card-actions button{
+  padding:6px 10px;border-radius:8px;color:var(--text-dim);
+  font-family:var(--font-body);font-size:12.5px;font-weight:500;letter-spacing:0;
+  transition:background .2s,color .2s;
+}
+.throw-card-actions button:hover{background:var(--panel-2);color:var(--text);}
+.throw-card-actions button.remove-btn:hover{background:color-mix(in srgb, var(--fire) 12%, transparent);color:var(--fire);}
+.throw-card-actions button.save-btn{color:var(--signal);}
+.throw-card-actions button.save-btn.saved{background:color-mix(in srgb, var(--signal) 12%, transparent);}
+.tc-carousel-label{font-family:var(--font-body);font-size:12px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--text-dim);}
+.hero-notes{font-size:13.5px;line-height:1.6;color:var(--text);}
+
+/* Variant strip */
+.detail-strip-thumb{border-radius:10px;}
+.strip-thumb-label{font-family:var(--font-body);font-size:11.5px;font-weight:600;letter-spacing:0;}
+.strip-thumb-default{font-family:var(--font-body);font-size:10.5px;font-weight:500;letter-spacing:0;text-transform:none;}
+.strip-hint{font-family:var(--font-body);font-size:12px;letter-spacing:0;}
+
+/* Footer actions */
+.detail-actions{margin-top:20px;padding-top:18px;border-top-color:var(--line-soft);}
+.detail-actions .ghost-btn.danger{color:var(--text-dim);}
+.detail-actions .ghost-btn.danger:hover{color:var(--fire);border-color:color-mix(in srgb, var(--fire) 50%, var(--line));background:color-mix(in srgb, var(--fire) 8%, transparent);}
+
+@media (max-width:768px){
+  .detail-panel-inner{padding:10px 16px 20px;}
+  .detail-head{gap:10px;margin-bottom:14px;flex-wrap:nowrap;}
+  .detail-name-wrap{order:0;flex-basis:auto;padding:0;}
+  .detail-head-actions{align-self:flex-start;}
+  .detail-name-input{font-size:21px;}
+  .icon-btn.head-btn{width:44px;height:44px;}
+  .hero-header{padding:10px 12px;}
+}
+
+/* =========================================================================
+   BUTTONS — sentence case in the body font. Primary is the one filled
+   accent; ghost buttons are outlined pills.
+   ========================================================================= */
+.primary-btn,.ghost-btn,a.ghost-btn{
+  font-family:var(--font-body);letter-spacing:0;text-transform:none;
+}
+.primary-btn{font-size:13px;font-weight:600;padding:9px 16px;}
+.ghost-btn,a.ghost-btn{font-size:13px;font-weight:500;}
