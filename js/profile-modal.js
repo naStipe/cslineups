@@ -46,15 +46,16 @@ function fillProfileModal() {
 async function loadAccountCount() {
   profileAccountCount.hidden = !isAdmin();
   profileAccountsLink.hidden = !isAdmin();
+  document.getElementById("profileAdminRow").hidden = !isAdmin();
   if (!isAdmin()) return;
-  profileAccountCount.textContent = "Accounts: …";
+  profileAccountCount.textContent = "… accounts";
   try {
     const res = await fetch("/api/admin?stats=1", { headers: await authHeaders() });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
-    profileAccountCount.textContent = `Accounts: ${body.accounts.toLocaleString()}`;
+    profileAccountCount.textContent = `${body.accounts.toLocaleString()} account${body.accounts === 1 ? "" : "s"}`;
   } catch {
-    profileAccountCount.textContent = "Accounts: unavailable";
+    profileAccountCount.textContent = "Account count unavailable";
   }
 }
 

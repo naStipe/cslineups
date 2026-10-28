@@ -491,31 +491,43 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
 <!-- MODAL: sign in / sign up -->
 <div class="modal-backdrop" id="authModal">
   <div class="modal auth-modal" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
-    <h3 id="authModalTitle">Sign in</h3>
+    <div class="modal-head">
+      <div>
+        <p class="modal-eyebrow">Lineupr account</p>
+        <h3 id="authModalTitle">Sign in</h3>
+      </div>
+      <button type="button" class="icon-btn modal-close" id="cancelAuth" aria-label="Close">✕</button>
+    </div>
     <p class="auth-error info" id="authError" hidden role="alert"></p>
+    <div class="auth-alt" id="authAlt">
+      <button type="button" class="ghost-btn auth-google-btn" id="authGoogleBtn"><svg width="16" height="16" viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.72A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg><span>Continue with Google</span></button>
+      <div class="auth-divider" aria-hidden="true"><span>or with email</span></div>
+    </div>
     <form class="auth-form" id="authForm" novalidate>
-    <label class="field-label" for="authEmailInput">Email</label>
-    <input type="email" id="authEmailInput" name="email" autocomplete="email" placeholder="you@example.com">
-    <div class="auth-signup-field" id="authUsernameField" hidden>
-      <label class="field-label" for="authUsernameInput">Username</label>
-      <input type="text" id="authUsernameInput" name="username" autocomplete="username" placeholder="How teammates will see you" maxlength="32">
-    </div>
-    <div id="authPasswordField">
-      <label class="field-label" for="authPasswordInput">Password</label>
-      <input type="password" id="authPasswordInput" name="password" autocomplete="current-password" placeholder="At least 8 characters">
-    </div>
-    <div class="auth-signup-field" id="authPasswordConfirmField" hidden>
-      <label class="field-label" for="authPasswordConfirmInput">Repeat password</label>
-      <input type="password" id="authPasswordConfirmInput" name="password-confirm" autocomplete="new-password" placeholder="Repeat your password">
-    </div>
-    <p class="auth-forgot" id="authForgotWrap"><a href="#" id="authForgotLink">Forgot password?</a></p>
-    <div id="authTurnstile" class="auth-turnstile"></div>
-    <button type="submit" class="primary-btn auth-submit-btn" id="authSubmitBtn">Sign in</button>
+      <div class="field">
+        <label class="field-label" for="authEmailInput">Email</label>
+        <input type="email" id="authEmailInput" name="email" autocomplete="email" placeholder="you@example.com">
+      </div>
+      <div class="field auth-signup-field" id="authUsernameField" hidden>
+        <label class="field-label" for="authUsernameInput">Username</label>
+        <input type="text" id="authUsernameInput" name="username" autocomplete="username" placeholder="How teammates will see you" maxlength="32">
+      </div>
+      <div class="field" id="authPasswordField">
+        <div class="field-label-row">
+          <label class="field-label" for="authPasswordInput">Password</label>
+          <span class="auth-forgot" id="authForgotWrap"><a href="#" id="authForgotLink">Forgot password?</a></span>
+        </div>
+        <input type="password" id="authPasswordInput" name="password" autocomplete="current-password" placeholder="At least 8 characters">
+      </div>
+      <div class="field auth-signup-field" id="authPasswordConfirmField" hidden>
+        <label class="field-label" for="authPasswordConfirmInput">Repeat password</label>
+        <input type="password" id="authPasswordConfirmInput" name="password-confirm" autocomplete="new-password" placeholder="Repeat your password">
+      </div>
+      <div id="authTurnstile" class="auth-turnstile"></div>
+      <button type="submit" class="primary-btn auth-submit-btn" id="authSubmitBtn">Sign in</button>
     </form>
-    <button type="button" class="ghost-btn auth-google-btn" id="authGoogleBtn">Continue with Google</button>
-    <p class="auth-legal">By signing up or continuing with Google, you accept the <a href="/terms.html" target="_blank" rel="noopener">Terms of Use</a> and confirm you have read the <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</p>
     <p class="auth-switch"><span id="authSwitchText">Don't have an account?</span> <a href="#" id="authSwitchLink">Sign up</a></p>
-    <button type="button" class="ghost-btn" id="cancelAuth">Cancel</button>
+    <p class="auth-legal">By signing up or continuing with Google, you accept the <a href="/terms.html" target="_blank" rel="noopener">Terms of Use</a> and confirm you have read the <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</p>
   </div>
 </div>
 
@@ -527,37 +539,47 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
       <div class="profile-head-text">
         <h3 id="profileModalName"></h3>
         <p class="profile-email" id="profileModalEmail"></p>
-        <p class="profile-admin-stat" id="profileAccountCount" hidden></p>
-        <a class="ghost-btn profile-admin-link" id="profileAccountsLink" href="/admin.html?view=accounts" hidden>Account management</a>
       </div>
-      <button class="icon-btn" id="closeProfile" aria-label="Close profile">✕</button>
+      <button class="icon-btn modal-close" id="closeProfile" aria-label="Close profile">✕</button>
     </div>
 
-    <div class="profile-section">
-      <p class="profile-section-title">Username</p>
+    <div class="profile-admin" id="profileAdminRow" hidden>
+      <span class="profile-admin-badge">Admin</span>
+      <p class="profile-admin-stat" id="profileAccountCount" hidden></p>
+      <a class="profile-admin-link" id="profileAccountsLink" href="/admin.html?view=accounts" hidden>Account management →</a>
+    </div>
+
+    <section class="profile-section">
+      <h4 class="profile-section-title">Username</h4>
       <div class="profile-row">
-        <input type="text" id="profileUsernameInput" maxlength="32" autocomplete="username" placeholder="Your username">
+        <input type="text" id="profileUsernameInput" maxlength="32" autocomplete="username" placeholder="Your username" aria-label="Username">
         <button class="primary-btn" id="saveUsernameBtn">Save</button>
       </div>
       <p class="profile-msg" id="usernameMsg" hidden></p>
-    </div>
+    </section>
 
-    <div class="profile-section">
-      <p class="profile-section-title">Change password</p>
-      <label class="field-label">New password</label>
-      <input type="password" id="profileNewPassword" autocomplete="new-password" placeholder="At least 8 characters">
-      <label class="field-label">Repeat new password</label>
-      <input type="password" id="profileNewPassword2" autocomplete="new-password" placeholder="Repeat it">
+    <section class="profile-section">
+      <h4 class="profile-section-title">Password</h4>
+      <div class="profile-pw-grid">
+        <div class="field">
+          <label class="field-label" for="profileNewPassword">New password</label>
+          <input type="password" id="profileNewPassword" autocomplete="new-password" placeholder="At least 8 characters">
+        </div>
+        <div class="field">
+          <label class="field-label" for="profileNewPassword2">Repeat new password</label>
+          <input type="password" id="profileNewPassword2" autocomplete="new-password" placeholder="Repeat it">
+        </div>
+      </div>
       <button class="ghost-btn profile-pw-btn" id="changePasswordBtn">Change password</button>
       <p class="profile-msg" id="passwordMsg" hidden></p>
-    </div>
+    </section>
 
-    <div class="profile-section profile-danger">
-      <p class="profile-section-title profile-danger-title">Danger zone</p>
-      <p class="profile-danger-text">Deleting your account permanently removes your personal lineups, saved bookmarks and uploaded screenshots. This cannot be undone.</p>
+    <section class="profile-section profile-danger">
+      <h4 class="profile-section-title profile-danger-title">Delete account</h4>
+      <p class="profile-danger-text">Permanently removes your personal lineups, saved bookmarks and uploaded screenshots. This cannot be undone.</p>
       <button class="ghost-btn danger" id="deleteAccountBtn">Delete my account</button>
       <p class="profile-msg" id="deleteMsg" hidden></p>
-    </div>
+    </section>
   </div>
 </div>
 
@@ -760,7 +782,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
     <textarea id="feedbackMessage" rows="5" maxlength="2000" placeholder="What would you like to see, or what went wrong?"></textarea>
     <p class="feedback-count" id="feedbackCount" aria-hidden="true">0 / 2000</p>
     <div id="feedbackContactWrap">
-      <label class="field-label" for="feedbackContact">Email <span class="coll-optional">optional, only if you want a reply</span></label>
+      <label class="field-label" for="feedbackContact">Email <span class="field-optional">Optional, only if you want a reply</span></label>
       <input type="text" id="feedbackContact" maxlength="200" autocomplete="email" placeholder="you@example.com">
     </div>
     <input type="text" id="feedbackWebsite" tabindex="-1" autocomplete="off" aria-hidden="true" class="hp-field">
@@ -777,7 +799,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
     <h3 id="collEditTitle">New collection</h3>
     <label class="field-label" for="collNameInput">Name</label>
     <input type="text" id="collNameInput" maxlength="80" autocomplete="off" placeholder="e.g. B execute, Anti-eco retake…">
-    <label class="field-label" for="collDescInput" style="margin-top:10px;">Description <span class="coll-optional">optional</span></label>
+    <label class="field-label" for="collDescInput" style="margin-top:10px;">Description <span class="field-optional">Optional</span></label>
     <textarea id="collDescInput" rows="3" maxlength="500" placeholder="When to use it, who throws what…"></textarea>
     <div class="coll-modal-actions">
       <button type="button" class="ghost-btn" id="collEditCancel" data-esc>Cancel</button>
@@ -812,7 +834,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
       <option value="spam">Spam</option>
       <option value="other">Something else</option>
     </select>
-    <label class="field-label" for="collReportDetails" style="margin-top:10px;">Details <span class="coll-optional">optional</span></label>
+    <label class="field-label" for="collReportDetails" style="margin-top:10px;">Details <span class="field-optional">Optional</span></label>
     <textarea id="collReportDetails" rows="3" maxlength="1000"></textarea>
     <div class="coll-modal-actions">
       <button type="button" class="ghost-btn" id="collReportCancel" data-esc>Cancel</button>
