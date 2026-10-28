@@ -3853,3 +3853,24 @@ body:not(.signed-in) .coll-rail-head,
 .home-screen--maps .map-card-name{font-family:var(--font-body);font-stretch:normal;font-size:17px;font-weight:600;letter-spacing:0;text-transform:none;}
 .home-screen--maps .map-card-count{font-family:var(--font-body);font-size:13px;letter-spacing:0;}
 .maps-title{font-family:var(--font-body);font-stretch:normal;letter-spacing:-.02em;}
+
+/* =========================================================================
+   EMAIL CONFIRMED / RESET PASSWORD (confirmed.html, reset-password.html)
+   ========================================================================= */
+.confirm-wrap{max-width:440px;padding:72px 20px 40px;min-height:100vh;gap:28px;justify-content:flex-start;}
+.confirm-brand{text-decoration:none;}
+.confirm-card{border-radius:16px;border-top:1px solid var(--line);background:var(--panel);padding:32px 30px;}
+.confirm-title{margin:0 0 8px;font-family:var(--font-body);font-stretch:normal;font-size:22px;font-weight:700;letter-spacing:-.01em;color:var(--text);}
+.confirm-icon{width:56px;height:56px;font-size:22px;}
+.confirm-text{font-size:14.5px;}
+.confirm-btn{display:inline-flex;padding:11px 22px;font-size:14px;}
+.confirm-fields{display:flex;flex-direction:column;gap:14px;text-align:left;}
+.confirm-fields input[type=password]{
+  width:100%;background:var(--void);border:1px solid var(--line);color:var(--text);
+  border-radius:8px;padding:11px 12px;font-size:14px;font-family:var(--font-body);
+}
+.confirm-fields input[type=password]:focus{outline:none;border-color:var(--signal);box-shadow:0 0 0 3px rgba(255,165,62,.12);}
+.confirm-submit{width:100%;justify-content:center;padding:12px 16px;font-size:14px;margin-top:4px;}
+.confirm-foot{margin:auto 0 0;font-size:12.5px;color:var(--text-faint);}
+.confirm-foot a{color:var(--text-dim);text-decoration:none;}
+.confirm-foot a:hover{color:var(--signal);}
