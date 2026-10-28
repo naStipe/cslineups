@@ -6,6 +6,7 @@ import { cancelThrow, cancelThrowBtn, tmSuggest, tmSuggestWrap, mapImage, moveme
 import { addFiles, clearDropHighlights, discardItems, draftItems, imageUrlOf, releaseItem, renderClip, renderPreciseThumb, renderResultThumb, renderStandingThumbGrid, renderThumbGrid, updateUploadSummary } from "./image-upload.js";
 import { refreshLocal, upsertLocalLineup } from "./map-data.js";
 import { getCssVarColor, typeColor } from "./markers.js";
+import { MAPS, TYPES } from "./constants.js";
 import { closeModal, watchDialog } from "./modal-utils.js";
 import { requireCanCreate, requireLineupEditable } from "./permissions.js";
 import { startReposition } from "./reposition.js";
@@ -20,6 +21,9 @@ import { state, uid } from "./state.js";
 // Image values are stored URLs (strings) or upload items, see
 // js/image-upload.js.
 export let pendingThrowDraft = null;
+
+const throwModalContext = document.getElementById("throwModalContext");
+const throwModalTypeDot = document.getElementById("throwModalTypeDot");
 
 // Anything the user would lose by closing: an image added/removed/moved, a
 // field edited, the spot repositioned. Drives the discard confirmation and
@@ -91,12 +95,19 @@ export function openThrowModal(throwPos, lineupId, isNewLineup, typeId, landingP
   movementSelect.value = existingThrow ? existingThrow.movement : "none";
   notesInput.value = existingThrow ? existingThrow.notes || "" : "";
 
+  // Eyebrow: what this is for ("Smoke · A Main Smoke", or "Smoke · Ancient"
+  // for a lineup that has no name yet), so the form never loses context.
+  const type = TYPES.find(t => t.id === typeId);
+  const name = (existingLineup && existingLineup.name || (isNewLineup && state.pendingName) || "").trim();
+  const map = MAPS.find(m => m.id === state.mapId);
+  throwModalTypeDot.style.background = type ? type.color : "var(--signal)";
+  throwModalContext.textContent = [type && type.label, name || (map && map.name)].filter(Boolean).join(" · ");
   if (existingThrow) {
     throwModalTitle.textContent = "Edit throw position";
-    throwModalHint.textContent = "Update details below, or use ⤢ Reposition on map to move the throw spot.";
+    throwModalHint.textContent = "Change screenshots or technique. Use Move on map to shift the throw spot.";
   } else {
-    throwModalTitle.textContent = isNewLineup ? "New lineup — throw position" : "Add throw position";
-    throwModalHint.textContent = "Add screenshots and technique. Not quite right? ⤢ Reposition on map to nudge the spot.";
+    throwModalTitle.textContent = isNewLineup ? "New lineup" : "Add throw position";
+    throwModalHint.textContent = "Show where to stand and aim, then how to throw it.";
   }
   throwModal.classList.add("show");
 }
@@ -111,10 +122,16 @@ watchDialog(throwModal, "show", () => cancelThrow);
 // On a Mac the paste shortcut is ⌘V; Win+Shift+S is how Windows players
 // grab a region, so the hint names it there.
 if (tmPasteHint && /Mac|iPhone|iPad/.test(navigator.platform || "")) {
-  tmPasteHint.innerHTML = "Tip: paste screenshots with <kbd>⌘</kbd><kbd>V</kbd>, or drop image files onto a slot.";
+  tmPasteHint.innerHTML = "Paste with <kbd>⌘</kbd><kbd>V</kbd> or drop files on a slot";
 } else if (tmPasteHint) {
-  tmPasteHint.innerHTML = "Tip: paste screenshots with <kbd>Ctrl</kbd>+<kbd>V</kbd> (grab one with <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>), or drop image files onto a slot.";
+  tmPasteHint.innerHTML = "Paste with <kbd>Ctrl</kbd>+<kbd>V</kbd> or drop files on a slot";
+  tmPasteHint.title = "Grab a screenshot region with Win+Shift+S, then paste it here";
 }
+
+// The "Add" tiles are buttons (reachable by keyboard) for the hidden inputs.
+throwModal.querySelectorAll(".tm-add-tile[data-input]").forEach(btn => {
+  btn.onclick = () => { const input = document.getElementById(btn.dataset.input); if (input) input.click(); };
+});
 
 // Hide the modal, let the user drag the throw-from spot on the full map, then
 // reopen the modal with the updated position (no save yet — the throw is only

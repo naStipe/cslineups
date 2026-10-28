@@ -40,6 +40,8 @@ export function updateAuthModalMode() {
   authPasswordField.hidden = isReset;
   authPasswordConfirmField.hidden = !isSignup;
   authForgotWrap.hidden = authMode !== "signin";
+  // Google sign-in doesn't apply to a password reset.
+  document.getElementById("authAlt").hidden = isReset;
   // Password managers should offer a fresh password on sign-up, not the
   // account's existing one.
   authPasswordInput.autocomplete = isSignup ? "new-password" : "current-password";

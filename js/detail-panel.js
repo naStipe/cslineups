@@ -435,9 +435,10 @@ function renderName(lineup, editable) {
   };
 }
 
-// Copy-link feedback: the 🔗 turns into ✓ for a moment, plus a toast. With
+// Copy-link feedback: the link icon turns into ✓ for a moment, plus a toast. With
 // several variants the link points at the one being viewed (&throw=n).
 let copyResetTimer = null;
+const LINK_ICON = shareLineupBtn ? shareLineupBtn.innerHTML : "";
 async function copyShareLink(lineup) {
   // A personal lineup is private until its owner opts in to link sharing.
   if (canModifyLineup(lineup) && !lineup.isOfficial && !lineup.linkShared) {
@@ -467,7 +468,7 @@ async function copyShareLink(lineup) {
   shareLineupBtn.setAttribute("aria-label", "Link copied");
   clearTimeout(copyResetTimer);
   copyResetTimer = setTimeout(() => {
-    shareLineupBtn.textContent = "🔗";
+    shareLineupBtn.innerHTML = LINK_ICON;
     shareLineupBtn.classList.remove("copied");
     shareLineupBtn.setAttribute("aria-label", shareLineupBtn.title || "Copy shareable link");
   }, 1200);
@@ -594,7 +595,7 @@ export function buildHeroHtml(t, idx, lineup) {
 
   return `
     <div class="hero-header">
-      <span class="variant-tag" tabindex="-1">VARIANT ${pad2(idx + 1)}</span>
+      <span class="variant-tag" tabindex="-1">Variant ${idx + 1}${lineup && lineup.throws.length > 1 ? ` <span class="variant-of">of ${lineup.throws.length}</span>` : ""}</span>
       <div class="throw-meta">
         <span class="tag">${RANGE_LABELS[t.range] || escapeHtml(t.range)}</span>
         <span class="tag">${MOVEMENT_LABELS[t.movement] || escapeHtml(t.movement)}</span>
@@ -603,7 +604,7 @@ export function buildHeroHtml(t, idx, lineup) {
       <div class="throw-card-actions">
         <button type="button" class="save-btn">☆ Save to my map</button>
         <button type="button" class="default-btn" title="Open this variant first">Make default</button>
-        <button type="button" class="reposition-btn">⤢ Reposition</button>
+        <button type="button" class="reposition-btn" title="Move this throw spot on the map">Move</button>
         <button type="button" class="edit-btn">Edit</button>
         <button type="button" class="remove-btn">Remove variant</button>
       </div>
@@ -666,8 +667,7 @@ if (sheet && sheetHandle) attachSheetDrag(sheetHandle, sheet, { onClose: () => c
 export function renderDetailType(lineup, editable) {
   const typeInfo = TYPES.find(t => t.id === lineup.type);
   detailType.textContent = editable ? typeInfo.label + " ✎" : typeInfo.label;
-  detailType.style.color = "#0a0d0e";
-  detailType.style.background = getCssVarColor(typeInfo.color);
+  detailType.style.setProperty("--chip-color", getCssVarColor(typeInfo.color));
   detailType.style.cursor = editable ? "pointer" : "default";
   detailType.title = editable ? "Click to change nade type" : "";
   detailType.onclick = () => {

@@ -621,6 +621,8 @@ function renderCat(cat) {
   const v = pendingThrowDraft[cat];
   const values = CATS[cat].kind === "array" ? v || [] : v ? [v] : [];
   values.forEach((value, i) => el.appendChild(makeThumb(value, cat, i)));
+  const slot = slotEl(cat);
+  if (slot) slot.classList.toggle("is-full", values.length >= CATS[cat].max); // hides the Add tile
   hydrateImages(el);
   setupDropZones();
   updateUploadSummary();

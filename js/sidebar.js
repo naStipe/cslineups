@@ -247,10 +247,10 @@ if (closeTypeFilter) closeTypeFilter.onclick = () => closeModal(typeFilterModal)
 
 export function buildTypeGrid(onPick) {
   typeGrid.innerHTML = "";
-  TYPES.forEach(t => {
+  TYPES.forEach((t, i) => {
     const opt = document.createElement("div");
     opt.className = "type-opt";
-    opt.innerHTML = `<span class="dot" style="background:${t.color}"></span>${t.label}`;
+    opt.innerHTML = `<span class="dot" style="background:${t.color}"></span>${t.label}<kbd class="type-key" aria-hidden="true">${i + 1}</kbd>`;
     opt.onclick = () => onPick(t.id);
     typeGrid.appendChild(opt);
   });

@@ -442,24 +442,27 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
       <h2 class="sr-only" id="detailDialogTitle">Lineup</h2>
       <div class="sheet-handle" aria-hidden="true"></div>
       <div class="detail-head">
-        <div>
-          <p class="dossier-eyebrow">Dossier</p>
-          <span class="type-chip" id="detailType">SMOKE</span>
-          <span class="owner-badge" id="detailOwnerBadge"></span>
-        </div>
-        <div class="detail-name-wrap">
-          <input class="detail-name-input" id="detailNameInput" type="text" placeholder="Unnamed position" maxlength="40" aria-label="Lineup name">
-          <button type="button" class="name-nudge hidden" id="detailNameNudge">✎ Name this lineup</button>
-          <div class="detail-side" id="detailSideSlot"></div>
+        <div class="detail-head-main">
+          <div class="detail-kicker">
+            <span class="type-chip" id="detailType">SMOKE</span>
+            <span class="owner-badge" id="detailOwnerBadge"></span>
+          </div>
+          <div class="detail-name-wrap">
+            <input class="detail-name-input" id="detailNameInput" type="text" placeholder="Unnamed position" maxlength="40" aria-label="Lineup name">
+            <button type="button" class="name-nudge hidden" id="detailNameNudge">✎ Name this lineup</button>
+          </div>
+          <div class="detail-meta">
+            <div class="detail-side" id="detailSideSlot"></div>
+            <p class="detail-meta-text" id="detailTitle">Lineup</p>
+          </div>
         </div>
         <div class="detail-head-actions">
           <button class="ghost-btn hidden" id="saveLineupBtn">☆ Save to my map</button>
-          <button class="icon-btn" id="addToCollBtn" title="Add to a collection" aria-label="Add to a collection" aria-haspopup="dialog">＋</button>
-          <button class="icon-btn" id="shareLineupBtn" title="Copy shareable link" aria-label="Copy shareable link">🔗</button>
-          <button class="icon-btn" id="closeDetail" aria-label="Close lineup">✕</button>
+          <button class="icon-btn head-btn" id="addToCollBtn" title="Add to a collection" aria-label="Add to a collection" aria-haspopup="dialog"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 4h7M2.5 8h7M2.5 12h4M12 9v5M9.5 11.5h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
+          <button class="icon-btn head-btn" id="shareLineupBtn" title="Copy shareable link" aria-label="Copy shareable link"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.5 9.5a3 3 0 0 0 4.24 0l2.12-2.12a3 3 0 0 0-4.24-4.24l-.7.7M9.5 6.5a3 3 0 0 0-4.24 0L3.14 8.62a3 3 0 0 0 4.24 4.24l.7-.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
+          <button class="icon-btn head-btn" id="closeDetail" aria-label="Close lineup">✕</button>
         </div>
       </div>
-      <h3 id="detailTitle">Lineup</h3>
       <div class="throw-list" id="throwList"></div>
       <div class="detail-actions">
         <button class="ghost-btn" id="addThrowBtn">+ Add throw position</button>
@@ -488,31 +491,43 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
 <!-- MODAL: sign in / sign up -->
 <div class="modal-backdrop" id="authModal">
   <div class="modal auth-modal" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
-    <h3 id="authModalTitle">Sign in</h3>
+    <div class="modal-head">
+      <div>
+        <p class="modal-eyebrow">Lineupr account</p>
+        <h3 id="authModalTitle">Sign in</h3>
+      </div>
+      <button type="button" class="icon-btn modal-close" id="cancelAuth" aria-label="Close">✕</button>
+    </div>
     <p class="auth-error info" id="authError" hidden role="alert"></p>
+    <div class="auth-alt" id="authAlt">
+      <button type="button" class="ghost-btn auth-google-btn" id="authGoogleBtn"><svg width="16" height="16" viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.72A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg><span>Continue with Google</span></button>
+      <div class="auth-divider" aria-hidden="true"><span>or with email</span></div>
+    </div>
     <form class="auth-form" id="authForm" novalidate>
-    <label class="field-label" for="authEmailInput">Email</label>
-    <input type="email" id="authEmailInput" name="email" autocomplete="email" placeholder="you@example.com">
-    <div class="auth-signup-field" id="authUsernameField" hidden>
-      <label class="field-label" for="authUsernameInput">Username</label>
-      <input type="text" id="authUsernameInput" name="username" autocomplete="username" placeholder="How teammates will see you" maxlength="32">
-    </div>
-    <div id="authPasswordField">
-      <label class="field-label" for="authPasswordInput">Password</label>
-      <input type="password" id="authPasswordInput" name="password" autocomplete="current-password" placeholder="At least 8 characters">
-    </div>
-    <div class="auth-signup-field" id="authPasswordConfirmField" hidden>
-      <label class="field-label" for="authPasswordConfirmInput">Repeat password</label>
-      <input type="password" id="authPasswordConfirmInput" name="password-confirm" autocomplete="new-password" placeholder="Repeat your password">
-    </div>
-    <p class="auth-forgot" id="authForgotWrap"><a href="#" id="authForgotLink">Forgot password?</a></p>
-    <div id="authTurnstile" class="auth-turnstile"></div>
-    <button type="submit" class="primary-btn auth-submit-btn" id="authSubmitBtn">Sign in</button>
+      <div class="field">
+        <label class="field-label" for="authEmailInput">Email</label>
+        <input type="email" id="authEmailInput" name="email" autocomplete="email" placeholder="you@example.com">
+      </div>
+      <div class="field auth-signup-field" id="authUsernameField" hidden>
+        <label class="field-label" for="authUsernameInput">Username</label>
+        <input type="text" id="authUsernameInput" name="username" autocomplete="username" placeholder="How teammates will see you" maxlength="32">
+      </div>
+      <div class="field" id="authPasswordField">
+        <div class="field-label-row">
+          <label class="field-label" for="authPasswordInput">Password</label>
+          <span class="auth-forgot" id="authForgotWrap"><a href="#" id="authForgotLink">Forgot password?</a></span>
+        </div>
+        <input type="password" id="authPasswordInput" name="password" autocomplete="current-password" placeholder="At least 8 characters">
+      </div>
+      <div class="field auth-signup-field" id="authPasswordConfirmField" hidden>
+        <label class="field-label" for="authPasswordConfirmInput">Repeat password</label>
+        <input type="password" id="authPasswordConfirmInput" name="password-confirm" autocomplete="new-password" placeholder="Repeat your password">
+      </div>
+      <div id="authTurnstile" class="auth-turnstile"></div>
+      <button type="submit" class="primary-btn auth-submit-btn" id="authSubmitBtn">Sign in</button>
     </form>
-    <button type="button" class="ghost-btn auth-google-btn" id="authGoogleBtn">Continue with Google</button>
-    <p class="auth-legal">By signing up or continuing with Google, you accept the <a href="/terms.html" target="_blank" rel="noopener">Terms of Use</a> and confirm you have read the <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</p>
     <p class="auth-switch"><span id="authSwitchText">Don't have an account?</span> <a href="#" id="authSwitchLink">Sign up</a></p>
-    <button type="button" class="ghost-btn" id="cancelAuth">Cancel</button>
+    <p class="auth-legal">By signing up or continuing with Google, you accept the <a href="/terms.html" target="_blank" rel="noopener">Terms of Use</a> and confirm you have read the <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</p>
   </div>
 </div>
 
@@ -524,52 +539,76 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
       <div class="profile-head-text">
         <h3 id="profileModalName"></h3>
         <p class="profile-email" id="profileModalEmail"></p>
-        <p class="profile-admin-stat" id="profileAccountCount" hidden></p>
-        <a class="ghost-btn profile-admin-link" id="profileAccountsLink" href="/admin.html?view=accounts" hidden>Account management</a>
       </div>
-      <button class="icon-btn" id="closeProfile" aria-label="Close profile">✕</button>
+      <button class="icon-btn modal-close" id="closeProfile" aria-label="Close profile">✕</button>
     </div>
 
-    <div class="profile-section">
-      <p class="profile-section-title">Username</p>
+    <div class="profile-admin" id="profileAdminRow" hidden>
+      <span class="profile-admin-badge">Admin</span>
+      <p class="profile-admin-stat" id="profileAccountCount" hidden></p>
+      <a class="profile-admin-link" id="profileAccountsLink" href="/admin.html?view=accounts" hidden>Account management →</a>
+    </div>
+
+    <section class="profile-section">
+      <h4 class="profile-section-title">Username</h4>
       <div class="profile-row">
-        <input type="text" id="profileUsernameInput" maxlength="32" autocomplete="username" placeholder="Your username">
+        <input type="text" id="profileUsernameInput" maxlength="32" autocomplete="username" placeholder="Your username" aria-label="Username">
         <button class="primary-btn" id="saveUsernameBtn">Save</button>
       </div>
       <p class="profile-msg" id="usernameMsg" hidden></p>
-    </div>
+    </section>
 
-    <div class="profile-section">
-      <p class="profile-section-title">Change password</p>
-      <label class="field-label">New password</label>
-      <input type="password" id="profileNewPassword" autocomplete="new-password" placeholder="At least 8 characters">
-      <label class="field-label">Repeat new password</label>
-      <input type="password" id="profileNewPassword2" autocomplete="new-password" placeholder="Repeat it">
+    <section class="profile-section">
+      <h4 class="profile-section-title">Password</h4>
+      <div class="profile-pw-grid">
+        <div class="field">
+          <label class="field-label" for="profileNewPassword">New password</label>
+          <input type="password" id="profileNewPassword" autocomplete="new-password" placeholder="At least 8 characters">
+        </div>
+        <div class="field">
+          <label class="field-label" for="profileNewPassword2">Repeat new password</label>
+          <input type="password" id="profileNewPassword2" autocomplete="new-password" placeholder="Repeat it">
+        </div>
+      </div>
       <button class="ghost-btn profile-pw-btn" id="changePasswordBtn">Change password</button>
       <p class="profile-msg" id="passwordMsg" hidden></p>
-    </div>
+    </section>
 
-    <div class="profile-section profile-danger">
-      <p class="profile-section-title profile-danger-title">Danger zone</p>
-      <p class="profile-danger-text">Deleting your account permanently removes your personal lineups, saved bookmarks and uploaded screenshots. This cannot be undone.</p>
+    <section class="profile-section profile-danger">
+      <h4 class="profile-section-title profile-danger-title">Delete account</h4>
+      <p class="profile-danger-text">Permanently removes your personal lineups, saved bookmarks and uploaded screenshots. This cannot be undone.</p>
       <button class="ghost-btn danger" id="deleteAccountBtn">Delete my account</button>
       <p class="profile-msg" id="deleteMsg" hidden></p>
-    </div>
+    </section>
   </div>
 </div>
 
 <!-- MODAL: new landing spot -> choose type -->
 <div class="modal-backdrop" id="typeModal">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="typeModalTitle">
-    <h3 id="typeModalTitle">What kind of nade?</h3>
-    <div class="type-grid" id="typeGrid" role="radiogroup" aria-labelledby="typeModalTitle"></div>
-    <label class="field-label" for="lineupNameInput" style="margin-top:8px;">Name this position <span style="color:var(--text-faint);font-size:10px;">optional</span></label>
-    <input type="text" id="lineupNameInput" placeholder="e.g. CT Spawn, Mid Box, Window…" autocomplete="off" maxlength="40" aria-describedby="lineupNameHint">
-    <label class="field-label" style="margin-top:12px;">Side <span style="color:var(--text-faint);font-size:10px;">optional</span></label>
-    <div id="lineupSideSlot"></div>
-    <div class="name-suggestions" id="lineupNameSuggestions" hidden></div>
+  <div class="modal type-modal" role="dialog" aria-modal="true" aria-labelledby="typeModalTitle">
+    <div class="modal-head">
+      <div>
+        <p class="modal-eyebrow" id="typeModalEyebrow">New lineup</p>
+        <h3 id="typeModalTitle">What kind of nade?</h3>
+      </div>
+      <button type="button" class="icon-btn modal-close" id="cancelType" data-esc aria-label="Cancel">✕</button>
+    </div>
+    <div class="type-modal-fields">
+      <div class="field">
+        <label class="field-label" for="lineupNameInput">Name <span class="field-optional">Optional</span></label>
+        <input type="text" id="lineupNameInput" placeholder="e.g. CT Spawn, Mid Box, Window…" autocomplete="off" maxlength="40" aria-describedby="lineupNameHint">
+        <div class="name-suggestions" id="lineupNameSuggestions" hidden></div>
+      </div>
+      <div class="field">
+        <span class="field-label" id="lineupSideLabel">Side <span class="field-optional">Optional</span></span>
+        <div id="lineupSideSlot"></div>
+      </div>
+    </div>
+    <div class="field">
+      <span class="field-label" id="typeGridLabel">Grenade</span>
+      <div class="type-grid" id="typeGrid" role="radiogroup" aria-labelledby="typeGridLabel"></div>
+    </div>
     <p class="name-hint" id="lineupNameHint" aria-live="polite"></p>
-    <button class="ghost-btn" id="cancelType" data-esc>Cancel</button>
   </div>
 </div>
 
@@ -578,9 +617,10 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
   <div class="modal throw-modal" role="dialog" aria-modal="true" aria-labelledby="throwModalTitle">
 
     <div class="tm-header">
-      <div>
-        <p class="tm-eyebrow" id="throwModalHint">New lineup</p>
+      <div class="tm-heading">
+        <p class="modal-eyebrow" id="throwModalEyebrow"><span class="tm-type-dot" id="throwModalTypeDot"></span><span id="throwModalContext">New lineup</span></p>
         <h3 id="throwModalTitle">Throw position</h3>
+        <p class="tm-sub" id="throwModalHint"></p>
       </div>
       <div class="tm-preview-wrap">
         <div class="tm-preview" id="tmPreview">
@@ -589,73 +629,100 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
           <div class="tm-preview-dot tm-preview-landing" id="tmPreviewLanding"></div>
           <div class="tm-preview-dot tm-preview-throw" id="tmPreviewThrow"></div>
         </div>
-        <button type="button" class="tm-reposition-btn" id="repositionOnMapBtn">⤢ Reposition on map</button>
+        <button type="button" class="tm-reposition-btn" id="repositionOnMapBtn">Move on map</button>
       </div>
-      <button class="icon-btn" id="cancelThrow" data-esc aria-label="Close">✕</button>
+      <button class="icon-btn modal-close" id="cancelThrow" data-esc aria-label="Close">✕</button>
     </div>
 
     <div class="tm-body">
 
-    <!-- Upload zones. Images upload in the background as soon as they're
-         added (file picker, Ctrl+V paste, or files dropped on a slot). -->
-    <div class="tm-section">
-      <p class="tm-paste-hint" id="tmPasteHint">Tip: paste screenshots with <kbd>Ctrl</kbd>+<kbd>V</kbd>, or drop image files onto a slot.</p>
-
+    <!-- Screenshots. Images upload in the background as soon as they're
+         added (Add tile, Ctrl+V paste, or files dropped on a slot). -->
+    <section class="tm-section" aria-labelledby="tmShotsTitle">
+      <div class="tm-section-head">
+        <h4 class="tm-section-title" id="tmShotsTitle">Screenshots</h4>
+        <p class="tm-paste-hint" id="tmPasteHint">Paste with <kbd>Ctrl</kbd>+<kbd>V</kbd> or drop files on a slot</p>
+      </div>
       <div class="tm-upload-row">
         <div class="tm-upload-col">
           <div class="tm-upload-head">
-            <span class="tm-label">🦶 Where to stand <span class="tm-optional">up to 3</span></span>
-            <label class="tm-upload-trigger" for="standingInput">+ Add</label>
+            <span class="tm-label">Where to stand</span>
+            <span class="tm-optional">Up to 3</span>
+          </div>
+          <div class="tm-slot-body">
+            <div class="tm-thumbs" id="standingThumbGrid"></div>
+            <button type="button" class="tm-add-tile" data-input="standingInput" aria-label="Add where to stand screenshot">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              <span>Add</span>
+            </button>
             <input type="file" id="standingInput" accept="image/*" multiple hidden>
           </div>
-          <div class="tm-thumbs" id="standingThumbGrid"></div>
         </div>
-
         <div class="tm-upload-col">
           <div class="tm-upload-head">
-            <span class="tm-label">🎯 Where to aim <span class="tm-optional">up to 5</span></span>
-            <label class="tm-upload-trigger" for="screenshotInput">+ Add</label>
+            <span class="tm-label">Where to aim</span>
+            <span class="tm-optional">Up to 5</span>
+          </div>
+          <div class="tm-slot-body">
+            <div class="tm-thumbs" id="thumbGrid"></div>
+            <button type="button" class="tm-add-tile" data-input="screenshotInput" aria-label="Add where to aim screenshot">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              <span>Add</span>
+            </button>
             <input type="file" id="screenshotInput" accept="image/*" multiple hidden>
           </div>
-          <div class="tm-thumbs" id="thumbGrid"></div>
         </div>
-
         <div class="tm-upload-col">
           <div class="tm-upload-head">
-            <span class="tm-label">🔍 Precise <span class="tm-optional">optional</span></span>
-            <label class="tm-upload-trigger" for="preciseInput">+ Add</label>
+            <span class="tm-label">Precise aim</span>
+            <span class="tm-optional">Optional</span>
+          </div>
+          <div class="tm-slot-body">
+            <div class="tm-thumbs" id="preciseThumbWrap"></div>
+            <button type="button" class="tm-add-tile" data-input="preciseInput" aria-label="Add precise aim screenshot">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              <span>Add</span>
+            </button>
             <input type="file" id="preciseInput" accept="image/*" hidden>
           </div>
-          <div class="tm-thumbs" id="preciseThumbWrap"></div>
         </div>
-
         <div class="tm-upload-col">
           <div class="tm-upload-head">
-            <span class="tm-label">🖼️ Result <span class="tm-optional">optional</span></span>
-            <label class="tm-upload-trigger" for="resultInput">+ Add</label>
+            <span class="tm-label">Result</span>
+            <span class="tm-optional">Optional</span>
+          </div>
+          <div class="tm-slot-body">
+            <div class="tm-thumbs" id="resultThumbWrap"></div>
+            <button type="button" class="tm-add-tile" data-input="resultInput" aria-label="Add result screenshot">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              <span>Add</span>
+            </button>
             <input type="file" id="resultInput" accept="image/*" hidden>
           </div>
-          <div class="tm-thumbs" id="resultThumbWrap"></div>
         </div>
       </div>
-
-    </div>
+    </section>
 
     <!-- One short clip (mp4 / webm), e.g. to show the jumpthrow timing -->
-    <div class="tm-section">
-      <div class="tm-upload-head">
-        <span class="tm-label">🎬 Clip <span class="tm-optional">optional · mp4 or webm, up to 15 s and 20 MB</span></span>
-        <label class="tm-upload-trigger" for="clipInput" id="clipTrigger">+ Add</label>
-        <input type="file" id="clipInput" accept="video/mp4,video/webm" hidden>
+    <section class="tm-section" aria-labelledby="tmClipTitle">
+      <div class="tm-section-head">
+        <h4 class="tm-section-title" id="tmClipTitle">Clip <span class="tm-optional">Optional</span></h4>
+        <p class="tm-paste-hint tm-paste-hint--static">MP4 or WebM, up to 15 s and 20 MB</p>
       </div>
       <div class="tm-clip" id="clipWrap"></div>
-    </div>
+      <button type="button" class="tm-add-tile tm-add-tile--wide" id="clipTrigger" data-input="clipInput">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span>Add a clip</span>
+      </button>
+      <input type="file" id="clipInput" accept="video/mp4,video/webm" hidden>
+    </section>
 
     <!-- Technique -->
-    <div class="tm-section">
+    <section class="tm-section" aria-labelledby="tmTechTitle">
+      <h4 class="tm-section-title" id="tmTechTitle">Technique</h4>
       <div class="tm-selects">
         <div class="tm-select-group">
-          <label class="tm-label">Throw range</label>
+          <label class="tm-label" for="throwRangeSelect">Throw range</label>
           <select id="throwRangeSelect" class="tm-select">
             <option value="throw">Throw (full)</option>
             <option value="mid-throw">Mid-throw</option>
@@ -663,7 +730,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
           </select>
         </div>
         <div class="tm-select-group">
-          <label class="tm-label">Movement</label>
+          <label class="tm-label" for="movementSelect">Movement</label>
           <select id="movementSelect" class="tm-select">
             <option value="none">None / standing</option>
             <option value="jumpthrow">Jumpthrow</option>
@@ -680,13 +747,11 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
           </select>
         </div>
       </div>
-    </div>
-
-    <!-- Notes -->
-    <div class="tm-section">
-      <label class="tm-label">Notes <span class="tm-optional">optional</span></label>
-      <textarea id="notesInput" class="tm-textarea" rows="3" placeholder="Crosshair placement, jump timing, smoke pixel..."></textarea>
-    </div>
+      <div class="tm-select-group tm-notes">
+        <label class="tm-label" for="notesInput">Notes <span class="tm-optional">Optional</span></label>
+        <textarea id="notesInput" class="tm-textarea" rows="3" placeholder="Crosshair placement, jump timing, smoke pixel…"></textarea>
+      </div>
+    </section>
 
     <!-- New personal lineups only: opt in to suggesting it for the official map -->
     <div class="tm-section" id="tmSuggestWrap" hidden>
@@ -717,7 +782,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
     <textarea id="feedbackMessage" rows="5" maxlength="2000" placeholder="What would you like to see, or what went wrong?"></textarea>
     <p class="feedback-count" id="feedbackCount" aria-hidden="true">0 / 2000</p>
     <div id="feedbackContactWrap">
-      <label class="field-label" for="feedbackContact">Email <span class="coll-optional">optional, only if you want a reply</span></label>
+      <label class="field-label" for="feedbackContact">Email <span class="field-optional">Optional, only if you want a reply</span></label>
       <input type="text" id="feedbackContact" maxlength="200" autocomplete="email" placeholder="you@example.com">
     </div>
     <input type="text" id="feedbackWebsite" tabindex="-1" autocomplete="off" aria-hidden="true" class="hp-field">
@@ -734,7 +799,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
     <h3 id="collEditTitle">New collection</h3>
     <label class="field-label" for="collNameInput">Name</label>
     <input type="text" id="collNameInput" maxlength="80" autocomplete="off" placeholder="e.g. B execute, Anti-eco retake…">
-    <label class="field-label" for="collDescInput" style="margin-top:10px;">Description <span class="coll-optional">optional</span></label>
+    <label class="field-label" for="collDescInput" style="margin-top:10px;">Description <span class="field-optional">Optional</span></label>
     <textarea id="collDescInput" rows="3" maxlength="500" placeholder="When to use it, who throws what…"></textarea>
     <div class="coll-modal-actions">
       <button type="button" class="ghost-btn" id="collEditCancel" data-esc>Cancel</button>
@@ -769,7 +834,7 @@ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches))
       <option value="spam">Spam</option>
       <option value="other">Something else</option>
     </select>
-    <label class="field-label" for="collReportDetails" style="margin-top:10px;">Details <span class="coll-optional">optional</span></label>
+    <label class="field-label" for="collReportDetails" style="margin-top:10px;">Details <span class="field-optional">Optional</span></label>
     <textarea id="collReportDetails" rows="3" maxlength="1000"></textarea>
     <div class="coll-modal-actions">
       <button type="button" class="ghost-btn" id="collReportCancel" data-esc>Cancel</button>

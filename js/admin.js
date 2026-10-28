@@ -36,6 +36,16 @@ const VIEWS = ["moderation", "accounts", "official", "areas", "collections", "fe
 let view = VIEWS.includes(new URLSearchParams(location.search).get("view")) ? new URLSearchParams(location.search).get("view") : "moderation";
 const mounted = new Set();
 
+// Page heading for each section.
+const VIEW_META = {
+  moderation:  { title: "Screenshots", desc: "Uploads on personal lineups. Approve to clear them from the queue, publish suggested ones to the official map." },
+  accounts:    { title: "Accounts", desc: "Everyone who has signed up. Open an account to see what it uploaded." },
+  official:    { title: "Sides", desc: "Set T / CT / Any on official lineups." },
+  areas:       { title: "Areas", desc: "Draw the named areas (A Site, Mid…) used to filter each map." },
+  collections: { title: "Collections", desc: "Shared collections and reports about them." },
+  feedback:    { title: "Feedback", desc: "Suggestions and bug reports sent from the site." },
+};
+
 async function loadConfig() {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
@@ -104,7 +114,16 @@ async function render() {
 }
 
 async function showView() {
-  els.viewToggle.querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.view === view));
+  els.viewToggle.querySelectorAll("button").forEach(b => {
+    b.classList.toggle("active", b.dataset.view === view);
+    if (b.dataset.view === view) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+  });
+  el("adminTitle").textContent = VIEW_META[view].title;
+  el("adminDesc").textContent = VIEW_META[view].desc;
+  document.title = `${VIEW_META[view].title} · Admin · Lineupr`;
+  // The count line belongs to the screenshot queue and accounts list; the
+  // other sections show their own status.
+  if (view !== "moderation" && view !== "accounts") els.adminHint.textContent = "";
   show(els.statusToggle, view === "moderation");
   show(els.adminQueue, view === "moderation");
   show(els.adminAccounts, view === "accounts");
@@ -152,7 +171,7 @@ function renderAccount(u) {
   row.innerHTML = `
     <button class="admin-account-head" type="button" ${u.screenshots ? "" : "disabled"}>
       <span class="admin-account-main">
-        <strong>${escapeHtml(name)}</strong>${u.isAdmin ? ` <span class="admin-tag">admin</span>` : ""}
+        <span class="admin-account-name"><strong>${escapeHtml(name)}</strong>${u.isAdmin ? ` <span class="admin-tag">Admin</span>` : ""}</span>
         <span class="admin-account-email">${escapeHtml(u.email || u.id)}</span>
       </span>
       <span class="admin-account-meta">
@@ -242,7 +261,7 @@ function renderCard(item, { readOnly = false } = {}) {
   card.innerHTML = `
     <div class="admin-card-head">
       <div>
-        <span class="type-chip">${escapeHtml(typeLabel)}</span>
+        <span class="type-chip" style="--chip-color:${(TYPES.find(t => t.id === item.type) || {}).color || "var(--signal)"}">${escapeHtml(typeLabel)}</span>
         <strong class="admin-card-name">${escapeHtml(item.name || "Unnamed position")}</strong>
         ${!item.name ? `<span class="admin-card-warn" title="Give this lineup a name before publishing — it shows up in page titles and search results">⚠ needs a name</span>` : ""}
         <span class="admin-card-sub">${escapeHtml(mapName)}${date ? ` · ${escapeHtml(date)}` : ""}</span>
@@ -253,9 +272,9 @@ function renderCard(item, { readOnly = false } = {}) {
     ${readOnly ? "" : `<div class="admin-card-actions">
       ${item.reviewedAt
         ? `<button class="ghost-btn" data-action="unreview" data-lineup="${escapeHtml(item.id)}">↩ Move back to pending</button>`
-        : `<button class="primary-btn" data-action="approve" data-lineup="${escapeHtml(item.id)}">✓ Approve (mark reviewed)</button>`}
+        : `<button class="${item.submittedAt ? "ghost-btn" : "primary-btn"}" data-action="approve" data-lineup="${escapeHtml(item.id)}">✓ Mark reviewed</button>`}
       ${item.submittedAt
-        ? `<button class="primary-btn admin-publish" data-action="publish" data-lineup="${escapeHtml(item.id)}">★ Approve: publish to official map</button>
+        ? `<button class="primary-btn admin-publish" data-action="publish" data-lineup="${escapeHtml(item.id)}">★ Publish to official map</button>
            <button class="ghost-btn danger" data-action="deny" data-lineup="${escapeHtml(item.id)}">Deny suggestion</button>`
         : `<span class="admin-card-sub" title="Only lineups the owner suggested can be published">${item.deniedAt ? "Suggestion denied" : "Not suggested for the official map"}</span>`}
       <button class="ghost-btn danger" data-action="delete-lineup" data-lineup="${escapeHtml(item.id)}">Delete whole lineup</button>
@@ -312,8 +331,8 @@ function setCardReviewed(card, lineupId, reviewed) {
     btn.textContent = "↩ Move back to pending";
     btn.onclick = () => markReviewed(lineupId, "unreview", card);
   } else {
-    btn.className = "primary-btn"; btn.dataset.action = "approve";
-    btn.textContent = "✓ Approve (mark reviewed)";
+    btn.className = card.querySelector('[data-action="publish"]') ? "ghost-btn" : "primary-btn"; btn.dataset.action = "approve";
+    btn.textContent = "✓ Mark reviewed";
     btn.onclick = () => markReviewed(lineupId, "approve", card);
   }
   oldBtn.replaceWith(btn);
