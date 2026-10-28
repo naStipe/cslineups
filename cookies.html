@@ -10,34 +10,38 @@
 <meta name="robots" content="noindex">
 <link href="/fonts/fonts.css" rel="stylesheet">
 <link rel="stylesheet" href="/blog/blog.css">
-<style>.cookie-table{width:100%;border-collapse:collapse;margin:0 0 20px;font-size:14px}
-.cookie-table th,.cookie-table td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-.cookie-table th{font-weight:600}
-.table-wrap{overflow-x:auto}
-#resetConsentBtn{font:inherit;font-weight:600;padding:9px 16px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--text);cursor:pointer}
-#resetConsentBtn:hover{border-color:var(--signal)}
-#resetConsentStatus{margin-left:10px;font-size:13px}</style>
 <script defer src="/consent.js"></script>
 <script defer src="/site-fx.js"></script>
 <script type="module" src="/analytics.js"></script>
 </head>
 <body>
-<div class="wrap">
 <header class="site-head">
-  <a class="brand-link" href="/">
-    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="26" height="26" aria-hidden="true"><circle cx="20" cy="20" r="17" stroke="#ffa53e" stroke-width="2.2"/><circle cx="20" cy="20" r="9" stroke="#ffa53e" stroke-width="1" opacity="0.3"/><line x1="20" y1="3" x2="20" y2="11" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><line x1="20" y1="29" x2="20" y2="37" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="20" x2="11" y2="20" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><line x1="29" y1="20" x2="37" y2="20" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><circle cx="20" cy="20" r="3.5" fill="#ffa53e"/><circle cx="20" cy="20" r="1.4" fill="#0f0c09"/></svg>
-    <span>lineupr</span>
+  <a class="brand-link" href="/" aria-label="Lineupr home">
+    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="30" height="30" aria-hidden="true"><circle cx="20" cy="20" r="17" stroke="#ffa53e" stroke-width="2.2"/><circle cx="20" cy="20" r="9" stroke="#ffa53e" stroke-width="1" opacity="0.3"/><line x1="20" y1="3" x2="20" y2="11" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><line x1="20" y1="29" x2="20" y2="37" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="20" x2="11" y2="20" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><line x1="29" y1="20" x2="37" y2="20" stroke="#ffa53e" stroke-width="2" stroke-linecap="round"/><circle cx="20" cy="20" r="3.5" fill="#ffa53e"/><circle cx="20" cy="20" r="1.4" fill="#0f0c09"/></svg>
+    <span class="wordmark">lineup<span>r</span></span>
   </a>
-  <nav><a href="/maps">Maps</a><a href="/blog">Blog</a></nav>
+  <nav aria-label="Primary"><a href="/maps">Maps</a><a href="/blog">Blog</a><a class="nav-cta" href="/maps">Open the map</a></nav>
 </header>
+<div class="wrap wrap--doc">
 <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> › Cookie Policy</nav>
 <main>
+<header class="post-head">
+<p class="post-meta"><span class="post-tag">Legal</span><span>Last updated October 22, 2026</span></p>
 <h1>Cookie Policy</h1>
-<p class="byline">Last updated: October 22, 2026</p>
+</header>
+<nav class="doc-toc" aria-label="On this page">
+  <p class="doc-toc-title">On this page</p>
+  <ol>
+    <li><a href="#strictly-necessary">Strictly necessary</a></li>
+    <li><a href="#analytics-optional-only-with-your-consent">Analytics (optional, only with your consent)</a></li>
+    <li><a href="#change-or-withdraw-your-choice">Change or withdraw your choice</a></li>
+    <li><a href="#more-information">More information</a></li>
+  </ol>
+</nav>
 
 <p>Lineupr (operated by naStipe.dev, Business ID 3447010-7) stores a few small pieces of data in your browser, as cookies or in your browser's local storage. Under Finnish law (Act on Electronic Communications Services 917/2014, section 205) we may store only what is strictly necessary for the service you use without asking. Everything else needs your consent first.</p>
 
-<h2>Strictly necessary</h2>
+<h2 id="strictly-necessary">Strictly necessary</h2>
 <p>These make the site work as you asked and are always on.</p>
 <div class="table-wrap"><table class="cookie-table">
 <thead><tr><th>Name</th><th>Type</th><th>Purpose</th><th>Duration</th></tr></thead>
@@ -50,7 +54,7 @@
 </table></div>
 <p>We also use <strong>Vercel Web Analytics</strong> for basic page statistics. It sets no cookies and stores nothing in your browser, so it is not covered by the consent banner. It is described in the <a href="/privacy.html">Privacy Policy</a>.</p>
 
-<h2>Analytics (optional, only with your consent)</h2>
+<h2 id="analytics-optional-only-with-your-consent">Analytics (optional, only with your consent)</h2>
 <p>If you press "Accept" on the banner, Google Analytics (Google Ireland Ltd / Google LLC, USA) sets cookies to measure how the site is used: pages viewed, approximate location, device and browser. Nothing from Google Analytics loads before you accept, and the data isn't used for advertising.</p>
 <div class="table-wrap"><table class="cookie-table">
 <thead><tr><th>Name</th><th>Provider</th><th>Purpose</th><th>Duration</th></tr></thead>
@@ -60,12 +64,12 @@
 </tbody>
 </table></div>
 
-<h2>Change or withdraw your choice</h2>
+<h2 id="change-or-withdraw-your-choice">Change or withdraw your choice</h2>
 <p>You can change your decision at any time. Withdrawing consent deletes the Google Analytics cookies and shows the banner again.</p>
 <p><button type="button" id="resetConsentBtn">Change cookie choice</button><span id="resetConsentStatus" role="status"></span></p>
 <p>You can also delete cookies and local storage in your browser settings.</p>
 
-<h2>More information</h2>
+<h2 id="more-information">More information</h2>
 <p>See the <a href="/privacy.html">Privacy Policy</a> for how we handle personal data in general, including transfers to the USA.</p>
 </main>
 <script>
@@ -74,10 +78,46 @@ document.getElementById('resetConsentBtn').addEventListener('click', function(){
   else { try { localStorage.removeItem('lineupr_consent'); } catch(e){} document.getElementById('resetConsentStatus').textContent = 'Choice cleared. Reload any page to choose again.'; }
 });
 </script>
-<footer class="foot">
-<p><a href="/">Lineupr</a> · <a href="/terms.html">Terms of Use</a> · <a href="/privacy.html">Privacy Policy</a> · <a href="/cookies.html">Cookie Policy</a> · <a href="mailto:support@nastipe.dev?subject=Content%20report">Report content</a></p>
-<p>Lineupr is an independent fan project and is not affiliated with or endorsed by Valve Corporation. Counter-Strike 2 and its map images are trademarks or copyrighted material of Valve.</p>
-</footer>
 </div>
+<footer class="site-footer" aria-label="Site footer">
+  <div class="site-footer-grid">
+    <div class="site-footer-brand">
+      <span class="wordmark">lineup<span>r</span></span>
+      <p>Built by players, for players. An independent fan project, not affiliated with or endorsed by Valve. Counter-Strike 2 and its map images are trademarks or copyrighted material of Valve.</p>
+    </div>
+    <nav class="site-footer-col" aria-label="Lineups by map">
+      <p class="site-footer-title">Lineups by map</p>
+      <ul class="site-footer-maps">
+        <li><a href="/dust2">Dust II</a></li>
+        <li><a href="/mirage">Mirage</a></li>
+        <li><a href="/inferno">Inferno</a></li>
+        <li><a href="/nuke">Nuke</a></li>
+        <li><a href="/ancient">Ancient</a></li>
+        <li><a href="/anubis">Anubis</a></li>
+        <li><a href="/vertigo">Vertigo</a></li>
+        <li><a href="/cache">Cache</a></li>
+        <li><a href="/overpass">Overpass</a></li>
+      </ul>
+    </nav>
+    <nav class="site-footer-col" aria-label="Lineupr">
+      <p class="site-footer-title">Lineupr</p>
+      <ul>
+        <li><a href="/">Home</a></li>
+        <li><a href="/maps">All maps</a></li>
+        <li><a href="/blog">Blog</a></li>
+        <li><a href="mailto:support@nastipe.dev">Contact</a></li>
+      </ul>
+    </nav>
+    <nav class="site-footer-col" aria-label="Legal">
+      <p class="site-footer-title">Legal</p>
+      <ul>
+        <li><a href="/privacy.html">Privacy</a></li>
+        <li><a href="/terms.html">Terms</a></li>
+        <li><a href="/cookies.html">Cookies</a></li>
+        <li><a href="mailto:support@nastipe.dev?subject=Content%20report">Report content</a></li>
+      </ul>
+    </nav>
+  </div>
+</footer>
 </body>
 </html>
