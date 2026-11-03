@@ -3044,6 +3044,40 @@ body.in-collection .feedback-btn{display:none;}
 .fb-message{margin:4px 0;font-size:13.5px;white-space:pre-wrap;overflow-wrap:anywhere;}
 .fb-item.closed{opacity:.65;}
 @media (max-width:768px){ .feedback-btn{min-height:44px;bottom:84px;} .feedback-btn span{display:none;} .feedback-btn{width:44px;justify-content:center;padding:0;} }
+/* Signed-in "Your feedback" tab and the update dot on the button. */
+.feedback-dot{
+  position:absolute;top:-4px;right:-4px;width:10px;height:10px;border-radius:50%;
+  background:var(--signal);border:2px solid var(--void);animation:fbDotIn .2s ease-out;
+}
+@keyframes fbDotIn{from{opacity:0;transform:scale(.6);}to{opacity:1;transform:none;}}
+.fb-tabs{margin:2px 0 12px;}
+.fb-tabs .side-seg{display:flex;}
+.fb-tabs .side-seg-btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;}
+.fb-tab-dot{width:7px;height:7px;border-radius:50%;background:var(--signal);flex-shrink:0;}
+.side-seg-btn.active .fb-tab-dot{background:currentColor;}
+.feedback-dot[hidden],.fb-tab-dot[hidden],.fb-tabs[hidden],.fb-form[hidden],.fb-mine[hidden]{display:none;}
+.fb-mine{animation:fbFade .15s ease-out;}
+.fb-form{animation:fbFade .15s ease-out;}
+@keyframes fbFade{from{opacity:0;}to{opacity:1;}}
+.fb-mine-list{list-style:none;margin:0 0 6px;padding:0;display:flex;flex-direction:column;gap:6px;max-height:min(52vh,420px);overflow-y:auto;}
+.fb-mine-item{padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel-2);}
+.fb-mine-item.unseen{border-color:var(--signal-dim);}
+.fb-mine-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;}
+.fb-status{
+  padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:600;
+  color:var(--text-dim);background:var(--panel);
+}
+.fb-status--solved{color:var(--he);background:color-mix(in srgb, var(--he) 14%, transparent);}
+.fb-status--discarded{color:var(--text-faint);background:color-mix(in srgb, var(--text-faint) 14%, transparent);}
+.fb-mine-kind,.fb-mine-date{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.04em;color:var(--text-faint);}
+.fb-mine-date{margin-left:auto;}
+.fb-new{font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--signal);}
+.fb-mine-msg{
+  margin:6px 0 0;font-size:13px;color:var(--text);white-space:pre-wrap;overflow-wrap:anywhere;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
+}
+@media (prefers-reduced-motion:reduce){ .feedback-dot,.fb-mine,.fb-form{animation:none;} }
+
 
 /* ===================== Button centering =====================
    Buttons that hold a glyph or short label were left to the browser's

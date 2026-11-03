@@ -175,4 +175,5 @@ export function applyAuthState() {
     if (profileAvatar) profileAvatar.textContent = name ? name[0].toUpperCase() : "";
   }
   if (personalViewBtn) personalViewBtn.classList.toggle("hidden", !authUser);
+  document.dispatchEvent(new CustomEvent("authchange"));
 }
