@@ -11,6 +11,7 @@ const LIMITS = {
   upload:       { max: 60, windowSeconds: 3600 },   // presign an image upload
   collection_write:  { max: 150, windowSeconds: 3600 }, // any collection / item change
   feedback:          { max: 6, windowSeconds: 3600 },   // feedback messages (per user, or per visitor IP)
+  feedback_reply:    { max: 30, windowSeconds: 3600 },  // replies to an admin on your own feedback
   collection_report: { max: 10, windowSeconds: 3600 },  // report a shared collection
 };
 

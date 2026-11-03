@@ -4,6 +4,7 @@ const { setCorsHeaders } = require("./_lib/cors");
 // authenticate() returns { user } or { reason } describing exactly why it
 // failed, which keeps an otherwise opaque 401 diagnosable from the client.
 const { authenticate, isAdmin } = require("./_lib/auth");
+const { REPLY_MAX, repliesFor, addReply } = require("./_lib/feedback");
 
 function supabase() {
   return createClient(
@@ -158,10 +159,10 @@ module.exports = async function handler(req, res) {
       return;
     }
 
-    // GET ?feedback=count — number of open items, for the badge on the map's
-    // feedback button (js/feedback.js).
+    // GET ?feedback=count — items waiting on an admin (open, or the sender
+    // replied), for the badge on the map's feedback button (js/feedback.js).
     if (req.method === "GET" && req.query && req.query.feedback === "count") {
-      const { count, error } = await sb.from("feedback").select("id", { count: "exact", head: true }).eq("status", "open");
+      const { count, error } = await sb.from("feedback").select("id", { count: "exact", head: true }).or("status.eq.open,needs_admin.eq.true");
       if (error) throw new Error(error.message);
       res.status(200).json({ open: count || 0 });
       return;
@@ -171,15 +172,17 @@ module.exports = async function handler(req, res) {
     if (req.method === "GET" && req.query && req.query.feedback) {
       const f = req.query.feedback;
       let q = sb.from("feedback").select("*").order("created_at", { ascending: false }).limit(500);
-      if (f === "open") q = q.eq("status", "open");
+      if (f === "open") q = q.or("status.eq.open,needs_admin.eq.true");
       else if (f === "closed") q = q.neq("status", "open");
       const { data, error } = await q;
       if (error) throw new Error(error.message);
       const emails = await fetchOwnerEmails(sb, new Set((data || []).map(r => r.user_id).filter(Boolean)));
+      const replies = await repliesFor(sb, (data || []).map(r => r.id));
       res.status(200).json({ items: (data || []).map(r => ({
         id: r.id, kind: r.kind, message: r.message, contact: r.contact, page: r.page, userAgent: r.user_agent,
         status: r.status, createdAt: r.created_at, closedAt: r.closed_at,
         from: r.user_id ? (emails[r.user_id] || r.user_id) : null,
+        canReply: !!r.user_id, needsAdmin: r.needs_admin, replies: replies[r.id] || [],
       })) });
       return;
     }
@@ -338,9 +341,26 @@ module.exports = async function handler(req, res) {
       if (action === "feedback-status") {
         const { id, status } = body;
         if (typeof id !== "string" || !/^[0-9a-f-]{36}$/i.test(id) || !["open", "solved", "discarded"].includes(status)) { res.status(400).json({ error: "Invalid feedback update" }); return; }
-        const { error } = await sb.from("feedback").update({ status, closed_at: status === "open" ? null : new Date().toISOString() }).eq("id", id);
+        // Closing also answers a pending reply from the sender.
+        const patch = status === "open" ? { status, closed_at: null } : { status, closed_at: new Date().toISOString(), needs_admin: false };
+        const { error } = await sb.from("feedback").update(patch).eq("id", id);
         if (error) throw new Error(error.message);
         res.status(200).json({ ok: true });
+        return;
+      }
+
+      // Feedback: reply to the sender. They see it in the feedback box on
+      // the map, so only items sent while signed in can get one.
+      if (action === "feedback-reply") {
+        const { id } = body;
+        const text = typeof body.body === "string" ? body.body.trim().slice(0, REPLY_MAX) : "";
+        if (typeof id !== "string" || !/^[0-9a-f-]{36}$/i.test(id) || !text) { res.status(400).json({ error: "Invalid feedback reply" }); return; }
+        const { data: item, error } = await sb.from("feedback").select("id, user_id").eq("id", id).maybeSingle();
+        if (error) throw new Error(error.message);
+        if (!item) { res.status(404).json({ error: "Feedback not found" }); return; }
+        if (!item.user_id) { res.status(400).json({ error: "This was sent signed out, so there's no one to reply to in the app." }); return; }
+        const reply = await addReply(sb, { feedbackId: id, authorId: user.id, fromAdmin: true, body: text });
+        res.status(200).json({ reply });
         return;
       }
 

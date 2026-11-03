@@ -1,8 +1,10 @@
-// Admin tool: read the feedback visitors sent from the map, and close each
-// one as solved or discard it (either can be reopened).
+// Admin tool: read the feedback visitors sent from the map, reply to it
+// (the sender sees the thread in the feedback box on the map), and close
+// each one as solved or discard it (either can be reopened). "Open" also
+// lists closed items the sender has replied to since.
 import { MAPS } from "./constants.js";
 import { toast, toastError } from "./toast.js";
-import { emptyState } from "./ui-utils.js";
+import { emptyState, setBusy } from "./ui-utils.js";
 import { relativeTime, fullDate } from "./time-utils.js";
 
 export function mountFeedback(root, authHeaders) {
@@ -10,8 +12,10 @@ export function mountFeedback(root, authHeaders) {
   let items = [];
 
   async function setStatus(item, status) {
-    const prev = item.status;
-    item.status = status; draw();
+    const prev = item.status, prevNeeds = item.needsAdmin;
+    item.status = status;
+    if (status !== "open") item.needsAdmin = false; // closing answers the sender too
+    draw();
     try {
       const res = await fetch("/api/admin", {
         method: "POST", headers: { "Content-Type": "application/json", ...(await authHeaders()) },
@@ -19,8 +23,58 @@ export function mountFeedback(root, authHeaders) {
       });
       if (!res.ok) throw new Error(res.status);
       toast(status === "solved" ? "Marked as solved" : status === "discarded" ? "Discarded" : "Reopened");
-      if (filter !== "all") { items = items.filter(i => (filter === "open") === (i.status === "open")); draw(); }
-    } catch (e) { item.status = prev; draw(); toastError("Couldn't update it: " + e.message); }
+      if (filter !== "all") { items = items.filter(i => (filter === "open") === (i.status === "open" || i.needsAdmin)); draw(); }
+    } catch (e) { item.status = prev; item.needsAdmin = prevNeeds; draw(); toastError("Couldn't update it: " + e.message); }
+  }
+
+  async function sendReply(item, box, btn) {
+    const text = box.value.trim();
+    if (!text) { box.focus(); return; }
+    setBusy(btn, true, "Sending…");
+    try {
+      const res = await fetch("/api/admin", {
+        method: "POST", headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+        body: JSON.stringify({ action: "feedback-reply", id: item.id, body: text }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || res.status);
+      item.replies.push(data.reply);
+      item.needsAdmin = false;
+      toast("Reply sent");
+      draw();
+    } catch (e) { setBusy(btn, false); toastError("Couldn't send the reply: " + e.message); }
+  }
+
+  function thread(it) {
+    const frag = document.createDocumentFragment();
+    if (it.replies.length) {
+      const list = document.createElement("ul");
+      list.className = "fb-replies";
+      it.replies.forEach(r => {
+        const li = document.createElement("li");
+        li.className = "fb-reply" + (r.fromAdmin ? " from-admin" : "");
+        const meta = document.createElement("div");
+        meta.className = "fb-reply-meta";
+        meta.append(
+          Object.assign(document.createElement("span"), { className: "fb-reply-who", textContent: r.fromAdmin ? "Team" : "Sender" }),
+          Object.assign(document.createElement("span"), { textContent: relativeTime(Date.parse(r.createdAt)), title: fullDate(Date.parse(r.createdAt)) }),
+        );
+        li.append(meta, Object.assign(document.createElement("p"), { className: "fb-reply-body", textContent: r.body }));
+        list.append(li);
+      });
+      frag.append(list);
+    }
+    if (it.canReply) {
+      const form = document.createElement("div");
+      form.className = "fb-reply-form";
+      const box = Object.assign(document.createElement("textarea"), { rows: 2, maxLength: 2000, placeholder: "Reply to the sender…" });
+      box.setAttribute("aria-label", "Reply to the sender");
+      const btn = Object.assign(document.createElement("button"), { type: "button", className: "ghost-btn", textContent: "Reply" });
+      btn.onclick = () => sendReply(it, box, btn);
+      form.append(box, btn);
+      frag.append(form);
+    }
+    return frag;
   }
 
   function draw() {
@@ -40,7 +94,7 @@ export function mountFeedback(root, authHeaders) {
     if (!items.length) { root.append(emptyState({ title: filter === "open" ? "No open feedback" : "Nothing here", compact: true })); return; }
     items.forEach(it => {
       const card = document.createElement("div");
-      card.className = "os-item cm-item fb-item" + (it.status !== "open" ? " closed" : "");
+      card.className = "os-item cm-item fb-item" + (it.status !== "open" && !it.needsAdmin ? " closed" : "");
       const info = document.createElement("div");
       info.className = "cm-info";
       const head = document.createElement("div");
@@ -50,11 +104,13 @@ export function mountFeedback(root, authHeaders) {
         Object.assign(document.createElement("span"), { className: "cm-meta", textContent: `${it.from || "anonymous"} · ${relativeTime(Date.parse(it.createdAt))}`, title: fullDate(Date.parse(it.createdAt)) }),
       );
       if (it.status !== "open") head.append(Object.assign(document.createElement("span"), { className: "cm-meta", textContent: it.status === "solved" ? "✓ solved" : "discarded" }));
+      if (it.needsAdmin) head.append(Object.assign(document.createElement("span"), { className: "fb-awaiting", textContent: "Sender replied" }));
       const msg = Object.assign(document.createElement("p"), { className: "fb-message", textContent: it.message });
       info.append(head, msg);
       const where = (it.page || "").replace(/^map:([a-z0-9]+)/, (_, m) => (MAPS.find(x => x.id === m) || { name: m }).name);
       if (where) info.append(Object.assign(document.createElement("span"), { className: "cm-meta", textContent: `On: ${where}` }));
       if (it.contact) info.append(Object.assign(document.createElement("span"), { className: "cm-meta", textContent: `Contact: ${it.contact}` }));
+      info.append(thread(it));
 
       const btns = document.createElement("div");
       btns.className = "cm-actions";
@@ -70,7 +126,7 @@ export function mountFeedback(root, authHeaders) {
     try {
       const res = await fetch(`/api/admin?feedback=${filter}`, { headers: await authHeaders() });
       if (!res.ok) throw new Error(res.status);
-      items = (await res.json()).items;
+      items = (await res.json()).items.map(i => ({ ...i, replies: i.replies || [] }));
     } catch (e) { items = []; toastError("Couldn't load feedback."); }
     draw();
   }

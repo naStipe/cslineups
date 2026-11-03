@@ -3,9 +3,9 @@
 // discarded by an admin in admin.html. Works signed out too; signed-out
 // visitors can leave an email if they want a reply.
 //
-// Signed-in users also get a "Your feedback" tab listing what they sent and
-// its status. When an admin closes one of their items, a dot shows on the
-// button until they open that tab, which tells the API those items were seen
+// Signed-in users also get a "Your feedback" tab listing what they sent, its
+// status and a reply thread with the team. When an admin closes or replies to
+// one of their items, a dot shows on the button until they open that tab, which tells the API those items were seen
 // (stored server-side, so the dot shows once per item across devices).
 //
 // For admins the button is a shortcut instead: it shows how many items are
@@ -40,6 +40,7 @@ let tab = "send";
 let items = null; // the signed-in user's own feedback, newest first (null = not loaded)
 let loadedFor = null; // user id `items` belongs to
 let lastLoad = 0;
+let expanded = new Set(); // ids of items whose thread is showing
 let adminOpen = 0; // open items site-wide, shown on the button for admins
 const ADMIN_LIST = "/admin.html?view=feedback";
 
@@ -90,7 +91,7 @@ export async function loadMine() {
     if (!res.ok) throw new Error(res.status);
     const data = await res.json();
     if (!authUser || authUser.id !== uid) return; // signed out or switched meanwhile
-    items = data.items || [];
+    items = (data.items || []).map(i => ({ ...i, replies: i.replies || [] }));
     loadedFor = uid;
     lastLoad = Date.now();
   } catch (e) {
@@ -99,27 +100,95 @@ export async function loadMine() {
   drawDot();
 }
 
+function replyRow(r) {
+  const li = document.createElement("li");
+  li.className = "fb-reply" + (r.fromAdmin ? " from-admin" : "");
+  const created = Date.parse(r.createdAt);
+  const meta = document.createElement("div");
+  meta.className = "fb-reply-meta";
+  meta.append(
+    Object.assign(document.createElement("span"), { className: "fb-reply-who", textContent: r.fromAdmin ? "Lineupr team" : "You" }),
+    Object.assign(document.createElement("span"), { textContent: relativeTime(created), title: fullDate(created) }),
+  );
+  li.append(meta, Object.assign(document.createElement("p"), { className: "fb-reply-body", textContent: r.body }));
+  return li;
+}
+
+function replyForm(it, onSent) {
+  const wrap = document.createElement("div");
+  wrap.className = "fb-reply-form";
+  const box = Object.assign(document.createElement("textarea"), { rows: 2, maxLength: 2000, placeholder: it.replies.length ? "Reply to the team…" : "Add a comment…" });
+  box.setAttribute("aria-label", "Your reply");
+  const btn = Object.assign(document.createElement("button"), { type: "button", className: "primary-btn", textContent: "Reply" });
+  btn.onclick = async () => {
+    const text = box.value.trim();
+    if (!text) { box.focus(); return; }
+    setBusy(btn, true, "Sending…");
+    try {
+      const res = await fetch("/api/feedback", {
+        method: "POST", headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+        body: JSON.stringify({ action: "reply", id: it.id, body: text }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Couldn't send your reply.");
+      it.replies.push(data.reply);
+      onSent();
+    } catch (e) { toastError(e.message); setBusy(btn, false); }
+  };
+  wrap.append(box, btn);
+  return wrap;
+}
+
 function itemRow(it) {
   const row = document.createElement("li");
   row.className = "fb-mine-item" + (it.unseen ? " unseen" : "");
-  const head = document.createElement("div");
+  const open = expanded.has(it.id);
+  const toggle = Object.assign(document.createElement("button"), { type: "button", className: "fb-mine-toggle" });
+  toggle.setAttribute("aria-expanded", String(open));
+  const head = document.createElement("span");
   head.className = "fb-mine-head";
   const created = Date.parse(it.createdAt);
   const closed = it.closedAt ? Date.parse(it.closedAt) : 0;
   head.append(
     Object.assign(document.createElement("span"), { className: `fb-status fb-status--${it.status}`, textContent: STATUS[it.status] || it.status }),
     Object.assign(document.createElement("span"), { className: "fb-mine-kind", textContent: it.kind === "bug" ? "Bug report" : "Suggestion" }),
-    Object.assign(document.createElement("span"), { className: "fb-mine-date", textContent: relativeTime(created), title: `Sent ${fullDate(created)}` + (closed ? `\n${STATUS[it.status]} ${fullDate(closed)}` : "") }),
+    Object.assign(document.createElement("span"), { className: "fb-mine-date", textContent: relativeTime(created), title: `Sent ${fullDate(created)}` + (closed ? `
+${STATUS[it.status]} ${fullDate(closed)}` : "") }),
   );
   if (it.unseen) head.append(Object.assign(document.createElement("span"), { className: "fb-new", textContent: "New" }));
-  const msg = Object.assign(document.createElement("p"), { className: "fb-mine-msg", textContent: it.message, title: it.message });
-  row.append(head, msg);
+  const msg = Object.assign(document.createElement("span"), { className: "fb-mine-msg" + (open ? " full" : ""), textContent: it.message });
+  toggle.append(head, msg);
+  const n = it.replies.length;
+  toggle.append(Object.assign(document.createElement("span"), { className: "fb-mine-more", textContent: open ? "Hide replies" : n ? `${n} repl${n === 1 ? "y" : "ies"}` : "Comment" }));
+  toggle.onclick = () => {
+    if (expanded.has(it.id)) expanded.delete(it.id); else expanded.add(it.id);
+    row.replaceWith(itemRow(it));
+  };
+  row.append(toggle);
+  if (open) {
+    const thread = document.createElement("div");
+    thread.className = "fb-thread";
+    if (n) {
+      const list = document.createElement("ul");
+      list.className = "fb-replies";
+      list.append(...it.replies.map(replyRow));
+      thread.append(list);
+    }
+    thread.append(replyForm(it, () => {
+      const next = itemRow(it);
+      row.replaceWith(next);
+      next.querySelector(".fb-reply-form textarea").focus({ preventScroll: true });
+    }));
+    row.append(thread);
+  }
   return row;
 }
 
 function drawMine() {
   if (items === null) { mine.replaceChildren(emptyState({ title: "Couldn't load your feedback", body: "Check your connection and try again.", compact: true })); return; }
   if (!items.length) { mine.replaceChildren(emptyState({ title: "Nothing sent yet", body: "Suggestions and bug reports you send show up here with their status.", compact: true })); return; }
+  // Items with something new (a verdict or a team reply) open expanded.
+  expanded = new Set(items.filter(i => i.unseen).map(i => i.id));
   const list = document.createElement("ul");
   list.className = "fb-mine-list";
   list.append(...items.map(itemRow));
