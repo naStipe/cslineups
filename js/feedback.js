@@ -7,7 +7,10 @@
 // its status. When an admin closes one of their items, a dot shows on the
 // button until they open that tab, which tells the API those items were seen
 // (stored server-side, so the dot shows once per item across devices).
-import { authHeaders, authUser } from "./auth.js";
+//
+// For admins the button is a shortcut instead: it shows how many items are
+// still open and goes straight to the feedback list in admin.html.
+import { authHeaders, authUser, isAdmin } from "./auth.js";
 import { feedbackBtn } from "./dom.js";
 import { closeModal, watchDialog } from "./modal-utils.js";
 import { sideSegment } from "./side.js";
@@ -37,6 +40,8 @@ let tab = "send";
 let items = null; // the signed-in user's own feedback, newest first (null = not loaded)
 let loadedFor = null; // user id `items` belongs to
 let lastLoad = 0;
+let adminOpen = 0; // open items site-wide, shown on the button for admins
+const ADMIN_LIST = "/admin.html?view=feedback";
 
 function buildKind() {
   document.getElementById("feedbackKind").replaceChildren(sideSegment(KINDS, kind, (v) => { kind = v; }, { label: "Type of feedback" }));
@@ -45,15 +50,40 @@ function buildKind() {
 const unseenCount = () => (items ? items.filter(i => i.unseen).length : 0);
 
 function drawDot() {
-  const n = authUser ? unseenCount() : 0;
+  const admin = !!authUser && isAdmin();
+  const n = !authUser ? 0 : admin ? adminOpen : unseenCount();
   dot.hidden = !n;
-  if (feedbackBtn) feedbackBtn.setAttribute("aria-label", n ? `Feedback, ${n} update${n === 1 ? "" : "s"}` : "Feedback");
+  dot.classList.toggle("count", admin);
+  dot.textContent = admin && n ? (n > 99 ? "99+" : String(n)) : "";
+  if (feedbackBtn) {
+    if (admin) feedbackBtn.removeAttribute("aria-haspopup");
+    else feedbackBtn.setAttribute("aria-haspopup", "dialog");
+    feedbackBtn.setAttribute("aria-label", admin
+      ? (n ? `Feedback, ${n} open` : "Feedback list")
+      : (n ? `Feedback, ${n} update${n === 1 ? "" : "s"}` : "Feedback"));
+    feedbackBtn.title = admin ? "Open the feedback list" : "";
+  }
   const tabDot = tabs.querySelector(".fb-tab-dot");
   if (tabDot) tabDot.hidden = !n;
 }
 
+async function loadAdminCount() {
+  const uid = authUser.id;
+  try {
+    const res = await fetch("/api/admin?feedback=count", { headers: await authHeaders() });
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    if (!authUser || authUser.id !== uid) return;
+    adminOpen = data.open || 0;
+    loadedFor = uid;
+    lastLoad = Date.now();
+  } catch (e) { /* keep the last count */ }
+  drawDot();
+}
+
 export async function loadMine() {
-  if (!authUser) { items = null; loadedFor = null; drawDot(); return; }
+  if (!authUser) { items = null; adminOpen = 0; loadedFor = null; drawDot(); return; }
+  if (isAdmin()) return loadAdminCount();
   const uid = authUser.id;
   try {
     const res = await fetch("/api/feedback", { headers: await authHeaders() });
@@ -169,14 +199,15 @@ async function submit() {
 }
 
 watchDialog(modal, "show", () => (tab === "mine" ? tabs.querySelector(".side-seg-btn.active") : message));
-if (feedbackBtn) feedbackBtn.onclick = open;
+if (feedbackBtn) feedbackBtn.onclick = () => { if (authUser && isAdmin()) location.assign(ADMIN_LIST); else open(); };
 cancel.onclick = () => closeModal(modal);
 send.onclick = submit;
 message.addEventListener("input", () => { count.textContent = `${message.value.length} / 2000`; });
 // applyAuthState (js/auth.js) fires this on startup and whenever who is
 // signed in changes.
 document.addEventListener("authchange", () => { if ((authUser ? authUser.id : null) !== loadedFor) loadMine(); });
-// Pick up an admin's verdict when the user comes back to the tab.
+// Pick up an admin's verdict (or, for admins, new open items) when the
+// user comes back to the tab.
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible" && authUser && Date.now() - lastLoad > 60_000) loadMine();
 });

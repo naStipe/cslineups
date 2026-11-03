@@ -158,6 +158,15 @@ module.exports = async function handler(req, res) {
       return;
     }
 
+    // GET ?feedback=count — number of open items, for the badge on the map's
+    // feedback button (js/feedback.js).
+    if (req.method === "GET" && req.query && req.query.feedback === "count") {
+      const { count, error } = await sb.from("feedback").select("id", { count: "exact", head: true }).eq("status", "open");
+      if (error) throw new Error(error.message);
+      res.status(200).json({ open: count || 0 });
+      return;
+    }
+
     // GET ?feedback=open|closed|all — visitor suggestions and bug reports.
     if (req.method === "GET" && req.query && req.query.feedback) {
       const f = req.query.feedback;

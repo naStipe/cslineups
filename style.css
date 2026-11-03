@@ -3049,6 +3049,10 @@ body.in-collection .feedback-btn{display:none;}
   position:absolute;top:-4px;right:-4px;width:10px;height:10px;border-radius:50%;
   background:var(--signal);border:2px solid var(--void);animation:fbDotIn .2s ease-out;
 }
+.feedback-dot.count{
+  width:auto;height:auto;min-width:18px;top:-8px;right:-8px;padding:1px 5px;border-radius:999px;
+  font-family:var(--font-mono);font-size:10px;font-weight:700;font-style:normal;line-height:14px;text-align:center;color:#221305;
+}
 @keyframes fbDotIn{from{opacity:0;transform:scale(.6);}to{opacity:1;transform:none;}}
 .fb-tabs{margin:2px 0 12px;}
 .fb-tabs .side-seg{display:flex;}
