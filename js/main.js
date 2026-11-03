@@ -18,7 +18,7 @@ import { browseOpen, closeBrowse, isPhone, openBrowse, toggleBrowse } from "./br
 import { renderMarkers } from "./markers.js";
 import { resetZoom } from "./pan-zoom.js";
 import { registerLayer, registerShortcut, setShortcutSuspender } from "./shortcuts.js";
-import { buildFilters, buildSidebar, closeSidebar, fetchMapCounts, sidebarOpen, toggleTypeFilter } from "./sidebar.js";
+import { buildFilters, buildSidebar, closeSidebar, cycleMarkMode, fetchMapCounts, sidebarOpen, toggleTypeFilter } from "./sidebar.js";
 import { state } from "./state.js";
 import { toastError } from "./toast.js";
 
@@ -104,6 +104,10 @@ registerShortcut({
   handler: () => { if (state.addMode) { setAddMode(false); state.pendingThrowFor = null; } else startAddFlow(); },
 });
 registerShortcut({ keys: ["z", "Z"], label: "Z", description: "Reset zoom", group: "Map", when: inMap, handler: resetZoom });
+registerShortcut({
+  keys: ["v", "V"], label: "V", description: "Show landings / throw spots / both", group: "Map",
+  when: () => inMap() && !state.collectionView, handler: cycleMarkMode,
+});
 
 registerShortcut({
   keys: ["ArrowLeft"], label: "←", description: "Previous image (lightbox) / previous variant (dossier)", group: "Lineups",

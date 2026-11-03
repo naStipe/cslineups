@@ -76,23 +76,41 @@ markerLayer.addEventListener("keydown", (e) => {
 // (phones) neighbouring marks don't overlap and steal each other's taps.
 const MIN_MARK_GAP_PX = 22;
 
-export function clusterLineups(list) {
+// Groups items whose map position (posOf(item) -> {x,y} in %) is too close to
+// tell apart; each cluster sits at the average of its items.
+function clusterPoints(items, posOf) {
   // 3.5% of the map at zoom 1 is the desktop spacing; small maps need more.
   const mapPx = mapImage.offsetWidth;
   const minPct = mapPx ? (MIN_MARK_GAP_PX / mapPx) * 100 : 0;
   const THRESHOLD = Math.max(3.5, minPct) / zoom;
   const clusters = [];
-  list.forEach(lineup => {
-    const c = clusters.find(cl => Math.hypot(cl.x - lineup.landing.x, cl.y - lineup.landing.y) < THRESHOLD);
+  items.forEach(item => {
+    const p = posOf(item);
+    const c = clusters.find(cl => Math.hypot(cl.x - p.x, cl.y - p.y) < THRESHOLD);
     if (c) {
-      c.lineups.push(lineup);
-      c.x = c.lineups.reduce((s, l) => s + l.landing.x, 0) / c.lineups.length;
-      c.y = c.lineups.reduce((s, l) => s + l.landing.y, 0) / c.lineups.length;
+      c.items.push(item);
+      c.x = c.items.reduce((s, it) => s + posOf(it).x, 0) / c.items.length;
+      c.y = c.items.reduce((s, it) => s + posOf(it).y, 0) / c.items.length;
     } else {
-      clusters.push({ x: lineup.landing.x, y: lineup.landing.y, lineups: [lineup] });
+      clusters.push({ x: p.x, y: p.y, items: [item] });
     }
   });
   return clusters;
+}
+
+export function clusterLineups(list) {
+  return clusterPoints(list, l => l.landing).map(c => ({ x: c.x, y: c.y, lineups: c.items }));
+}
+
+// Throw-spot clusters: `lineups[i]` is thrown from its variant `throwIdxs[i]`
+// (one lineup can appear twice when two of its variants stand close together).
+function clusterThrowSpots(list) {
+  const items = list.flatMap(lineup => lineup.throws.map((t, idx) => ({ lineup, idx, pos: t.pos })));
+  return clusterPoints(items, it => it.pos).map(c => ({
+    x: c.x, y: c.y,
+    lineups: c.items.map(it => it.lineup),
+    throwIdxs: c.items.map(it => it.idx),
+  }));
 }
 
 export function clusterKey(cluster) {
@@ -100,7 +118,17 @@ export function clusterKey(cluster) {
   // throw position (which changes the marker's badge number) counts as a
   // real change in cluster identity — otherwise the reconciler below sees
   // "same lineup ids here" and leaves the stale marker/badge in place.
+  if (cluster.throwIdxs) {
+    return "t:" + cluster.lineups.map((l, i) => `${l.id}#${cluster.throwIdxs[i]}:${l.throws.length}`).sort().join(",");
+  }
   return cluster.lineups.map(l => `${l.id}:${l.throws.length}`).sort().join(",");
+}
+
+// Which marks the map shows: "landing" (pick a lineup to see where it's thrown
+// from), "throws" (every throw spot) or "both". An open collection always
+// shows landings, since its step numbers live on the landing marks.
+export function markMode() {
+  return state.collectionView ? "landing" : state.markMode;
 }
 
 // Label shown under a fan petal; unnamed lineups read like the sidebar list.
@@ -126,9 +154,12 @@ function fanRadius(labels, startAngle, step) {
 
 export function renderClusterFan(cluster, key, animate = true) {
   const count = cluster.lineups.length;
+  const isSpot = !!cluster.throwIdxs;
   const startAngle = -90;
   const step = 360 / count;
-  const labels = cluster.lineups.map(petalLabel);
+  // Throw spots name the variant too, matching "VARIANT 0N" in the dossier.
+  const labels = cluster.lineups.map((l, i) =>
+    isSpot && l.throws.length > 1 ? `${petalLabel(l)} · ${cluster.throwIdxs[i] + 1}` : petalLabel(l));
   // Divide by zoom so the fan's on-screen spread stays constant — the map
   // frame itself is scaled by `zoom`, which would otherwise blow up these
   // pixel offsets and scatter the petals when zoomed in.
@@ -148,9 +179,9 @@ export function renderClusterFan(cluster, key, animate = true) {
   // all — the hub was already glowing, the marker underneath it (revived,
   // not rebuilt — see the reconciliation below) is already glowing too,
   // so nothing visibly flickers or lights up mid-transition.
-  hub.className = "marker landing fan-hub pinned";
+  hub.className = `marker ${isSpot ? "throwpos spot" : "landing"} fan-hub pinned`;
   makeKeyboardButton(hub);
-  hub.setAttribute("aria-label", `Close ${cluster.lineups.length} lineups`);
+  hub.setAttribute("aria-label", `Close ${count} ${isSpot ? "throw spots" : "lineups"}`);
   const sameType = cluster.lineups.every(l => l.type === cluster.lineups[0].type);
   if (sameType) {
     hub.classList.add(cluster.lineups[0].type);
@@ -202,8 +233,21 @@ export function renderClusterFan(cluster, key, animate = true) {
     makeKeyboardButton(petal);
     petal.setAttribute("aria-label", label);
     petal.dataset.lid = lineup.id; // read by multi-select
+    if (isSpot) petal.dataset.tidx = String(cluster.throwIdxs[i]); // hover preview shows the stand photo
     petal.onclick = (e) => {
       e.stopPropagation();
+      if (isSpot) {
+        const throwIdx = cluster.throwIdxs[i];
+        // Select mode: toggle this throw and keep the fan open for the next pick.
+        if (hooks.interceptThrow && hooks.interceptThrow(e, lineup, throwIdx)) return;
+        state.openClusterKey = null;
+        wrap.remove();
+        renderMarkers();
+        markerLayer.appendChild(wrap);
+        collapseFan(wrap, lineEls, petalEls, () => wrap.remove());
+        openDetail(lineup.id, throwIdx);
+        return;
+      }
       // Select mode: toggle this lineup and keep the fan open for the next pick.
       if (hooks.intercept && hooks.intercept(e, [lineup])) return;
       state.openClusterKey = null;
@@ -293,7 +337,12 @@ export function renderMarkers(animate = true) {
   // don't let a stray re-render (zoom, filter toggle, etc.) wipe its dots.
   if (state.reposition) return;
   const visible = state.lineups.filter(lineupVisible);
-  const clusters = clusterLineups(visible);
+  const mode = markMode();
+  // A picked lineup always shows its landing and numbered throw spots, so
+  // "throws" mode still draws the one landing for the selection. Its spots
+  // then come from buildThrows below rather than the all-spots layer.
+  const clusters = clusterLineups(mode === "throws" ? visible.filter(l => l.id === state.selectedLineupId) : visible);
+  const spotClusters = mode === "landing" ? [] : clusterThrowSpots(visible.filter(l => l.id !== state.selectedLineupId));
 
   // Zooming changes the clustering distance threshold, so a cluster that was
   // fanned open can split apart (or a couple of separate markers can merge)
@@ -301,7 +350,7 @@ export function renderMarkers(animate = true) {
   // matches any current cluster, drop it — otherwise every cluster below
   // gets hidden (each fails the "must match the open fan" check) and the
   // whole stack silently disappears from the map.
-  if (state.openClusterKey && !clusters.some(c => clusterKey(c) === state.openClusterKey)) {
+  if (state.openClusterKey && ![...clusters, ...spotClusters].some(c => clusterKey(c) === state.openClusterKey)) {
     state.openClusterKey = null;
   }
 
@@ -321,6 +370,15 @@ export function renderMarkers(animate = true) {
     // dimmed, so the user keeps their bearings (and can still switch).
     desiredLandings.set(key, { cluster, isPinned, dimmed: !!state.selectedLineupId && !isPinned });
     if (isPinned) pinnedCluster = cluster;
+  }
+  const desiredSpots = new Map();      // key -> cluster
+  for (const cluster of spotClusters) {
+    const key = clusterKey(cluster);
+    if (state.openClusterKey && state.openClusterKey !== key) continue;
+    if (cluster.lineups.length > 1 && state.openClusterKey === key) {
+      desiredFanKey = key; fanCluster = cluster; continue;
+    }
+    desiredSpots.set(key, cluster);
   }
 
   // --- Fan wrap ---
@@ -367,11 +425,13 @@ export function renderMarkers(animate = true) {
     ? openLineup.id + "|" + openLineup.throws.map(t => `${t.pos.x},${t.pos.y}`).join(";")
     : null;
   if (throwSig !== renderedThrowSig) {
-    markerLayer.querySelectorAll(":scope > .marker.throwpos").forEach(el => el.remove());
+    markerLayer.querySelectorAll(":scope > .marker.throwpos:not(.spot)").forEach(el => el.remove());
     linkSvg.innerHTML = "";
     if (openLineup && pinnedLandingEl) buildThrows(openLineup, pinnedLandingEl, animate);
     renderedThrowSig = throwSig;
   }
+
+  renderSpots(desiredSpots, mode === "both", !!state.selectedLineupId, animate);
 
   // Keep the sidebar lineup list's highlight in step with map selection.
   syncLineupListSelection();
@@ -433,6 +493,110 @@ export function buildLandingMarker(cluster, key, isPinned, animate) {
     else pickLineup(lineup);
   };
   return landing;
+}
+
+// The all-spots layer of the "throws" and "both" modes, reconciled by cluster
+// key like the landing marks so a re-render doesn't flicker them. In "both"
+// each spot also gets a faint path to its landing, lit while hovered.
+function renderSpots(desired, withLines, dimmed, animate) {
+  const live = new Map();
+  markerLayer.querySelectorAll(":scope > .marker.spot:not(.fan-hub)").forEach(el => {
+    const key = el.dataset.mkey;
+    const cluster = desired.get(key);
+    if (cluster && !live.has(key)) {
+      if (el._leaveTimer) { clearTimeout(el._leaveTimer); el._leaveTimer = null; }
+      el.classList.remove("leaving");
+      el.style.left = cluster.x + "%";
+      el.style.top = cluster.y + "%";
+      live.set(key, el);
+    } else {
+      if (el.classList.contains("leaving")) return;
+      if (animate) { el.classList.add("leaving"); el._leaveTimer = setTimeout(() => el.remove(), 200); }
+      else el.remove();
+    }
+  });
+  desired.forEach((cluster, key) => {
+    if (live.has(key)) return;
+    const el = buildSpotMarker(cluster, key, animate);
+    markerLayer.appendChild(el);
+    live.set(key, el);
+  });
+
+  linkSvg.querySelectorAll(":scope > .spot-line").forEach(l => l.remove());
+  live.forEach((el, key) => {
+    el.classList.toggle("dimmed", dimmed);
+    const cluster = desired.get(key);
+    const lines = !withLines ? [] : cluster.lineups.map((lineup, i) => {
+      const pos = lineup.throws[cluster.throwIdxs[i]].pos;
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("x1", pos.x + "%");
+      line.setAttribute("y1", pos.y + "%");
+      line.setAttribute("x2", lineup.landing.x + "%");
+      line.setAttribute("y2", lineup.landing.y + "%");
+      const linkColor = getCssVarColor(typeColor(lineup.type));
+      line.setAttribute("stroke", linkColor);
+      line.style.color = linkColor;
+      line.setAttribute("class", "link-line spot-line" + (dimmed ? " dimmed" : ""));
+      linkSvg.appendChild(line);
+      return line;
+    });
+    el.onmouseenter = () => lines.forEach(l => l.classList.add("glow"));
+    el.onmouseleave = () => lines.forEach(l => l.classList.remove("glow"));
+  });
+}
+
+function buildSpotMarker(cluster, key, animate) {
+  const count = cluster.lineups.length;
+  const sameType = cluster.lineups.every(l => l.type === cluster.lineups[0].type);
+
+  const spot = document.createElement("div");
+  spot.className = `marker throwpos spot ${sameType ? cluster.lineups[0].type : "multi"}${animate ? " enter" : ""}`;
+  if (animate) spot.addEventListener("animationend", () => spot.classList.remove("enter"), { once: true });
+  spot.dataset.mkey = key;
+  spot.style.left = cluster.x + "%";
+  spot.style.top = cluster.y + "%";
+  makeKeyboardButton(spot);
+
+  if (!sameType) {
+    const typeCounts = {};
+    cluster.lineups.forEach(l => { typeCounts[l.type] = (typeCounts[l.type] || 0) + 1; });
+    spot.style.background = buildPieGradient(typeCounts);
+  }
+
+  if (count > 1) {
+    spot.title = `${count} throw spots here`;
+    spot.setAttribute("aria-label", spot.title);
+    const badge = document.createElement("span");
+    badge.className = "marker-badge";
+    badge.textContent = count;
+    spot.appendChild(badge);
+    spot.onclick = (e) => {
+      e.stopPropagation();
+      state.openClusterKey = key;
+      renderMarkers();
+    };
+    return spot;
+  }
+
+  const lineup = cluster.lineups[0];
+  const throwIdx = cluster.throwIdxs[0];
+  spot.dataset.lid = lineup.id;          // read by the hover preview and multi-select
+  spot.dataset.tidx = String(throwIdx);
+  spot.title = "Click to open this lineup";
+  if (lineup.throws.length > 1) {
+    const num = document.createElement("span");
+    num.className = "throw-num";
+    num.setAttribute("aria-hidden", "true");
+    num.textContent = String(throwIdx + 1);
+    spot.appendChild(num);
+  }
+  spot.setAttribute("aria-label", `Open ${lineup.name || "lineup"}, throw position ${throwIdx + 1}`);
+  spot.onclick = (e) => {
+    e.stopPropagation();
+    if (hooks.interceptThrow && hooks.interceptThrow(e, lineup, throwIdx)) return;
+    openDetail(lineup.id, throwIdx);
+  };
+  return spot;
 }
 
 export function buildThrows(openLineup, landingEl, animate) {

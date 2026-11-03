@@ -3874,3 +3874,12 @@ body:not(.signed-in) .coll-rail-head,
 .confirm-foot{margin:auto 0 0;font-size:12.5px;color:var(--text-faint);}
 .confirm-foot a{color:var(--text-dim);text-decoration:none;}
 .confirm-foot a:hover{color:var(--signal);}
+
+/* Show-on-map switch (landings / throw spots / both) before the side filter
+   (a full row in the phone filter popup), and the faint paths from every
+   throw spot to its landing in "both". */
+.mobile-extra-filters .mark-mode-seg{display:flex;flex-basis:100%;}
+.mobile-extra-filters .mark-mode-seg .side-seg-btn{flex:1;}
+.link-line.spot-line{opacity:.3;}
+.link-line.spot-line.dimmed{opacity:.08;}
+.link-line.spot-line.glow{opacity:1;}

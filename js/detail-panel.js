@@ -718,7 +718,10 @@ syncDossierInert();
 watchDialog(detailPanel, "open", () => closeDetail, () => {
   if (!lastDossierLineupId) return null;
   return [...markerLayer.querySelectorAll(".marker.landing[data-lids]")]
-    .find(el => el.dataset.lids.split(",").includes(lastDossierLineupId)) || null;
+    .find(el => el.dataset.lids.split(",").includes(lastDossierLineupId))
+    // "Throws" map mode has no landing mark once the dossier closes.
+    || [...markerLayer.querySelectorAll(".marker.spot[data-lid]")].find(el => el.dataset.lid === lastDossierLineupId)
+    || null;
 });
 
 detailPanel.addEventListener("click", (e) => {

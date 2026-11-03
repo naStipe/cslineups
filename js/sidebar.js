@@ -7,7 +7,7 @@ import { renderMarkers } from "./markers.js";
 import { resetZoom, zoomToBox } from "./pan-zoom.js";
 import { SIDE_FILTERS, sideSegment } from "./side.js";
 import { closeModal } from "./modal-utils.js";
-import { state } from "./state.js";
+import { MARK_MODES, MARK_MODE_KEY, state } from "./state.js";
 
 // Official lineup count per map ({ dust2: 26, … }), fetched once and shared
 // by the sidebar and the home screen's map cards. Resolves null on failure.
@@ -100,9 +100,34 @@ export function buildFilters() {
   buildSideAndAreaFilters();
 }
 
-// T / CT segment and the area dropdown, in the topbar and (mobile) the filter popup.
+const MARK_MODE_OPTIONS = [
+  { id: "landing", label: "Landings" },
+  { id: "throws",  label: "Throws" },
+  { id: "both",    label: "Both" },
+];
+
+// What the map draws: landing spots (as before), every throw spot, or both.
+// One setting for every map, unlike the per-map filters.
+export function setMarkMode(mode) {
+  if (!MARK_MODES.includes(mode)) return;
+  state.markMode = mode;
+  try { localStorage.setItem(MARK_MODE_KEY, mode); } catch {}
+  state.openClusterKey = null;
+  buildFilters();
+  renderMarkers();
+}
+
+export function cycleMarkMode() {
+  setMarkMode(MARK_MODES[(MARK_MODES.indexOf(state.markMode) + 1) % MARK_MODES.length]);
+}
+
+// Show-on-map segment, T / CT segment and the area dropdown, in the topbar
+// and (mobile) the filter popup.
 function filterControls() {
   const frag = document.createDocumentFragment();
+  const show = sideSegment(MARK_MODE_OPTIONS, state.markMode, setMarkMode, { label: "Show on map" });
+  show.classList.add("mark-mode-seg");
+  frag.append(show);
   frag.append(sideSegment(SIDE_FILTERS, state.sideFilter, setSideFilter, { label: "Filter by side" }));
   const opts = areaOptions();
   if (opts.length) {
@@ -120,6 +145,8 @@ function filterControls() {
 function buildSideAndAreaFilters() {
   if (sideFilters) sideFilters.replaceChildren(filterControls());
   if (mobileTypeFilterGrid) {
+    // Also runs after the map's areas load, so replace any earlier row.
+    mobileTypeFilterGrid.querySelectorAll(".mobile-extra-filters").forEach(el => el.remove());
     const row = document.createElement("div");
     row.className = "mobile-extra-filters";
     row.append(filterControls());
