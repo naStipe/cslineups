@@ -42,16 +42,32 @@ export function pickLineup(lineup) {
   maybeShowThrowHint();
 }
 
+// Picking a throw spot (the "throws" / "both" modes) first shows where that
+// nade lands: the lineup's landing, its numbered spots and paths, with the
+// picked path lit. Clicking the spot or the landing again opens the dossier.
+function pickThrowSpot(lineup, throwIdx) {
+  state.openClusterKey = null;
+  state.selectedLineupId = lineup.id;
+  renderMarkers();
+  const line = linkSvg.querySelector(`.link-line:not(.spot-line)[data-tidx="${throwIdx}"]`);
+  if (line) line.classList.add("glow");
+  showHintOnce(SPOT_HINT_KEY, "Click the throw spot again for instructions");
+}
+
 const THROW_HINT_KEY = "lineupr_throw_hint_seen";
+const SPOT_HINT_KEY = "lineupr_spot_hint_seen";
 function maybeShowThrowHint() {
+  showHintOnce(THROW_HINT_KEY, "Click a throw spot to open its lineup");
+}
+function showHintOnce(key, text) {
   try {
-    if (localStorage.getItem(THROW_HINT_KEY)) return;
-    localStorage.setItem(THROW_HINT_KEY, "1");
+    if (localStorage.getItem(key)) return;
+    localStorage.setItem(key, "1");
   } catch { return; }
   const el = document.createElement("div");
   el.className = "throw-hint";
   el.setAttribute("role", "status");
-  el.textContent = "Click a throw spot to open its lineup";
+  el.textContent = text;
   mapStage.appendChild(el);
   setTimeout(() => el.classList.add("out"), 4000);
   setTimeout(() => el.remove(), 4400);
@@ -240,12 +256,10 @@ export function renderClusterFan(cluster, key, animate = true) {
         const throwIdx = cluster.throwIdxs[i];
         // Select mode: toggle this throw and keep the fan open for the next pick.
         if (hooks.interceptThrow && hooks.interceptThrow(e, lineup, throwIdx)) return;
-        state.openClusterKey = null;
         wrap.remove();
-        renderMarkers();
+        pickThrowSpot(lineup, throwIdx);
         markerLayer.appendChild(wrap);
         collapseFan(wrap, lineEls, petalEls, () => wrap.remove());
-        openDetail(lineup.id, throwIdx);
         return;
       }
       // Select mode: toggle this lineup and keep the fan open for the next pick.
@@ -582,7 +596,7 @@ function buildSpotMarker(cluster, key, animate) {
   const throwIdx = cluster.throwIdxs[0];
   spot.dataset.lid = lineup.id;          // read by the hover preview and multi-select
   spot.dataset.tidx = String(throwIdx);
-  spot.title = "Click to open this lineup";
+  spot.title = "Click to see where it lands";
   if (lineup.throws.length > 1) {
     const num = document.createElement("span");
     num.className = "throw-num";
@@ -590,11 +604,11 @@ function buildSpotMarker(cluster, key, animate) {
     num.textContent = String(throwIdx + 1);
     spot.appendChild(num);
   }
-  spot.setAttribute("aria-label", `Open ${lineup.name || "lineup"}, throw position ${throwIdx + 1}`);
+  spot.setAttribute("aria-label", `Show where ${lineup.name || "this lineup"} lands, throw position ${throwIdx + 1}`);
   spot.onclick = (e) => {
     e.stopPropagation();
     if (hooks.interceptThrow && hooks.interceptThrow(e, lineup, throwIdx)) return;
-    openDetail(lineup.id, throwIdx);
+    pickThrowSpot(lineup, throwIdx);
   };
   return spot;
 }
@@ -636,6 +650,7 @@ export function buildThrows(openLineup, landingEl, animate) {
     line.setAttribute("stroke", linkColor);
     line.style.color = linkColor;
     line.setAttribute("class", "link-line");
+    line.dataset.tidx = String(throwIdx); // a picked throw spot lights its own path
     linkSvg.appendChild(line);
     lines.push(line);
 
